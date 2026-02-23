@@ -1,0 +1,211 @@
+// Place your key bindings in this file to override the defaultsauto[]
+[
+  {
+    "key": "ctrl+alt+oem_comma",
+    "command": "extension.csv-to-table.csv"
+  },
+  {
+    "key": "ctrl+shift+g",
+    "command": "workbench.view.scm",
+    "when": "workbench.scm.active && !gitlens:disabled && config.gitlens.keymap == 'chorded'"
+  },
+  {
+    "key": "ctrl+shift+g g",
+    "command": "-workbench.view.scm",
+    "when": "workbench.scm.active && !gitlens:disabled && config.gitlens.keymap == 'chorded'"
+  },
+  // Place your key bindings in this file to override the defaults
+  // NAVIGATION
+  {
+    "key": "ctrl+shift+a",
+    "command": "workbench.action.terminal.focusNext",
+    "when": "terminalFocus"
+  },
+  {
+    "key": "ctrl+shift+b",
+    "command": "workbench.action.terminal.focusPrevious",
+    "when": "terminalFocus"
+  },
+  {
+    "key": "ctrl+shift+j",
+    "command": "workbench.action.togglePanel"
+  },
+  {
+    "key": "ctrl+shift+n",
+    "command": "workbench.action.terminal.new",
+    "when": "terminalFocus"
+  },
+  {
+    "key": "ctrl+shift+w",
+    "command": "workbench.action.terminal.kill",
+    "when": "terminalFocus"
+  },
+  {
+    "key": "ctrl+shift+r",
+    "command": "extension.multiCommand.execute",
+    "args": {
+      "sequence": [
+        "workbench.action.terminal.kill",
+        "workbench.action.terminal.new"
+      ]
+    },
+    "when": "terminalFocus"
+  },
+  // FILE TREE
+  {
+    "command": "workbench.action.toggleSidebarVisibility",
+    "key": "ctrl+e"
+  },
+  {
+    "command": "workbench.action.toggleSidebarVisibility",
+    "key": "ctrl+b"
+  },
+  {
+    "command": "workbench.files.action.focusFilesExplorer",
+    "key": "ctrl+e",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "n",
+    "command": "explorer.newFile",
+    "when": "filesExplorerFocus && !inputFocus"
+  },
+  {
+    "command": "renameFile",
+    "key": "r",
+    "when": "filesExplorerFocus && !inputFocus"
+  },
+  {
+    "key": "shift+n",
+    "command": "explorer.newFolder",
+    "when": "explorerViewletFocus"
+  },
+  {
+    "command": "deleteFile",
+    "key": "d",
+    "when": "filesExplorerFocus && !inputFocus"
+  },
+  {
+    "command": "workbench.files.action.collapseExplorerFolders",
+    "key": "c",
+    "when": "filesExplorerFocus && !inputFocus"
+  },
+
+  // EXTRA
+  {
+    "key": "ctrl+shift+5",
+    "command": "editor.emmet.action.matchTag"
+  },
+  {
+    "key": "meta+c",
+    "command": "editor.action.commentLine",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "ctrl+'",
+    "command": "workbench.action.toggleZenMode"
+  },
+  {
+    "key": "alt+h",
+    "command": "workbench.action.navigateBack",
+    "when": "canNavigateBack"
+  },
+  {
+    "key": "alt+left",
+    "command": "-workbench.action.navigateBack",
+    "when": "canNavigateBack"
+  },
+  {
+    "key": "alt+l",
+    "command": "workbench.action.navigateForward",
+    "when": "canNavigateForward"
+  },
+  {
+    "key": "alt+right",
+    "command": "-workbench.action.navigateForward",
+    "when": "canNavigateForward"
+  },
+  {
+    "key": "ctrl+alt+i",
+    "command": "workbench.panel.chatEditing",
+    "when": "workbench.panel.chat.view.edits.active"
+  },
+  {
+    "key": "ctrl+shift+i",
+    "command": "-workbench.panel.chatEditing",
+    "when": "workbench.panel.chat.view.edits.active"
+  },
+  {
+    "key": "ctrl+alt+f",
+    "command": "find-it-faster.findWithinFiles"
+  },
+  {
+    "key": "ctrl+shift+u",
+    "command": "-find-it-faster.findWithinFiles"
+  },
+  {
+    "key": "ctrl+shift+u",
+    "command": "find-it-faster.findFiles"
+  },
+  {
+    "key": "ctrl+shift+j",
+    "command": "-find-it-faster.findFiles"
+  },
+  {
+    "key": "ctrl+shift+oem_1 ctrl+shift+oem_7",
+    "command": "chatgpt.openSidebar"
+  },
+  {
+    "key": "ctrl+shift+i",
+    "command": "-workbench.action.chat.openagent",
+    "when": "config.chat.agent.enabled && !chatSetupDisabled && !chatSetupHidden"
+  },
+  {
+    "key": "ctrl+shift+i",
+    "command": "-workbench.action.toggleDevTools",
+    "when": "isDevelopment"
+  },
+  {
+    "key": "ctrl+shift+i",
+    "command": "-supermaven.addToChat"
+  },
+  {
+    "key": "ctrl+i",
+    "command": "-supermaven.editWithSupermaven"
+  },
+  {
+  "key": "ctrl+f",
+  "command": "actions.find",
+  "when": "editorTextFocus && !neovim.ctrlKeys"
+},
+{
+  "key": "ctrl+h",
+  "command": "editor.action.startFindReplaceAction",
+  "when": "editorTextFocus && !neovim.ctrlKeys"
+},
+	{
+	  "key": "ctrl+w",
+	  "command": "workbench.action.closeActiveEditor",
+	  "when": "editorTextFocus && !neovim.ctrlKeys"
+	},
+		{
+		  "key": "ctrl+w",
+		  "command": "workbench.action.closeActiveEditor",
+		  "when": "!editorTextFocus && !terminalFocus"
+		},
+		{
+		  "key": "g+c",
+		  "command": "git.checkout",
+		  "when": "!operationInProgress"
+  },
+  {
+    "key": "ctrl+l ctrl+v",
+    "command": "latex-workshop.view",
+    "when": "config.latex-workshop.bind.altKeymap.enabled && editorLangId =~ /^latex$|^latex-class$|^latex-package$|^context$|^latex-expl3$|^doctex$|^rsweave$|^jlweave$|^pweave$/"
+  },
+  {
+    "key": "ctrl+l alt+v",
+    "command": "-latex-workshop.view",
+    "when": "config.latex-workshop.bind.altKeymap.enabled && editorLangId =~ /^latex$|^latex-class$|^latex-package$|^context$|^latex-expl3$|^doctex$|^rsweave$|^jlweave$|^pweave$/"
+  }
+]

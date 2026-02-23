@@ -1,0 +1,1 @@
+/home/kuba/.config/omarchy/current/theme/neovim.lua

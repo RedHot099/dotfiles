@@ -1,0 +1,7 @@
+.config/hypr/
+.config/nvim/
+.config/Code/User/settings.json
+.config/Code/User/keybindings.json
+.config/Code/User/mcp.json
+.config/Code/User/chatLanguageModels.json
+.vscode/argv.json

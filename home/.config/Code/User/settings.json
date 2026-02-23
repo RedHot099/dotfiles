@@ -1,0 +1,79 @@
+{
+    "workbench.colorTheme": "Everforest Dark",
+    "workbench.sideBar.location": "right",
+    "workbench.activityBar.location": "hidden",
+    "extensions.experimental.affinity": {
+        "asvetliakov.vscode-neovim": 1
+    },
+    "vscode-neovim.useWSL": true,
+    "editor.minimap.renderCharacters": false,
+    "editor.minimap.enabled": false,
+    "ruff.lineLength": 120,
+    "files.autoSave": "onFocusChange",
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "notebook.defaultFormatter": "charliermarsh.ruff",
+    "vscode-neovim.neovimCtrlKeys": {
+        "f": false,
+        "h": false,
+        "w": false,
+        "b": false,
+        },
+    "workbench.view.showQuietly": {
+        "workbench.panel.output": true
+    },
+    "git.confirmSync": false,
+    "git.autofetch": true,
+    "files.exclude": {
+        "": true,
+        "**/.git": false
+    },
+    "supermaven.enable": {
+        "*": false
+    },
+    "explorer.confirmDelete": false,
+    "cSpell.language": "en,pl",
+    "latex-workshop.latex.tools": [
+        {
+            "name": "latexmk",
+            "command": "latexmk",
+            "args": [
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "-pdf",
+                "%DOC%"
+            ]
+        },
+        {
+            "name": "latexmk-clean",
+            "command": "latexmk",
+            "args": [
+                "-c",
+                "%DOC%"
+            ]
+        },
+        {
+            "name": "latexmk-clean-extras",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "rm -f \"%DOC%.bbl\" \"%DOC%.synctex.gz\""
+            ]
+        }
+    ],
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "latexmk (clean)",
+            "tools": [
+                "latexmk",
+                "latexmk-clean",
+                "latexmk-clean-extras"
+            ]
+        }
+    ],
+    "latex-workshop.latex.recipe.default": "latexmk (clean)",
+    "editor.wordWrap": "on",
+    "coderabbit.agentType": "Codex CLI",
+    "coderabbit.autoReviewMode": "disabled",
+    "vsicons.dontShowNewVersionMessage": true,
+}
