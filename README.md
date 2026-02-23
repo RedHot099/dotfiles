@@ -1,9 +1,9 @@
 # Omarchy Dotfiles
 
-Repozytorium trzyma Twoje preferencje dla bazowego Omarchy i IDE.
+This repository stores your personal Omarchy and IDE preferences so you can quickly reproduce your setup on a fresh system.
 
-## Zakres
-Pliki zarządzane przez `manifest.txt`:
+## Scope
+Managed by `manifest.txt`:
 - `~/.config/hypr/`
 - `~/.config/nvim/`
 - `~/.config/Code/User/settings.json`
@@ -12,34 +12,44 @@ Pliki zarządzane przez `manifest.txt`:
 - `~/.config/Code/User/chatLanguageModels.json`
 - `~/.vscode/argv.json`
 
-## Struktura
-- `home/` - docelowe pliki w układzie względem `$HOME`
-- `scripts/capture.sh` - zrzut aktualnego stanu z systemu do repo
-- `scripts/install.sh` - wdrożenie repo na system (z backupem)
-- `scripts/diff.sh` - porównanie repo vs aktualny system
+## Repository Layout
+- `home/` - files mirrored in `$HOME`-relative structure
+- `scripts/capture.sh` - capture current local config into this repo
+- `scripts/install.sh` - apply repo config to local system (with backups)
+- `scripts/diff.sh` - compare repo state vs current local state
+- `scripts/bootstrap-omarchy.sh` - convenience wrapper for install
 
-## Użycie
+## Usage
 
-### 1) Zrzut aktualnego stanu
+### 1) Capture current setup
 ```bash
 ./scripts/capture.sh
 ```
 
-### 2) Wdrożenie na nowym systemie
+### 2) Apply setup on a new system
 ```bash
 ./scripts/install.sh
 ```
 
-Opcje:
+Options:
 ```bash
 ./scripts/install.sh --dry-run
 ./scripts/install.sh --no-backup
 ```
 
-Backup trafia domyślnie do:
+Backups are stored by default in:
 - `~/.local/state/dotfiles/backups/<timestamp>`
 
-### 3) Sprawdzenie różnic
+### 3) Check differences
 ```bash
 ./scripts/diff.sh
+```
+
+## Makefile shortcuts
+```bash
+make capture
+make diff
+make dry-run
+make install
+make bootstrap
 ```
