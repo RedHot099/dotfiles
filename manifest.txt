@@ -5,3 +5,8 @@
 .config/Code/User/mcp.json
 .config/Code/User/chatLanguageModels.json
 .vscode/argv.json
+.icons/default/index.theme
+.config/environment.d/cursor.conf
+.config/gtk-3.0/settings.ini
+.config/gtk-4.0/settings.ini
+.local/share/icons/Maverick Pointy Dark/
