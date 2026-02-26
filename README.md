@@ -1,51 +1,26 @@
 # Omarchy Dotfiles
 
-This repository stores your personal Omarchy and IDE preferences so you can quickly reproduce your setup on a fresh system.
+This repository stores personal Omarchy preferences so a fresh system can be configured quickly with the same setup.
 
-## Scope
-Managed by `manifest.txt`:
-- `~/.config/hypr/`
-- `~/.config/nvim/`
-- `~/.config/Code/User/settings.json`
-- `~/.config/Code/User/keybindings.json`
-- `~/.config/Code/User/mcp.json`
-- `~/.config/Code/User/chatLanguageModels.json`
-- `~/.vscode/argv.json`
+## What These Dotfiles Configure
+- Hyprland configuration: `~/.config/hypr/`
+- Neovim configuration: `~/.config/nvim/`
+- VS Code user config:
+  - `~/.config/Code/User/settings.json`
+  - `~/.config/Code/User/keybindings.json`
+  - `~/.config/Code/User/mcp.json`
+  - `~/.config/Code/User/chatLanguageModels.json`
+- VS Code runtime args: `~/.vscode/argv.json`
+- Cursor/theme integration:
+  - `~/.icons/default/index.theme`
+  - `~/.config/environment.d/cursor.conf`
+  - `~/.config/gtk-3.0/settings.ini`
+  - `~/.config/gtk-4.0/settings.ini`
+  - `~/.local/share/icons/Maverick Pointy Dark/`
 
-## Repository Layout
-- `home/` - files mirrored in `$HOME`-relative structure
-- `scripts/capture.sh` - capture current local config into this repo
-- `scripts/install.sh` - apply repo config to local system (with backups)
-- `scripts/diff.sh` - compare repo state vs current local state
-- `scripts/bootstrap-omarchy.sh` - convenience wrapper for install
+Managed paths are defined in `manifest.txt`.
 
-## Usage
-
-### 1) Capture current setup
-```bash
-./scripts/capture.sh
-```
-
-### 2) Apply setup on a new system
-```bash
-./scripts/install.sh
-```
-
-Options:
-```bash
-./scripts/install.sh --dry-run
-./scripts/install.sh --no-backup
-```
-
-Backups are stored by default in:
-- `~/.local/state/dotfiles/backups/<timestamp>`
-
-### 3) Check differences
-```bash
-./scripts/diff.sh
-```
-
-## Makefile shortcuts
+## Makefile Usage
 ```bash
 make capture
 make diff
@@ -53,3 +28,11 @@ make dry-run
 make install
 make bootstrap
 ```
+
+- `make capture` - sync current local config into this repo
+- `make diff` - compare repo state with current local state
+- `make dry-run` - preview install actions
+- `make install` - apply repo config to the system
+- `make bootstrap` - convenience wrapper for install
+
+Backups are created under `~/.local/state/dotfiles/backups/<timestamp>`.
