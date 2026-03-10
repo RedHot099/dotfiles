@@ -5,6 +5,8 @@
 .config/Code/User/mcp.json
 .config/Code/User/chatLanguageModels.json
 .vscode/argv.json
+.local/bin/t3code
+.local/share/applications/t3-code.desktop
 .icons/default/index.theme
 .config/environment.d/cursor.conf
 .config/gtk-3.0/settings.ini

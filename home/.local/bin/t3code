@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APPDIR="${T3CODE_APPDIR:-$HOME/.local/opt/t3code/current}"
+BINARY=""
+
+if [[ -x "$APPDIR/t3-code-desktop" ]]; then
+  BINARY="$APPDIR/t3-code-desktop"
+  export DESKTOPINTEGRATION=false
+  export PATH="$APPDIR:$APPDIR/usr/sbin:$PATH"
+  export LD_LIBRARY_PATH="$APPDIR/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+  export XDG_DATA_DIRS="$APPDIR/usr/share${XDG_DATA_DIRS:+:$XDG_DATA_DIRS}"
+  export GSETTINGS_SCHEMA_DIR="$APPDIR/usr/share/glib-2.0/schemas${GSETTINGS_SCHEMA_DIR:+:$GSETTINGS_SCHEMA_DIR}"
+elif command -v t3-code-desktop >/dev/null 2>&1; then
+  BINARY="$(command -v t3-code-desktop)"
+else
+  echo "T3 Code is not available. Install it separately and optionally set T3CODE_APPDIR." >&2
+  exit 1
+fi
+
+exec "$BINARY" --no-sandbox "$@"

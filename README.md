@@ -11,6 +11,9 @@ This repository stores personal Omarchy preferences so a fresh system can be con
   - `~/.config/Code/User/mcp.json`
   - `~/.config/Code/User/chatLanguageModels.json`
 - VS Code runtime args: `~/.vscode/argv.json`
+- T3 Code launcher:
+  - `~/.local/bin/t3code`
+  - `~/.local/share/applications/t3-code.desktop`
 - Cursor/theme integration:
   - `~/.icons/default/index.theme`
   - `~/.config/environment.d/cursor.conf`
@@ -19,6 +22,7 @@ This repository stores personal Omarchy preferences so a fresh system can be con
   - `~/.local/share/icons/Maverick Pointy Dark/`
 
 Managed paths are defined in `manifest.txt`.
+The T3 Code launcher assumes the app is installed separately and can be found via `T3CODE_APPDIR` or `t3-code-desktop` in `PATH`.
 
 ## Makefile Usage
 ```bash
