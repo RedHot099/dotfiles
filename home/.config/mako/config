@@ -6,4 +6,4 @@ on-button-middle=invoke-action 0
 
 # Keep Caprine's conversation action, then reveal its window on workspace 4.
 [app-name=Caprine actionable]
-on-button-left=exec sh -c 'makoctl invoke -n "$id"; hyprctl dispatch workspace 4; hyprctl dispatch focuswindow "class:^(caprine|Caprine)$"'
+on-button-left=exec sh -c 'makoctl invoke -n "$id"; makoctl dismiss -n "$id"; hyprctl dispatch workspace 4; hyprctl dispatch focuswindow "class:^(caprine|Caprine)$"'
