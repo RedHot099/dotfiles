@@ -11,4 +11,5 @@
 .config/environment.d/cursor.conf
 .config/gtk-3.0/settings.ini
 .config/gtk-4.0/settings.ini
+.local/bin/caprine-notification-patch
 .local/share/icons/Maverick Pointy Dark/

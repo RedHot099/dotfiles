@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Some shell environments export ELECTRON_RUN_AS_NODE for tooling, which breaks
+# desktop Electron apps like Caprine by forcing them into Node mode.
+unset ELECTRON_RUN_AS_NODE
+
+asar_path='/usr/lib/caprine/app.asar'
+if patched_asar="$($HOME/.local/bin/caprine-notification-patch)"; then
+  asar_path="$patched_asar"
+fi
+
+exec electron39 "$asar_path" "$@"
