@@ -1,0 +1,9 @@
+include=~/.config/omarchy/current/theme/mako.ini
+
+# Google Calendar notifications from Chromium expose Snooze as action "0".
+[body~="calendar\\.google\\.com"]
+on-button-middle=invoke-action 0
+
+# Keep Caprine's conversation action, then reveal its window on workspace 4.
+[app-name=Caprine actionable]
+on-button-left=exec sh -c 'makoctl invoke -n "$id"; hyprctl dispatch workspace 4; hyprctl dispatch focuswindow "class:^(caprine|Caprine)$"'
