@@ -1,0 +1,563 @@
+#!/usr/bin/env python3
+"""Stable Todoist boundary for the kuba.tasks Omarchy Shell plugin."""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from dataclasses import dataclass
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any, Sequence
+
+
+CONTRACT_VERSION = 1
+CACHE_VERSION = 1
+SUPPORTED_TD_MAJOR = 3
+HISTORY_DAYS = 30
+HISTORY_LIMIT = 50
+TIMEOUT_SECONDS = 30
+
+
+class BoundaryError(Exception):
+    def __init__(self, code: str, message: str, *, retryable: bool = False, exit_code: int = 1):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.retryable = retryable
+        self.exit_code = exit_code
+
+
+@dataclass(frozen=True)
+class CommandResult:
+    stdout: str
+    stderr: str
+
+
+def now() -> datetime:
+    frozen = os.environ.get("OMARCHY_TODOIST_NOW")
+    if frozen:
+        parsed = datetime.fromisoformat(frozen.replace("Z", "+00:00"))
+        return parsed if parsed.tzinfo else parsed.astimezone()
+    return datetime.now().astimezone()
+
+
+def iso(value: datetime) -> str:
+    return value.isoformat(timespec="seconds")
+
+
+def state_dir() -> Path:
+    override = os.environ.get("OMARCHY_TODOIST_STATE_DIR")
+    if override:
+        return Path(override)
+    base = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state"))
+    return base / "omarchy" / "tasks"
+
+
+def cache_path() -> Path:
+    return state_dir() / "snapshot-v1.json"
+
+
+def resolve_td() -> str:
+    override = os.environ.get("OMARCHY_TODOIST_TD_BIN")
+    if override:
+        return override
+    found = shutil.which("td")
+    if found:
+        return found
+    shim = Path.home() / ".local" / "share" / "mise" / "shims" / "td"
+    if shim.is_file() and os.access(shim, os.X_OK):
+        return str(shim)
+    raise BoundaryError(
+        "DEPENDENCY_MISSING",
+        "Nie znaleziono oficjalnego CLI Todoist `td`.",
+        exit_code=3,
+    )
+
+
+def classify_failure(stderr: str) -> tuple[str, str, bool]:
+    text = stderr.strip()
+    message = text
+    try:
+        parsed = json.loads(text)
+        error = parsed.get("error", {}) if isinstance(parsed, dict) else {}
+        message = str(error.get("message") or text)
+    except json.JSONDecodeError:
+        pass
+    lowered = message.lower()
+    if any(word in lowered for word in ("auth", "login", "token", "credential", "unauthorized")):
+        return "AUTH_REQUIRED", "Todoist wymaga zalogowania przez `td auth login`.", False
+    if any(word in lowered for word in ("network", "fetch", "connect", "dns", "timeout", "timed out")):
+        return "OFFLINE", "Nie udało się połączyć z Todoist.", True
+    return "TD_FAILED", message or "Polecenie Todoist nie powiodło się.", False
+
+
+def run_td(args: Sequence[str], *, timeout: int = TIMEOUT_SECONDS) -> CommandResult:
+    command = [resolve_td(), *args]
+    try:
+        result = subprocess.run(
+            command,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=timeout,
+            check=False,
+            env=os.environ.copy(),
+        )
+    except subprocess.TimeoutExpired as error:
+        raise BoundaryError(
+            "OUTCOME_UNKNOWN",
+            "Todoist nie odpowiedział przed upływem limitu czasu.",
+            retryable=False,
+            exit_code=4,
+        ) from error
+    except OSError as error:
+        raise BoundaryError("DEPENDENCY_MISSING", str(error), exit_code=3) from error
+    if result.returncode != 0:
+        code, message, retryable = classify_failure(result.stderr)
+        raise BoundaryError(code, message, retryable=retryable, exit_code=4)
+    return CommandResult(result.stdout, result.stderr)
+
+
+def parse_json_output(result: CommandResult, source: str) -> Any:
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        raise BoundaryError(
+            "UPSTREAM_FORMAT_CHANGED",
+            f"`td` zwróciło niepoprawny JSON dla {source}.",
+            exit_code=5,
+        ) from error
+
+
+def result_items(raw: Any, source: str) -> list[dict[str, Any]]:
+    if isinstance(raw, list):
+        items = raw
+    elif isinstance(raw, dict) and isinstance(raw.get("results"), list):
+        items = raw["results"]
+    else:
+        raise BoundaryError(
+            "UPSTREAM_FORMAT_CHANGED",
+            f"Nieznany kształt listy `td` dla {source}.",
+            exit_code=5,
+        )
+    if not all(isinstance(item, dict) for item in items):
+        raise BoundaryError(
+            "UPSTREAM_FORMAT_CHANGED",
+            f"Lista `td` dla {source} zawiera niepoprawny rekord.",
+            exit_code=5,
+        )
+    return items
+
+
+def string_id(value: Any, field: str) -> str:
+    result = str(value or "").strip()
+    if not result:
+        raise BoundaryError("UPSTREAM_FORMAT_CHANGED", f"Brak {field} w odpowiedzi `td`.", exit_code=5)
+    return result
+
+
+def optional_id(value: Any) -> str | None:
+    result = str(value or "").strip()
+    return result or None
+
+
+def priority_name(value: Any) -> str:
+    if isinstance(value, str) and value.lower() in {"p1", "p2", "p3", "p4"}:
+        return value.lower()
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        number = 1
+    return {4: "p1", 3: "p2", 2: "p3", 1: "p4"}.get(number, "p4")
+
+
+def normalize_due(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, dict) or not raw.get("date"):
+        return None
+    return {
+        "date": str(raw["date"]),
+        "datetime": raw.get("datetime"),
+        "timezone": raw.get("timezone"),
+        "recurring": bool(raw.get("isRecurring", raw.get("is_recurring", False))),
+        "expression": raw.get("string"),
+    }
+
+
+def lookup_name(records: dict[str, dict[str, Any]], record_id: str | None) -> str | None:
+    if not record_id:
+        return None
+    record = records.get(record_id)
+    return str(record.get("name")) if record and record.get("name") is not None else None
+
+
+def normalize_task(
+    raw: dict[str, Any],
+    *,
+    kind: str,
+    projects: dict[str, dict[str, Any]],
+    sections: dict[str, dict[str, Any]],
+    parents: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    task_id = string_id(raw.get("id"), "id zadania")
+    project_id = optional_id(raw.get("projectId", raw.get("project_id")))
+    section_id = optional_id(raw.get("sectionId", raw.get("section_id")))
+    parent_id = optional_id(raw.get("parentId", raw.get("parent_id")))
+    due = normalize_due(raw.get("due"))
+    parent = parents.get(parent_id or "")
+    recurring = bool(due and due["recurring"])
+    completed_at = raw.get("completedAt", raw.get("completed_at")) if kind == "completed" else None
+    return {
+        "kind": kind,
+        "id": task_id,
+        "title": str(raw.get("content") or ""),
+        "description": str(raw.get("description") or ""),
+        "url": str(raw.get("webUrl", raw.get("url")) or f"https://app.todoist.com/app/task/{task_id}"),
+        "project": {"id": project_id or "", "name": lookup_name(projects, project_id)},
+        "section": ({"id": section_id, "name": lookup_name(sections, section_id)} if section_id else None),
+        "parent": (
+            {"id": parent_id, "title": str(parent.get("content")) if parent and parent.get("content") is not None else None}
+            if parent_id
+            else None
+        ),
+        "labels": [str(label) for label in raw.get("labels", []) if str(label)],
+        "priority": priority_name(raw.get("priority")),
+        "order": int(raw.get("childOrder", raw.get("order", 0)) or 0),
+        "due": due,
+        "completedAt": str(completed_at) if completed_at else None,
+        "recurring": recurring,
+        "reopenable": kind == "completed" and not recurring,
+        "completable": not bool(raw.get("isUncompletable", raw.get("is_uncompletable", False))),
+    }
+
+
+def fetch_snapshot() -> dict[str, Any]:
+    current = now()
+    today = current.date()
+    since = today - timedelta(days=HISTORY_DAYS - 1)
+    until = today + timedelta(days=1)
+
+    task_raw = result_items(
+        parse_json_output(run_td(["task", "list", "--all", "--json", "--show-urls", "--full"]), "tasks"),
+        "tasks",
+    )
+    project_raw = result_items(
+        parse_json_output(run_td(["project", "list", "--all", "--json", "--full"]), "projects"),
+        "projects",
+    )
+    projects = {string_id(item.get("id"), "id projektu"): item for item in project_raw}
+    section_raw: list[dict[str, Any]] = []
+    for project_id in projects:
+        project_sections = result_items(
+            parse_json_output(
+                run_td(["section", "list", "--project", f"id:{project_id}", "--all", "--json", "--full"]),
+                "sections",
+            ),
+            "sections",
+        )
+        section_raw.extend(project_sections)
+    completed_raw = result_items(
+        parse_json_output(
+            run_td(
+                [
+                    "completed",
+                    "list",
+                    "--since",
+                    since.isoformat(),
+                    "--until",
+                    until.isoformat(),
+                    "--all",
+                    "--json",
+                    "--full",
+                    "--show-urls",
+                ]
+            ),
+            "completed tasks",
+        ),
+        "completed tasks",
+    )
+
+    sections = {string_id(item.get("id"), "id sekcji"): item for item in section_raw}
+    parents = {string_id(item.get("id"), "id zadania"): item for item in [*task_raw, *completed_raw]}
+    active = [
+        normalize_task(item, kind="active", projects=projects, sections=sections, parents=parents)
+        for item in task_raw
+    ]
+    completed = [
+        normalize_task(item, kind="completed", projects=projects, sections=sections, parents=parents)
+        for item in completed_raw
+    ]
+    completed.sort(key=lambda item: item.get("completedAt") or "", reverse=True)
+    return {
+        "contractVersion": CONTRACT_VERSION,
+        "fetchedAt": iso(current),
+        "today": today.isoformat(),
+        "active": active,
+        "completed": completed[:HISTORY_LIMIT],
+    }
+
+
+def validate_snapshot(raw: Any) -> dict[str, Any]:
+    if not isinstance(raw, dict) or raw.get("contractVersion") != CONTRACT_VERSION:
+        raise BoundaryError("CACHE_UNAVAILABLE", "Cache Todoist ma nieobsługiwaną wersję.", exit_code=5)
+    if not isinstance(raw.get("active"), list) or not isinstance(raw.get("completed"), list):
+        raise BoundaryError("CACHE_UNAVAILABLE", "Cache Todoist jest uszkodzony.", exit_code=5)
+    return raw
+
+
+def load_cache() -> dict[str, Any] | None:
+    path = cache_path()
+    if not path.exists():
+        return None
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(raw, dict) or raw.get("cacheVersion") != CACHE_VERSION:
+            return None
+        return validate_snapshot(raw.get("snapshot"))
+    except (OSError, json.JSONDecodeError, BoundaryError):
+        return None
+
+
+def save_cache(snapshot: dict[str, Any]) -> None:
+    directory = state_dir()
+    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    payload = {"cacheVersion": CACHE_VERSION, "snapshot": snapshot}
+    fd, temporary_name = tempfile.mkstemp(prefix="snapshot-", suffix=".tmp", dir=directory)
+    temporary = Path(temporary_name)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, ensure_ascii=False, separators=(",", ":"))
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, cache_path())
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+
+def snapshot_response() -> tuple[dict[str, Any], int]:
+    attempted_at = now()
+    try:
+        snapshot = fetch_snapshot()
+        save_cache(snapshot)
+        return success(snapshot=snapshot, freshness={"kind": "fresh", "fetchedAt": snapshot["fetchedAt"]}), 0
+    except BoundaryError as error:
+        cached = load_cache()
+        if cached is None:
+            return failure(error), error.exit_code
+        freshness = {
+            "kind": "stale",
+            "fetchedAt": cached["fetchedAt"],
+            "failedAt": iso(attempted_at),
+            "reason": error.code,
+            "message": error.message,
+        }
+        return success(snapshot=cached, freshness=freshness), 0
+
+
+def require_text(value: Any, field: str, maximum: int = 16_384) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise BoundaryError("INVALID_REQUEST", f"Pole {field} nie może być puste.", exit_code=2)
+    if len(value.encode("utf-8")) > maximum:
+        raise BoundaryError("INVALID_REQUEST", f"Pole {field} jest zbyt długie.", exit_code=2)
+    return value
+
+
+def require_task_id(value: Any) -> str:
+    task_id = require_text(value, "taskId", maximum=256).strip()
+    if any(character.isspace() or ord(character) < 32 for character in task_id):
+        raise BoundaryError("INVALID_REQUEST", "Niepoprawny identyfikator zadania.", exit_code=2)
+    return task_id
+
+
+def current_task(task_id: str) -> dict[str, Any]:
+    raw = parse_json_output(run_td(["task", "view", f"id:{task_id}", "--json", "--full"]), "task")
+    if isinstance(raw, dict) and isinstance(raw.get("results"), list) and raw["results"]:
+        raw = raw["results"][0]
+    if not isinstance(raw, dict):
+        raise BoundaryError("UPSTREAM_FORMAT_CHANGED", "Nieznany kształt zadania `td`.", exit_code=5)
+    return raw
+
+
+def created_task_id(stdout: str) -> str | None:
+    try:
+        raw = json.loads(stdout)
+    except json.JSONDecodeError:
+        return None
+    if isinstance(raw, dict) and raw.get("id"):
+        return str(raw["id"])
+    if isinstance(raw, dict) and isinstance(raw.get("results"), list) and raw["results"]:
+        result = raw["results"][0]
+        return str(result.get("id")) if isinstance(result, dict) and result.get("id") else None
+    return None
+
+
+def execute_request(request: Any) -> tuple[dict[str, Any], int]:
+    if not isinstance(request, dict) or request.get("version") != 1:
+        raise BoundaryError("INVALID_REQUEST", "Nieobsługiwana wersja żądania.", exit_code=2)
+    request_id = require_text(request.get("requestId"), "requestId", maximum=256).strip()
+    operation = require_text(request.get("operation"), "operation", maximum=64).strip()
+    task_id: str | None = None
+    created_id: str | None = None
+
+    if operation == "quickAdd":
+        content = require_text(request.get("content"), "content")
+        due_value = request.get("due", "")
+        if not isinstance(due_value, str):
+            raise BoundaryError("INVALID_REQUEST", "Pole due musi być tekstem.", exit_code=2)
+        if len(due_value.encode("utf-8")) > 512:
+            raise BoundaryError("INVALID_REQUEST", "Pole due jest zbyt długie.", exit_code=2)
+        argv = ["task", "add", content]
+        if due_value.strip():
+            argv.extend(["--due", due_value.strip()])
+        argv.append("--json")
+        result = run_td(argv)
+        created_id = created_task_id(result.stdout)
+        task_id = created_id
+    elif operation in {"complete", "reopen", "setDue", "clearDue", "setPriority", "browse", "completeSeries"}:
+        task_id = require_task_id(request.get("taskId"))
+        reference = f"id:{task_id}"
+        if operation == "complete":
+            run_td(["task", "complete", reference])
+        elif operation == "reopen":
+            raw = current_task(task_id)
+            due = normalize_due(raw.get("due"))
+            if due and due["recurring"]:
+                raise BoundaryError(
+                    "UNSUPPORTED_RECURRING_REOPEN",
+                    "Todoist nie potrafi ponownie otworzyć pojedynczego wystąpienia cyklicznego.",
+                    exit_code=2,
+                )
+            run_td(["task", "uncomplete", reference])
+        elif operation == "setDue":
+            due = require_text(request.get("due"), "due", maximum=512)
+            run_td(["task", "update", reference, "--due", due, "--json"])
+        elif operation == "clearDue":
+            run_td(["task", "update", reference, "--no-due", "--json"])
+        elif operation == "setPriority":
+            priority = str(request.get("priority") or "").lower()
+            if priority not in {"p1", "p2", "p3", "p4"}:
+                raise BoundaryError("INVALID_REQUEST", "Priorytet musi mieć wartość p1-p4.", exit_code=2)
+            run_td(["task", "update", reference, "--priority", priority, "--json"])
+        elif operation == "browse":
+            run_td(["task", "browse", reference], timeout=10)
+            return success(
+                snapshot=None,
+                freshness=None,
+                operation={"requestId": request_id, "type": operation, "taskId": task_id, "createdTaskId": None},
+            ), 0
+        elif operation == "completeSeries":
+            raw = current_task(task_id)
+            due = normalize_due(raw.get("due"))
+            if not due or not due["recurring"]:
+                raise BoundaryError("INVALID_REQUEST", "Zadanie nie jest cykliczne.", exit_code=2)
+            run_td(["task", "complete", reference, "--forever"])
+    else:
+        raise BoundaryError("INVALID_REQUEST", f"Nieznana operacja: {operation}.", exit_code=2)
+
+    snapshot, _ = snapshot_response()
+    operation_result = {"requestId": request_id, "type": operation, "taskId": task_id, "createdTaskId": created_id}
+    if snapshot.get("ok"):
+        snapshot["operation"] = operation_result
+        return snapshot, 0
+    return success(
+        snapshot=load_cache(),
+        freshness=None,
+        operation=operation_result,
+        warning=snapshot.get("error"),
+    ), 0
+
+
+def success(
+    *,
+    snapshot: dict[str, Any] | None,
+    freshness: dict[str, Any] | None,
+    operation: dict[str, Any] | None = None,
+    warning: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return {
+        "contractVersion": CONTRACT_VERSION,
+        "ok": True,
+        "snapshot": snapshot,
+        "freshness": freshness,
+        "operation": operation,
+        "warning": warning,
+        "error": None,
+    }
+
+
+def failure(error: BoundaryError) -> dict[str, Any]:
+    return {
+        "contractVersion": CONTRACT_VERSION,
+        "ok": False,
+        "snapshot": None,
+        "freshness": None,
+        "operation": None,
+        "warning": None,
+        "error": {"code": error.code, "message": error.message, "retryable": error.retryable},
+    }
+
+
+def doctor() -> tuple[dict[str, Any], int]:
+    checks: list[dict[str, Any]] = []
+    try:
+        td = resolve_td()
+        version = run_td(["--version"]).stdout.strip()
+        compatible = version.split(".", 1)[0] == str(SUPPORTED_TD_MAJOR)
+        checks.append({"name": "td", "ok": compatible, "detail": f"{td} ({version})"})
+        auth = run_td(["auth", "status", "--json"])
+        parse_json_output(auth, "auth status")
+        checks.append({"name": "auth", "ok": True, "detail": "Todoist jest zalogowany."})
+    except BoundaryError as error:
+        checks.append({"name": "auth", "ok": False, "detail": error.message})
+    try:
+        directory = state_dir()
+        directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+        checks.append({"name": "state", "ok": os.access(directory, os.W_OK), "detail": str(directory)})
+    except OSError as error:
+        checks.append({"name": "state", "ok": False, "detail": str(error)})
+    ok = all(check["ok"] for check in checks)
+    return {"contractVersion": CONTRACT_VERSION, "ok": ok, "checks": checks}, 0 if ok else 1
+
+
+def emit(payload: dict[str, Any]) -> None:
+    json.dump(payload, sys.stdout, ensure_ascii=False, separators=(",", ":"))
+    sys.stdout.write("\n")
+
+
+def main(argv: Sequence[str]) -> int:
+    if not argv or argv[0] not in {"snapshot", "request", "doctor"}:
+        emit(failure(BoundaryError("INVALID_REQUEST", "Użycie: omarchy-todoist snapshot|request <json>|doctor", exit_code=2)))
+        return 2
+    try:
+        if argv[0] == "snapshot":
+            payload, exit_code = snapshot_response()
+        elif argv[0] == "doctor":
+            payload, exit_code = doctor()
+        else:
+            if len(argv) != 2:
+                raise BoundaryError("INVALID_REQUEST", "request wymaga jednego argumentu JSON.", exit_code=2)
+            if len(argv[1].encode("utf-8")) > 16_384:
+                raise BoundaryError("INVALID_REQUEST", "Żądanie jest zbyt duże.", exit_code=2)
+            try:
+                request = json.loads(argv[1])
+            except json.JSONDecodeError as error:
+                raise BoundaryError("INVALID_REQUEST", "Żądanie nie jest poprawnym JSON.", exit_code=2) from error
+            payload, exit_code = execute_request(request)
+        emit(payload)
+        return exit_code
+    except BoundaryError as error:
+        emit(failure(error))
+        return error.exit_code
+    except Exception as error:  # Last-resort protocol guarantee at the process boundary.
+        emit(failure(BoundaryError("INTERNAL", str(error), exit_code=70)))
+        return 70
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

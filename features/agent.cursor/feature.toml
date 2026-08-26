@@ -1,0 +1,8 @@
+id = "agent.cursor"
+label = "Cursor Agent"
+description = "Optional Cursor coding agent"
+default = false
+visible = true
+group = "Optional AI agents"
+packages = ["cursor-cli"]
+commands = ["cursor-agent"]

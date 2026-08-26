@@ -1,0 +1,4 @@
+id = "gaming"
+label = "Gaming"
+default = false
+features = ["app.steam"]

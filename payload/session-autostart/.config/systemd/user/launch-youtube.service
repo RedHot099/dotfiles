@@ -1,0 +1,9 @@
+[Unit]
+Description=Launch YouTube after Caprine is ready
+After=launch-caprine.service graphical-session.target wayland-session-waitenv.service
+Wants=launch-chromium.service
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/start-session-youtube

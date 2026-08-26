@@ -1,0 +1,10 @@
+id = "user-skills"
+label = "User agent skills"
+description = "Reviewed user-owned skills for Claude, Codex, and OpenCode"
+default = false
+visible = false
+group = "AI"
+
+[[files]]
+source = "payload/user-skills"
+target = "."

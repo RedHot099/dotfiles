@@ -1,42 +1,116 @@
-# Omarchy Dotfiles
+# Omarchy 4 bootstrap
 
-This repository stores personal Omarchy preferences so a fresh system can be configured quickly with the same setup.
+This repository configures a fresh, updated Omarchy 4 installation. It installs selected applications, applies user-owned configuration, restores agent skills, and verifies the result. Later system updates remain the responsibility of `omarchy update`.
 
-## What These Dotfiles Configure
-- Hyprland configuration: `~/.config/hypr/`
-- Neovim configuration: `~/.config/nvim/`
-- VS Code user config:
-  - `~/.config/Code/User/settings.json`
-  - `~/.config/Code/User/keybindings.json`
-  - `~/.config/Code/User/mcp.json`
-  - `~/.config/Code/User/chatLanguageModels.json`
-- VS Code runtime args: `~/.vscode/argv.json`
-- T3 Code launcher:
-  - `~/.local/bin/t3code`
-  - `~/.local/share/applications/t3-code.desktop`
-- Cursor/theme integration:
-  - `~/.icons/default/index.theme`
-  - `~/.config/environment.d/cursor.conf`
-  - `~/.config/gtk-3.0/settings.ini`
-  - `~/.config/gtk-4.0/settings.ini`
-  - `~/.local/share/icons/Maverick Pointy Dark/`
+## Run the interactive setup
 
-Managed paths are defined in `manifest.txt`.
-The T3 Code launcher assumes the app is installed separately and can be found via `T3CODE_APPDIR` or `t3-code-desktop` in `PATH`.
+Clone the repository on a fresh Omarchy 4 machine, then run:
 
-## Makefile Usage
 ```bash
-make capture
-make diff
-make dry-run
-make install
-make bootstrap
+./bootstrap
 ```
 
-- `make capture` - sync current local config into this repo
-- `make diff` - compare repo state with current local state
-- `make dry-run` - preview install actions
-- `make install` - apply repo config to the system
-- `make bootstrap` - convenience wrapper for install
+The English terminal wizard detects the monitor and installed programs. It marks installed choices, keeps required dependencies selected, and lets you choose optional applications with the keyboard. Installed optional applications are not selected automatically.
 
-Backups are created under `~/.local/state/dotfiles/backups/<timestamp>`.
+The default selection contains `core-desktop` and `ai-development`. `core-desktop` explicitly includes the Todoist widget, calendar notification behavior, and pinned themes. The current ultrawide NVIDIA profile also selects `session-autostart`.
+
+## Review a plan before applying it
+
+Create a plan without changing system configuration:
+
+```bash
+./bootstrap plan --out .bootstrap/plan.json
+```
+
+Apply the reviewed plan:
+
+```bash
+./bootstrap apply --plan .bootstrap/plan.json
+```
+
+Audit the selected state without writing files, installing packages, or changing services:
+
+```bash
+./bootstrap audit --plan .bootstrap/plan.json
+```
+
+`audit` prints `PASS`, `WARN`, or `FAIL`. It returns a nonzero status when any finding is `FAIL`.
+
+The `plan` command writes the requested JSON plan (by default `.bootstrap/plan.json`) but does not change `$HOME`, packages, or services. `audit` does not write through the bootstrap; authentication status commands may read credential stores and, depending on the third-party CLI, contact its service.
+
+## Select profiles and applications without the wizard
+
+Profiles select related top-level applications. Dependencies remain internal to the catalog.
+
+```bash
+./bootstrap plan \
+  --profile communication-media \
+  --profile research \
+  --select cloud.onedrive \
+  --select cloud.google-drive
+```
+
+Available profiles are:
+
+- `core-desktop`, selected by default.
+- `ai-development`, selected by default.
+- `communication-media`.
+- `gaming`.
+- `research`.
+- `cloud`.
+
+Run `./bootstrap plan --help` for monitor, agent, target-home, and fixture options.
+
+## Hardware behavior
+
+The known `desktop-ultrawide-nvidia` profile configures the Microstep MAG 341C OLED at 3440x1440 and about 175 Hz. Unknown monitors open a wizard for the primary output, mode, scale, and position. The generated monitor configuration belongs to the plan and is never committed automatically.
+
+## Agents and skills
+
+The AI profile installs Claude, Codex, and OpenCode. The wizard asks which one Omarchy should use by default. Optional agent entries cover Gemini, Grok, Crush, GitHub Copilot, and Cursor Agent.
+
+The repository stores 83 reviewed user-owned skills in one canonical tree. Relative symlinks expose the same tree to Claude, Codex, and OpenCode. The capture tool excludes Omarchy-provided skills, Codex system skills, caches, sessions, histories, and secret-like files.
+
+Authentication remains manual. The bootstrap runs official login commands and stores no tokens. It has no 1Password integration.
+
+## Cloud storage
+
+OneDrive and Google Drive are independent choices. Both use rclone. The bootstrap installs the unit files but enables a mount only after its remote passes the authentication probe.
+
+## Safety
+
+File writes use atomic replacement. Existing target files receive a per-plan backup under:
+
+```text
+~/.local/state/omarchy-bootstrap/backups/<plan-digest>/
+```
+
+Completed work is journaled under `~/.local/state/omarchy-bootstrap/`. A failed action offers `Retry`, `Skip feature`, or `Abort`. Skipping a feature also skips features that depend on it.
+
+The repository never writes `/usr/share/omarchy`. It carries only user-owned overrides and justified shell plugins.
+
+The bootstrap targets a freshly updated Omarchy 4 system. Pacman/AUR packages and agent CLIs marked `@latest` intentionally resolve when the plan is applied, so they follow the current Omarchy repositories rather than recreating an old package snapshot. Major development runtimes and theme repository commits are pinned where configuration compatibility depends on them.
+
+## Verify changes
+
+Run the complete offline and temporary-home checks:
+
+```bash
+./scripts/verify-bootstrap.sh
+```
+
+The check covers dependency resolution, deterministic plans, path ownership, idempotence, skill hashes, Lua syntax, Todoist, rclone units, and read-only audit behavior.
+
+## Repository layout
+
+```text
+bootstrap                  Public command
+lib/                       Planner, executor, audit, and terminal UI
+features/                  Feature metadata and dependencies
+profiles/                  Named feature selections
+payload/                   Portable user-owned files
+scripts/                   Capture, pin maintenance, and verification tools
+tests/                     Level 1 and level 2 checks
+```
+
+Use `scripts/refresh-theme-pins.py` only to review upstream theme commits during repository maintenance. It does not update the installed system.

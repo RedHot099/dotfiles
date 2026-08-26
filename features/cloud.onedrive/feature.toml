@@ -1,0 +1,19 @@
+id = "cloud.onedrive"
+label = "OneDrive"
+description = "OneDrive mount through rclone"
+default = false
+visible = true
+group = "Cloud"
+requires = ["tool.rclone"]
+reload_systemd = true
+units = ["rclone-onedrive.service"]
+
+[[files]]
+source = "payload/cloud-onedrive"
+target = "."
+
+[[auth]]
+label = "OneDrive remote"
+command = "rclone config"
+probe = "rclone listremotes"
+probe_contains = "onedrive:"

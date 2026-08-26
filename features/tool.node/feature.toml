@@ -1,0 +1,8 @@
+id = "tool.node"
+label = "Node.js runtime"
+description = "Pinned Node.js runtime for user-level tools"
+default = false
+visible = false
+group = "Development"
+mise = ["node@24"]
+commands = ["node"]

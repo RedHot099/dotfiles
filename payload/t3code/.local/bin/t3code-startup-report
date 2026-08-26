@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+logs_dir="${T3CODE_LOG_DIR:-$HOME/.t3/userdata/logs}"
+
+echo "== systemd launch-t3.service =="
+journalctl --user -u launch-t3.service --since "14 days ago" --no-pager --output=short-iso |
+  awk '
+    /Starting Launch T3 Code/ { start=$1 }
+    /Finished Launch T3 Code/ && start != "" { print start " -> " $1; start="" }
+  ' || true
+
+echo
+echo "== T3 listeners =="
+ss -ltnp | rg ":3773|:3774|t3code" || true
+
+echo
+echo "== Desktop bootstrap events =="
+rg "runtime log capture enabled|bootstrap backend start requested|bootstrap backend ready|bootstrap backend readiness warning|bootstrap main window created|before-quit" \
+  "$logs_dir/desktop-main.log" 2>/dev/null | tail -120 || true
+
+echo
+echo "== Slow trace spans =="
+jq -r '
+  select(.type=="effect-span" and (.durationMs // 0) >= 1000)
+  | [.durationMs, .name, (.attributes["git.operation"] // ""), (.attributes["git.cwd"] // ""), (.exit._tag // "")]
+  | @tsv
+' "$logs_dir"/server.trace.ndjson* 2>/dev/null |
+  sort -nr |
+  head -80 || true

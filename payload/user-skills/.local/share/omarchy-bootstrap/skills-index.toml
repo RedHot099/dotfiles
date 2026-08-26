@@ -1,0 +1,417 @@
+schema = 1
+count = 83
+
+[[skills]]
+id = "architect"
+origin = ".codex"
+sha256 = "d6c32ef7d3e60380996aed32bb90a0214c22de3ea41027c35f67b1d343795e8d"
+
+[[skills]]
+id = "arena"
+origin = ".codex"
+sha256 = "f8eff76d280f9e63c186a9221228722f69b307fd31a25eb6abce823d2d4bd07e"
+
+[[skills]]
+id = "ask-matt"
+origin = ".agents"
+sha256 = "29c507d41b3463c7217b7bc15192e989b1962961e6d5a9ed84dc375659c025b0"
+
+[[skills]]
+id = "automate-me"
+origin = ".codex"
+sha256 = "455e6a19f23316a991e312985c2ffbd3e17e3c6b012a6ebec93399bcfe6e9c38"
+
+[[skills]]
+id = "blast-radius"
+origin = ".codex"
+sha256 = "d3f6a8dde283ccd95507de02e4bc7dee36c554564ca78b50996e8bb54dc1d206"
+
+[[skills]]
+id = "bro"
+origin = ".codex"
+sha256 = "63e8def41510e3f7096f81dee0aa20d4500d8a8abeed84117541ec06c14e50a4"
+
+[[skills]]
+id = "claude-handoff"
+origin = ".agents"
+sha256 = "005be3174965ba9f21455b9f06da369f50ef7cd9011b26c36008f550a1e277d9"
+
+[[skills]]
+id = "code-review"
+origin = ".agents"
+sha256 = "f38469e70857951d8bc1c43c96f86ba627ffb56364345f926b192be44ae94adc"
+
+[[skills]]
+id = "code-simplification"
+origin = ".codex"
+sha256 = "3504d65d1b1228db3bf60d6e79aa17bda588271e2edc9df88ee20b66c4fbbbb9"
+
+[[skills]]
+id = "codebase-design"
+origin = ".agents"
+sha256 = "c95ce5894edc9f6679607c740be9c1bb28278bb7ffd4ea3144fe3f7ac18d8650"
+
+[[skills]]
+id = "create-verification-skill"
+origin = ".codex"
+sha256 = "cf08764345ea8423d3d29f678c98854aac121c51e4204470f864d5db21549603"
+
+[[skills]]
+id = "diagnosing-bugs"
+origin = ".agents"
+sha256 = "398582519f18fa20a9f7298b1ea0ece9a7c96fe3849e70cf7d1913b9286fdf78"
+
+[[skills]]
+id = "domain-modeling"
+origin = ".agents"
+sha256 = "1155a3ea5c2571fe652e553d77cc398e7996a9ad93fd5d15ef77cce86f599b1e"
+
+[[skills]]
+id = "edit-article"
+origin = ".codex"
+sha256 = "c1db78ce3d1390b6932e31df17e3d2bd25b2321c60eeac459c2983e3eb4dce14"
+
+[[skills]]
+id = "feature-docs-confluence"
+origin = ".codex"
+sha256 = "ec4f922e49b58eb5dae3c517623f5547eb2c3626d7c3fa87f38b312974b6524a"
+
+[[skills]]
+id = "figure-it-out"
+origin = ".codex"
+sha256 = "6c272f8957fe04905baf7ae159592522d837aee3296243d1d5608743c8941553"
+
+[[skills]]
+id = "find-skills"
+origin = ".agents"
+sha256 = "9ace7a53843a1c0ffbddf4f9bc3b93fd6b7fc06ec49e722636dc279dba9a33de"
+
+[[skills]]
+id = "git-guardrails-claude-code"
+origin = ".agents"
+sha256 = "070448403a6bfea7511db26e24f092824a9dc87d614e3973a4e7b4a8401d469c"
+
+[[skills]]
+id = "grill-me"
+origin = ".agents"
+sha256 = "30fb960b233fe0ad285331edf89f6c722335a04537ea1ab0fde195ecd175160e"
+
+[[skills]]
+id = "grill-with-docs"
+origin = ".agents"
+sha256 = "e343da32cd390c3fcecc6c1ec9756a859ed4912088d7296708bdc9adcbf5dac8"
+
+[[skills]]
+id = "grilling"
+origin = ".agents"
+sha256 = "d63f00789c85e10224fd5dd3328b9a4ace44c1d16be92526ba9b890588058443"
+
+[[skills]]
+id = "handoff"
+origin = ".agents"
+sha256 = "12fd91390114202b8552d5d13b07178ff03ad0d65d5c2a06e62f6723f05d583f"
+
+[[skills]]
+id = "how"
+origin = ".codex"
+sha256 = "40ff124d3534fb2ea7a24e3225dd89d30e51a447ab90b92fbb368a1d1ff452cb"
+
+[[skills]]
+id = "implement"
+origin = ".agents"
+sha256 = "6e9668144630403f2f38e496c2a48b572c1898fbd636a4c2e1cf92e5f4f2e658"
+
+[[skills]]
+id = "improve-codebase-architecture"
+origin = ".agents"
+sha256 = "256101419f78ce7e4f4c50d2e2e76e10ea7332ae5efbaaaf5fdbf6c424af3779"
+
+[[skills]]
+id = "interrogate"
+origin = ".codex"
+sha256 = "76d9535669c8aac61d90bbdafde392e8b57088f0e98ce4cbe99e5e052232bd34"
+
+[[skills]]
+id = "jira-task-from-diff"
+origin = ".codex"
+sha256 = "f11ea070487721f173f13ed518bb58be85786d06f5e787555c68f1ab453e3178"
+
+[[skills]]
+id = "karpathy-guidelines"
+origin = ".codex"
+sha256 = "cf438b64311fa097466ef4573fdee8d9f88f4a16c0db7560ae8382074cab5497"
+
+[[skills]]
+id = "learning-workspace"
+origin = ".agents"
+sha256 = "700d18a5029dcd4c6bb276d1fc9e300b69127d433a42214653a63e3affaa18df"
+
+[[skills]]
+id = "loop-me"
+origin = ".agents"
+sha256 = "165872267c9431eb6f18767d6258d9befae9ea88796f16d399610bb64c3ed786"
+
+[[skills]]
+id = "maintain-verification-skill"
+origin = ".codex"
+sha256 = "e5f12b155e701e653e0aa37c85d90266d769a54c43e99cbaf6ebf1dd8afa8d15"
+
+[[skills]]
+id = "no-comments"
+origin = ".codex"
+sha256 = "e0915a5674552ae650c18d73b4ce4f7e97845df22a7613938ae7f3017d2ed31a"
+
+[[skills]]
+id = "obsidian-vault"
+origin = ".codex"
+sha256 = "3b5b17aed6a12235fd9369cb5c84aef1531b5e145a5b29b779219e9b847c99da"
+
+[[skills]]
+id = "poteto-mode"
+origin = ".codex"
+sha256 = "b29ce367ed5f5d614da44897835af7a04b9eb9db3495e713c548ceb6a02a41b1"
+
+[[skills]]
+id = "principle-boundary-discipline"
+origin = ".codex"
+sha256 = "41155248813797b83a3ba1aeeec80ec6023b6c254c326de95ffea760062fe16c"
+
+[[skills]]
+id = "principle-build-the-lever"
+origin = ".codex"
+sha256 = "beb977733977558698ccdb5ec98ce7654c956c3257a8c57458f7041f4e516e6f"
+
+[[skills]]
+id = "principle-encode-lessons-in-structure"
+origin = ".codex"
+sha256 = "ae50443c12f7849f16718db21be87e60cda39351234876a61b92556ce1a490a5"
+
+[[skills]]
+id = "principle-exhaust-the-design-space"
+origin = ".codex"
+sha256 = "f8cc177a91ea8e44be4f4e7e2d172a0b48dcd18faf324c322943dccb05ca3543"
+
+[[skills]]
+id = "principle-experience-first"
+origin = ".codex"
+sha256 = "1e42329939ec52a40fef371a67b3f6ebe742e010eb1979bd68693f11328ba88d"
+
+[[skills]]
+id = "principle-fix-root-causes"
+origin = ".codex"
+sha256 = "1ae9cf483f58a8b9702c60bdc0f7b0ef6dc71992436b705db995e33d93c92355"
+
+[[skills]]
+id = "principle-foundational-thinking"
+origin = ".codex"
+sha256 = "0bb7c7dd255a58608c798488110b4a0302d1c098b84ceb1f9fa3a09ce354f332"
+
+[[skills]]
+id = "principle-guard-the-context-window"
+origin = ".codex"
+sha256 = "04c380ea00351e804ec7cf30f772ae8f818d3ed95c605094bb28d26170245a04"
+
+[[skills]]
+id = "principle-laziness-protocol"
+origin = ".codex"
+sha256 = "88ceed51cc24ccfb238a9e563fa1c1ffd1fc6543d3534e0068c37a3362dd2870"
+
+[[skills]]
+id = "principle-make-operations-idempotent"
+origin = ".codex"
+sha256 = "b2f88794a3b3b7c5683b713f19b30d9062a2642a7930c91fea7f79b216b655f2"
+
+[[skills]]
+id = "principle-migrate-callers-then-delete-legacy-apis"
+origin = ".codex"
+sha256 = "0a733edd9fe6b5780a40322544da2fffa521b3c6a46951ab6a36bd814c1a1e7a"
+
+[[skills]]
+id = "principle-minimize-reader-load"
+origin = ".codex"
+sha256 = "8ce86481d659cb19bbd6979133af0db71b84105b58bae185faca67eec1001de4"
+
+[[skills]]
+id = "principle-model-the-domain"
+origin = ".codex"
+sha256 = "c89bae34647249aac2b1fc89e67842311d04c0fbf0c2c9e6eac21986a83098c0"
+
+[[skills]]
+id = "principle-never-block-on-the-human"
+origin = ".codex"
+sha256 = "eadeb92c7afb4b8281cc81c4119f0c5825ca5e3c3ea666c92ad0717bc2b75b39"
+
+[[skills]]
+id = "principle-outcome-oriented-execution"
+origin = ".codex"
+sha256 = "1242b57386861c36cf53dd246beac13e7700db2f731ed7b46cd4b474643a24b0"
+
+[[skills]]
+id = "principle-prove-it-works"
+origin = ".codex"
+sha256 = "010df0f61e9f1f9c5224469ebedb0582af17c5d32d3be86f4cac935ae68e7334"
+
+[[skills]]
+id = "principle-redesign-from-first-principles"
+origin = ".codex"
+sha256 = "9dcd833398dc263945b54f0eb766456b4231caeca97b77696cc303a578044677"
+
+[[skills]]
+id = "principle-separate-before-serializing-shared-state"
+origin = ".codex"
+sha256 = "fc050696b916c892c0c56cc9030f70702b41f62ed7bb37c953aa458f3a150936"
+
+[[skills]]
+id = "principle-sequence-verifiable-units"
+origin = ".codex"
+sha256 = "b4a504546e3171f66f240e127da7db8df57d8f6b97e5177d424eb4b2845b394e"
+
+[[skills]]
+id = "principle-subtract-before-you-add"
+origin = ".codex"
+sha256 = "8d262deac8083863e81106b2733dad0383d079cef44a68695ef1b2df82521763"
+
+[[skills]]
+id = "principle-type-system-discipline"
+origin = ".codex"
+sha256 = "d03751e76b2e51e8a916cec974f64f887addf32d342a79c774d962cee21e78e9"
+
+[[skills]]
+id = "prototype"
+origin = ".agents"
+sha256 = "2749a90fd0ffec3a6010a64aa7fb186c84979ff92681a254739498dda20c30a0"
+
+[[skills]]
+id = "python-review"
+origin = ".codex"
+sha256 = "93cfca4649e2b2d22b988ca99ff0f76d30cdc86e89d1ed232234e37d8dff2eeb"
+
+[[skills]]
+id = "recall"
+origin = ".codex"
+sha256 = "c27fa9c05f1d8dd3c988c202634c88e2410e80e2025f42cf481ac60aa0a7fad8"
+
+[[skills]]
+id = "receiving-code-review"
+origin = ".codex"
+sha256 = "e0909f2cebff9eeb22f938f77525a5261dd8205c5ffa407220de0db5f4d09fe3"
+
+[[skills]]
+id = "reflect"
+origin = ".codex"
+sha256 = "2c6a3032afad4af9c200dfdf6e901eca87ab8cbfb4a3c015e6ee87d376302f80"
+
+[[skills]]
+id = "research"
+origin = ".agents"
+sha256 = "b89e117f27674af2eb11fdb7ea7d207662317e9fad726d42f5eb7556e7627f7a"
+
+[[skills]]
+id = "resolving-merge-conflicts"
+origin = ".agents"
+sha256 = "041e1bf8ce8283742df4e0a906b62b8d385d047d677697c65f401560ab5c4c22"
+
+[[skills]]
+id = "scaffold-exercises"
+origin = ".agents"
+sha256 = "3580f23ff5a4876e6580a23b0f126fe8d02dd946a363fd053f5b4c9b182adfa1"
+
+[[skills]]
+id = "setup-matt-pocock-skills"
+origin = ".agents"
+sha256 = "113430bd4acb28af393ba9d3db1dd24b824e4e27220f6bc4bf7e5a6a802d8511"
+
+[[skills]]
+id = "setup-pstack"
+origin = ".codex"
+sha256 = "3b4303affcad01c2c8315b31d4ea86eaa1263a9accf05ed9b10003d8992054b5"
+
+[[skills]]
+id = "show-me-your-work"
+origin = ".codex"
+sha256 = "b1b4efc212d5ceb5838ed985eae3c28fd289057055607b1dd0b2f3410db5c14f"
+
+[[skills]]
+id = "swarm"
+origin = ".codex"
+sha256 = "ec7897ec9a155f928f8a7e2d470cac8fe0d76ac36b2211dad2ca94fac446f142"
+
+[[skills]]
+id = "tdd"
+origin = ".codex"
+sha256 = "44b7c5b2ba12c8847f1f15d77cfb2c8ef93279273732adf9802fbe2783358731"
+
+[[skills]]
+id = "teach"
+origin = ".codex"
+sha256 = "71d6f90642a76961c35e48c2501d029ce7fdc6e1e0d98035695a538ff82f9834"
+
+[[skills]]
+id = "technical-writing"
+origin = ".codex"
+sha256 = "18922b38427f795978859e20a8cae2123b19ca65671ae479cbee3c751b5c0bfd"
+
+[[skills]]
+id = "to-questionnaire"
+origin = ".agents"
+sha256 = "a7bf20ce86a8773aa95c62ec85fc2a78968ecb318fb2aa76b2eb499203437cc2"
+
+[[skills]]
+id = "to-spec"
+origin = ".agents"
+sha256 = "3b2a9f394ca9841f24c206b24872d6feb8822933aebb98e5505f053422c916f2"
+
+[[skills]]
+id = "to-tickets"
+origin = ".agents"
+sha256 = "df33a318115c8abbd447ca558d792910d18c4b88fb814302738c416f84c5caa7"
+
+[[skills]]
+id = "triage"
+origin = ".agents"
+sha256 = "95152ee086f384c04d4138bd2b59493ca8c2f4b32e3b53f9bb626ffb9b0002fc"
+
+[[skills]]
+id = "unslop"
+origin = ".codex"
+sha256 = "c4532837d0da3ace9ac0737c567781a8e122f0d664c372ef3240a1cb959cd853"
+
+[[skills]]
+id = "wait-what"
+origin = ".agents"
+sha256 = "bf73e9899ea99ba1d7944aec5193757ad17c5f6ea5e22a6e76ea9a636af85b78"
+
+[[skills]]
+id = "wayfinder"
+origin = ".agents"
+sha256 = "8bbddad475a1fe64f54457eb4f2305a7758824c4c67805a3dbe780ff60bfd1d0"
+
+[[skills]]
+id = "why"
+origin = ".codex"
+sha256 = "89cfbef771189d47d21a5deebee13b258f2d95e1cd97324a06c0bf73e1d1ad4e"
+
+[[skills]]
+id = "wizard"
+origin = ".agents"
+sha256 = "78d24e5b92a69bb669b582475f2e6db19561269a80982d7541e5a8f023a222c1"
+
+[[skills]]
+id = "writing-beats"
+origin = ".agents"
+sha256 = "73cb6ceef13f7236f5bf9871b52ba52a3efa0d6f90c6c0d79096bebca0cb623c"
+
+[[skills]]
+id = "writing-for-agents"
+origin = ".agents"
+sha256 = "88cdf9e91bcc980bbedbe2624b147b660b6c8a1155537a336fed52bc45122a8c"
+
+[[skills]]
+id = "writing-fragments"
+origin = ".agents"
+sha256 = "38408671d096b3e336a1d7b2ba6fcde2fc7cad7adb860b791c58b12a67d73b9b"
+
+[[skills]]
+id = "writing-shape"
+origin = ".agents"
+sha256 = "ed7de614a57b7ebd650c1a0de897bfacbf8a4ce0f5f2b324e40db69d070d825a"

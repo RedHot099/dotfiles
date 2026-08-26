@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=T3 Code Nightly
+Comment=T3 Code nightly desktop build
+Exec=/usr/bin/env -u ELECTRON_RUN_AS_NODE /usr/bin/t3code-nightly --password-store=gnome-libsecret %U
+Terminal=false
+Type=Application
+Icon=t3code-nightly
+StartupWMClass=t3code
+Categories=Development;

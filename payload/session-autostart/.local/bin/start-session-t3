@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+class_regex='^(T3 Code \(Alpha\)|T3 Code|t3code|t3-code-desktop)$'
+workspace='2'
+timeout="${T3CODE_WINDOW_TIMEOUT:-45}"
+lock_file="${XDG_RUNTIME_DIR:-/tmp}/start-session-t3.lock"
+
+exec 9>"$lock_file"
+flock -n 9 || exit 0
+
+if "$HOME/.local/bin/hypr-find-client" "$class_regex" "$workspace" >/dev/null 2>&1; then
+  exit 0
+fi
+
+if pgrep -u "$USER" -f '[t]3code-bin/t3code' >/dev/null 2>&1; then
+  "$HOME/.local/bin/hypr-wait-client" "$class_regex" "$workspace" "$timeout" >/dev/null 2>&1 || true
+  exit 0
+fi
+
+uwsm-app -- "$HOME/.local/bin/t3code" >/dev/null 2>&1 &
+"$HOME/.local/bin/hypr-wait-client" "$class_regex" "$workspace" "$timeout" >/dev/null 2>&1 || true

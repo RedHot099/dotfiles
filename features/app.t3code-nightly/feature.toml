@@ -1,0 +1,8 @@
+id = "app.t3code-nightly"
+label = "T3 Code Nightly"
+description = "Nightly T3 Code build"
+default = false
+visible = true
+group = "Development"
+aur = ["t3code-nightly-bin"]
+commands = ["t3code-nightly"]

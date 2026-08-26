@@ -1,0 +1,8 @@
+id = "system.coolercontrol"
+label = "CoolerControl"
+description = "Cooling controller and daemon"
+default = false
+visible = true
+group = "System tools"
+aur = ["coolercontrol-bin", "coolercontrold-bin"]
+commands = ["coolercontrol", "coolercontrold"]

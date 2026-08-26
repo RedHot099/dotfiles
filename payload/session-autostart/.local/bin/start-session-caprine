@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+class_regex='^(caprine|Caprine)$'
+
+if "$HOME/.local/bin/hypr-find-client" "$class_regex" '4' >/dev/null 2>&1; then
+  exit 0
+fi
+
+uwsm-app -- "$HOME/.local/bin/caprine-safe" >/dev/null 2>&1 &
+"$HOME/.local/bin/hypr-wait-client" "$class_regex" '4' 15 >/dev/null

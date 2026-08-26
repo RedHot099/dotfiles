@@ -1,0 +1,8 @@
+id = "app.obsidian"
+label = "Obsidian"
+description = "Obsidian knowledge base"
+default = false
+visible = true
+group = "Research"
+packages = ["obsidian"]
+commands = ["obsidian"]

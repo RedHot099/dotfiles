@@ -1,0 +1,14 @@
+id = "agent.opencode"
+label = "OpenCode"
+description = "OpenCode CLI and portable settings"
+default = false
+visible = false
+group = "AI"
+mise = ["opencode@latest"]
+commands = ["opencode"]
+
+[[auth]]
+label = "OpenCode"
+command = "opencode auth login"
+probe = "opencode auth list"
+probe_contains = "credential"

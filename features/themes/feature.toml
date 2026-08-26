@@ -1,0 +1,22 @@
+id = "themes"
+label = "Custom themes"
+description = "Pinned Akane, All Hallows Eve, and Void themes"
+default = false
+visible = false
+group = "Desktop"
+theme = "akane"
+
+[[repositories]]
+url = "https://github.com/Grenish/omarchy-akane-theme"
+revision = "8ab3d0211f8627551fc9a7ecea5b578f9721639e"
+target = ".config/omarchy/themes/akane"
+
+[[repositories]]
+url = "https://github.com/guilhermetk/omarchy-all-hallows-eve-theme"
+revision = "21aa0f7d354aabe7b278117144773a07708db942"
+target = ".config/omarchy/themes/all-hallows-eve"
+
+[[repositories]]
+url = "https://github.com/vyrx-dev/omarchy-void-theme.git"
+revision = "c1fc95a579bf5c5e1d3b9edd43b1df501b5bd5c9"
+target = ".config/omarchy/themes/void"

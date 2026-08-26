@@ -1,0 +1,8 @@
+id = "system.solaar"
+label = "Solaar"
+description = "Logitech device manager"
+default = false
+visible = true
+group = "System tools"
+packages = ["solaar"]
+commands = ["solaar"]

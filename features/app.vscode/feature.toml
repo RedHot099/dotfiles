@@ -1,0 +1,12 @@
+id = "app.vscode"
+label = "Visual Studio Code"
+description = "VS Code and portable user settings"
+default = false
+visible = false
+group = "Development"
+packages = ["visual-studio-code-bin"]
+commands = ["code"]
+
+[[files]]
+source = "payload/vscode"
+target = "."

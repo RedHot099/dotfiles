@@ -1,0 +1,8 @@
+id = "agent.gemini"
+label = "Gemini CLI"
+description = "Optional Gemini coding agent"
+default = false
+visible = true
+group = "Optional AI agents"
+mise = ["gemini@latest"]
+commands = ["gemini"]

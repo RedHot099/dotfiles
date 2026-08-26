@@ -1,0 +1,4 @@
+id = "cloud"
+label = "Cloud"
+default = false
+features = ["cloud.onedrive", "cloud.google-drive"]
