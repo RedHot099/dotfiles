@@ -406,11 +406,7 @@ def detect_host_state(workspace: Workspace) -> HostState:
             name, version = row.split(maxsplit=1)
             package_versions[name] = version
         packages = frozenset(package_versions)
-        foreign_packages = frozenset(
-            subprocess.run(
-                ("pacman", "-Qmq"), check=True, text=True, stdout=subprocess.PIPE
-            ).stdout.splitlines()
-        )
+        foreign_packages = query_foreign_packages()
     wanted = {
         command for implementation in workspace.implementations.values() for command in implementation.commands
     }
@@ -420,6 +416,15 @@ def detect_host_state(workspace: Workspace) -> HostState:
         package_versions,
         foreign_packages,
     )
+
+
+def query_foreign_packages() -> frozenset[str]:
+    result = subprocess.run(
+        ("pacman", "-Qmq"), check=False, text=True, stdout=subprocess.PIPE
+    )
+    if result.returncode not in (0, 1):
+        result.check_returncode()
+    return frozenset(result.stdout.splitlines())
 
 
 def load_host_state(path: Path) -> HostState:

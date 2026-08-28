@@ -2,9 +2,11 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from subprocess import CompletedProcess
+from unittest.mock import patch
 
 from bootstrap.catalog import CatalogError
-from bootstrap.cli import render_monitor, write_plan
+from bootstrap.cli import query_foreign_packages, render_monitor, write_plan
 from bootstrap.planner import HostState, PlanInputs, plan_install
 from bootstrap.catalog import load_workspace
 from bootstrap.platform import detect_platform
@@ -15,6 +17,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class SchemaTwoCliTests(unittest.TestCase):
+    @patch("bootstrap.cli.subprocess.run")
+    def test_empty_foreign_package_list_is_valid(self, run):
+        run.return_value = CompletedProcess(("pacman", "-Qmq"), 1, stdout="")
+
+        self.assertEqual(query_foreign_packages(), frozenset())
+
     def test_monitor_renderer_rejects_injected_values(self):
         content = render_monitor("DP-1", "2560x1440@144", "0x0", "1")
         self.assertIn('output = "DP-1"', content)
