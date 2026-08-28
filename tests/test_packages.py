@@ -1,7 +1,8 @@
 import base64
 import unittest
+from pathlib import Path
 
-from bootstrap.catalog import CatalogError, PackageBinding
+from bootstrap.catalog import CatalogError, PackageBinding, load_workspace
 from bootstrap.packages import (
     AurRecipe,
     repository_names,
@@ -13,6 +14,18 @@ from bootstrap.packages import (
 
 
 class PackageSafetyTests(unittest.TestCase):
+    def test_cachy_tailscale_accepts_the_official_znver4_extra_repository(self):
+        workspace = load_workspace(Path(__file__).resolve().parents[1], "cachy")
+        binding = workspace.package_bindings["tailscale"]
+
+        transaction = parse_transaction(
+            "cachyos-extra-znver4\ttailscale\t1.0-1\n",
+            (binding,),
+            ("cachyos-extra-znver4",),
+        )
+
+        self.assertEqual(transaction[0].repository, "cachyos-extra-znver4")
+
     def test_transaction_is_closed_and_direct_sources_are_allowlisted(self):
         binding = PackageBinding(
             "editor", "repository", "editor", ("extra",), None, None
