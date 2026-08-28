@@ -1,8 +1,0 @@
-id = "app.losslesscut"
-label = "LosslessCut"
-description = "Lossless video editor"
-default = false
-visible = true
-group = "Communication and media"
-aur = ["losslesscut-bin"]
-commands = ["losslesscut"]

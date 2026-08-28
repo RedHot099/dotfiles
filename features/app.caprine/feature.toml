@@ -1,8 +1,0 @@
-id = "app.caprine"
-label = "Caprine"
-description = "Messenger desktop client"
-default = false
-visible = true
-group = "Communication and media"
-aur = ["caprine"]
-commands = ["caprine"]

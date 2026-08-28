@@ -1,8 +1,0 @@
-id = "app.cursor"
-label = "Cursor"
-description = "Cursor editor"
-default = false
-visible = true
-group = "Development"
-packages = ["cursor-bin"]
-commands = ["cursor"]

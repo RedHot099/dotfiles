@@ -1,0 +1,8 @@
+schema = 2
+id = "app.filelight"
+label = "Filelight"
+description = "Disk usage viewer"
+group = "System tools"
+default = false
+visible = true
+requires = []

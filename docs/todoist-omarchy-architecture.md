@@ -108,7 +108,7 @@ type Request =
 
 The helper validates the request once and maps it to exact `td` argv. `completeSeries` uses `td task complete id:<id> --forever`. Task creation uses `td task add <content> [--due <due>] --json`, so the name and chosen date are sent in one operation. It builds active state from tasks, projects, and sections, and completed state from the last 30 days capped at 50 records.
 
-The private cache lives at `$XDG_STATE_HOME/omarchy/tasks/snapshot-v1.json`, defaults to `~/.local/state`, uses a distinct private schema version, mode `0600`, and atomic replacement. A failed read returns the last valid snapshot as stale. A write is never stored or retried offline.
+The private cache lives at `$XDG_STATE_HOME/arch-hypr-bootstrap/todoist/snapshot-v1.json`, defaults to `~/.local/state`, uses a distinct private schema version, mode `0600`, and atomic replacement. A failed read returns the last valid snapshot as stale. A write is never stored or retried offline.
 
 ### Runtime service
 
@@ -127,14 +127,14 @@ The popup uses `Style.space(380)` and `KeyboardPanel.fittedContentHeight()` capp
 ## Module map
 
 ```text
-payload/todoist/.config/omarchy/plugins/kuba.tasks/
+omarchy/payload/todoist/.config/omarchy/plugins/kuba.tasks/
   manifest.json
   Service.qml
   Panel.qml
   TaskView.js
 
-home/.local/bin/
-  omarchy-todoist
+common/payload/todoist-helper/.local/bin/
+  todoist-helper
 
 tests/
   test_omarchy_todoist.py

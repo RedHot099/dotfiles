@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-helper="$HOME/.local/bin/omarchy-todoist"
+helper="$HOME/.local/bin/todoist-helper"
 td_bin="$(command -v td)"
 task_id=""
 deleted=false

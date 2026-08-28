@@ -1,0 +1,8 @@
+schema = 2
+id = "system.gpu-tools"
+label = "GPU diagnostic tools"
+description = "NVIDIA, Mesa, and Vulkan utilities"
+group = "System tools"
+default = false
+visible = true
+requires = []

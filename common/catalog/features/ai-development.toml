@@ -1,0 +1,8 @@
+schema = 2
+id = "ai-development"
+label = "AI development"
+description = "Claude, Codex, OpenCode, GitHub CLI, editors, and user skills"
+group = "Profiles"
+default = true
+visible = true
+requires = ["agent.claude", "agent.codex", "agent.opencode", "tool.github", "tool.runtimes", "app.vscode", "app.t3code", "user-skills"]

@@ -1,0 +1,8 @@
+schema = 2
+id = "tool.node"
+label = "Node.js runtime"
+description = "Pinned Node.js runtime for user-level tools"
+group = "Development"
+default = false
+visible = false
+requires = []

@@ -1,0 +1,8 @@
+schema = 2
+id = "app.steam"
+label = "Steam"
+description = "Steam and MangoHud"
+group = "Gaming"
+default = false
+visible = true
+requires = []

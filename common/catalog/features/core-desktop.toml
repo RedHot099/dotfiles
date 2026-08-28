@@ -1,0 +1,8 @@
+schema = 2
+id = "core-desktop"
+label = "Core desktop"
+description = "Hyprland desktop, Todoist, notifications, themes, input, editors, and cursor"
+group = "Profiles"
+default = true
+visible = true
+requires = ["todoist", "themes", "notifications-calendar", "desktop-portable"]

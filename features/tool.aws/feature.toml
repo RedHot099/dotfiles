@@ -1,8 +1,0 @@
-id = "tool.aws"
-label = "AWS CLI"
-description = "Amazon Web Services command-line client"
-default = false
-visible = true
-group = "Development"
-aur = ["aws-cli-bin"]
-commands = ["aws"]

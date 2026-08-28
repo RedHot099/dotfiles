@@ -1,0 +1,8 @@
+schema = 2
+id = "app.vscode"
+label = "Visual Studio Code"
+description = "VS Code and portable user settings"
+group = "Development"
+default = false
+visible = false
+requires = []

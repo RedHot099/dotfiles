@@ -1,0 +1,8 @@
+schema = 2
+id = "system.coolercontrol"
+label = "CoolerControl"
+description = "Cooling controller and daemon"
+group = "System tools"
+default = false
+visible = true
+requires = []

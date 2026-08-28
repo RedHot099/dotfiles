@@ -22,15 +22,18 @@ SECRET_PATTERNS = (
 def main() -> int:
     parser = argparse.ArgumentParser(description="Capture reviewed user-owned agent skills")
     parser.add_argument("--home", type=Path, default=Path.home())
-    parser.add_argument("--destination", type=Path, default=Path("payload/user-skills"))
+    parser.add_argument("--destination", type=Path, default=Path("common/payload/user-skills"))
     args = parser.parse_args()
     sources = (args.home / ".agents" / "skills", args.home / ".codex" / "skills")
     skills = discover(sources)
     destination = args.destination.resolve()
+    allowed_destination = (Path(__file__).resolve().parents[1] / "common/payload/user-skills").resolve()
+    if destination != allowed_destination:
+        raise SystemExit(f"Destination must be {allowed_destination}")
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=destination.parent, prefix=".skills-") as temporary_name:
         temporary = Path(temporary_name)
-        canonical = temporary / ".local" / "share" / "omarchy-bootstrap" / "agent-skills"
+        canonical = temporary / ".local" / "share" / "arch-hypr-bootstrap" / "agent-skills"
         canonical.mkdir(parents=True)
         index = []
         for skill_id, source in sorted(skills.items()):
@@ -40,7 +43,7 @@ def main() -> int:
             reject_secrets(target)
             index.append((skill_id, source.parent.parent.name, tree_hash(target)))
         write_adapters(temporary, [item[0] for item in index])
-        write_index(temporary / ".local" / "share" / "omarchy-bootstrap" / "skills-index.toml", index)
+        write_index(temporary / ".local" / "share" / "arch-hypr-bootstrap" / "skills-index.toml", index)
         if destination.exists():
             shutil.rmtree(destination)
         shutil.copytree(temporary, destination, symlinks=True)
@@ -106,9 +109,9 @@ def reject_secrets(root: Path) -> None:
 
 def write_adapters(root: Path, skill_ids: list[str]) -> None:
     adapters = {
-        root / ".agents" / "skills": "../../.local/share/omarchy-bootstrap/agent-skills",
-        root / ".claude" / "skills": "../../.local/share/omarchy-bootstrap/agent-skills",
-        root / ".config" / "opencode" / "skills": "../../../.local/share/omarchy-bootstrap/agent-skills",
+        root / ".agents" / "skills": "../../.local/share/arch-hypr-bootstrap/agent-skills",
+        root / ".claude" / "skills": "../../.local/share/arch-hypr-bootstrap/agent-skills",
+        root / ".config" / "opencode" / "skills": "../../../.local/share/arch-hypr-bootstrap/agent-skills",
     }
     for directory, canonical in adapters.items():
         directory.mkdir(parents=True)

@@ -1,8 +1,0 @@
-id = "system.tailscale"
-label = "Tailscale"
-description = "Tailscale client"
-default = false
-visible = true
-group = "Cloud"
-packages = ["tailscale"]
-commands = ["tailscale"]

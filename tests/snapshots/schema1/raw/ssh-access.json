@@ -1,0 +1,30 @@
+{
+  "actions": [
+    {
+      "data": {
+        "fingerprints": [
+          "SHA256:+HZV1Z3cJfpHMojtVaG58byhDxnxqDWAvm+6BTT0tEo"
+        ],
+        "keys": [
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINBbCfb+WmiX3sbFKT8weE9KCJ66FtN3C42nxEkueumS fixture"
+        ],
+        "username": "RedHot099"
+      },
+      "feature": "ssh-access",
+      "id": "4060c73ecc553c6d",
+      "kind": "github-ssh"
+    }
+  ],
+  "default_agent": "claude",
+  "dependencies": {
+    "ssh-access": []
+  },
+  "digest": "359fce215bb4de281793c9bdfc3a187ccaa352e17229413887431ac773d8c70f",
+  "hardware": "generic",
+  "omarchy_major": 4,
+  "schema": 1,
+  "selected": [
+    "ssh-access"
+  ],
+  "target_home": "/tmp/arch-hypr-bootstrap-fixture-home"
+}

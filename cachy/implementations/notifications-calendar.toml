@@ -1,0 +1,4 @@
+schema = 2
+id = "notifications-calendar"
+available = false
+unavailable_reason = "Google Calendar Snooze is unavailable until a real Chrome notification exposes a reviewed Freedesktop action or Noctalia adds an interception API"

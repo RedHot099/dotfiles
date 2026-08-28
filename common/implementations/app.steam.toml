@@ -1,0 +1,4 @@
+schema = 2
+id = "app.steam"
+package_requirements = ["steam", "lib32-mangohud"]
+commands = ["steam"]

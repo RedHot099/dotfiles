@@ -1,0 +1,4 @@
+schema = 2
+id = "agent.crush"
+tools = ["crush@0.91.1"]
+commands = ["crush"]

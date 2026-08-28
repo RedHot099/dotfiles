@@ -1,0 +1,8 @@
+schema = 2
+id = "tool.research-cli"
+label = "Research CLI tools"
+description = "XML, YAML, and calculation tools"
+group = "Research"
+default = false
+visible = false
+requires = []

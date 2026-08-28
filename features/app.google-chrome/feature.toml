@@ -1,8 +1,0 @@
-id = "app.google-chrome"
-label = "Google Chrome"
-description = "Google Chrome browser"
-default = false
-visible = true
-group = "Communication and media"
-aur = ["google-chrome"]
-commands = ["google-chrome-stable"]

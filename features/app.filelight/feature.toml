@@ -1,8 +1,0 @@
-id = "app.filelight"
-label = "Filelight"
-description = "Disk usage viewer"
-default = false
-visible = true
-group = "System tools"
-packages = ["filelight"]
-commands = ["filelight"]

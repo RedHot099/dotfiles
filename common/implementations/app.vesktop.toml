@@ -1,0 +1,4 @@
+schema = 2
+id = "app.vesktop"
+package_requirements = ["vesktop"]
+commands = ["vesktop"]

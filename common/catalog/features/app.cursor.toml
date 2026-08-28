@@ -1,0 +1,8 @@
+schema = 2
+id = "app.cursor"
+label = "Cursor"
+description = "Cursor editor"
+group = "Development"
+default = false
+visible = true
+requires = []

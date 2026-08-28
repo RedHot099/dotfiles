@@ -1,8 +1,0 @@
-id = "app.latex"
-label = "LaTeX toolchain"
-description = "Biber and the TeX Live packages used by the current setup"
-default = false
-visible = true
-group = "Research"
-packages = ["biber", "texlive-basic", "texlive-bibtexextra", "texlive-binextra", "texlive-fontsrecommended", "texlive-latexextra", "texlive-mathscience"]
-commands = ["biber", "latexmk"]

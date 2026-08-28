@@ -1,0 +1,4 @@
+schema = 2
+id = "tool.python"
+tools = ["python@3.14.7"]
+commands = ["python3"]

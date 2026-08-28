@@ -1,6 +1,6 @@
 import QtQuick
 import QtTest
-import "../../payload/todoist/.config/omarchy/plugins/kuba.tasks/TaskView.js" as TaskView
+import "../../omarchy/payload/todoist/.config/omarchy/plugins/kuba.tasks/TaskView.js" as TaskView
 
 TestCase {
   name: "TaskView"

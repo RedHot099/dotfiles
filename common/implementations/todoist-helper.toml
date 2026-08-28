@@ -1,0 +1,13 @@
+schema = 2
+id = "todoist-helper"
+tools = ["npm:@doist/todoist-cli@4.0.0"]
+commands = ["td"]
+
+[[files]]
+source = "payload/todoist-helper"
+target = "."
+
+[[authentication]]
+label = "Todoist"
+command = ["td", "auth", "login"]
+probe = ["td", "auth", "status"]

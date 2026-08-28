@@ -25,7 +25,7 @@ home = Path(plan["target_home"])
 rows = []
 for action in plan["actions"]:
     data = action["data"]
-    if action["kind"] == "file":
+    if action["kind"] in {"user-file", "generated-file", "managed-fragment"}:
         path = home / data["target"]
         if path.is_symlink():
             value = "link:" + os.readlink(path)
@@ -34,7 +34,7 @@ for action in plan["actions"]:
         else:
             value = "missing"
         rows.append(("file", data["target"], value))
-    elif action["kind"] == "git":
+    elif action["kind"] == "pinned-git":
         path = home / data["target"]
         result = subprocess.run(["git", "-C", str(path), "status", "--porcelain=v1", "--branch"], text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         rows.append(("git", data["target"], result.stdout if result.returncode == 0 else "missing"))

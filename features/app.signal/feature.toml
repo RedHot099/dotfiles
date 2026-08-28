@@ -1,8 +1,0 @@
-id = "app.signal"
-label = "Signal"
-description = "Signal Desktop"
-default = false
-visible = true
-group = "Communication and media"
-packages = ["signal-desktop"]
-commands = ["signal-desktop"]

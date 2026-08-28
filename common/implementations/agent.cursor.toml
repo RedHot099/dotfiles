@@ -1,0 +1,4 @@
+schema = 2
+id = "agent.cursor"
+package_requirements = ["cursor-cli"]
+commands = ["cursor-agent"]

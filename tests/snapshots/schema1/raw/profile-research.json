@@ -1,0 +1,70 @@
+{
+  "actions": [
+    {
+      "data": {
+        "packages": [
+          "biber",
+          "texlive-basic",
+          "texlive-bibtexextra",
+          "texlive-binextra",
+          "texlive-fontsrecommended",
+          "texlive-latexextra",
+          "texlive-mathscience"
+        ]
+      },
+      "feature": "app.latex",
+      "id": "edff642d02260677",
+      "kind": "packages"
+    },
+    {
+      "data": {
+        "packages": [
+          "obsidian"
+        ]
+      },
+      "feature": "app.obsidian",
+      "id": "15747534213b4467",
+      "kind": "packages"
+    },
+    {
+      "data": {
+        "packages": [
+          "typora"
+        ]
+      },
+      "feature": "app.typora",
+      "id": "9c6f360f7cecc98c",
+      "kind": "packages"
+    },
+    {
+      "data": {
+        "packages": [
+          "xmlstarlet",
+          "yq",
+          "libqalculate"
+        ]
+      },
+      "feature": "tool.research-cli",
+      "id": "6cf65e0de59260fd",
+      "kind": "packages"
+    }
+  ],
+  "default_agent": "claude",
+  "dependencies": {
+    "app.latex": [],
+    "app.obsidian": [],
+    "app.typora": [],
+    "tool.research-cli": []
+  },
+  "digest": "280910011a1744a5ce59389b5ef6a8e61f8c679bf898317ec6cfb05c9c437973",
+  "hardware": "generic",
+  "omarchy_major": 4,
+  "schema": 1,
+  "selected": [
+    "app.latex",
+    "app.obsidian",
+    "app.typora",
+    "tool.research-cli"
+  ],
+  "target_home": "/tmp/arch-hypr-bootstrap-fixture-home"
+}

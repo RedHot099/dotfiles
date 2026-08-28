@@ -1,0 +1,8 @@
+schema = 2
+id = "user-skills"
+label = "User agent skills"
+description = "Reviewed user-owned skills for Claude, Codex, and OpenCode"
+group = "AI"
+default = false
+visible = false
+requires = []

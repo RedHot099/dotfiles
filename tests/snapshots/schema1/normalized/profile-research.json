@@ -1,0 +1,68 @@
+{
+  "actions": [
+    {
+      "data": {
+        "packages": [
+          "biber",
+          "texlive-basic",
+          "texlive-bibtexextra",
+          "texlive-binextra",
+          "texlive-fontsrecommended",
+          "texlive-latexextra",
+          "texlive-mathscience"
+        ]
+      },
+      "feature": "app.latex",
+      "kind": "repository-packages"
+    },
+    {
+      "data": {
+        "packages": [
+          "obsidian"
+        ]
+      },
+      "feature": "app.obsidian",
+      "kind": "repository-packages"
+    },
+    {
+      "data": {
+        "packages": [
+          "typora"
+        ]
+      },
+      "feature": "app.typora",
+      "kind": "repository-packages"
+    },
+    {
+      "data": {
+        "packages": [
+          "xmlstarlet",
+          "yq",
+          "libqalculate"
+        ]
+      },
+      "feature": "tool.research-cli",
+      "kind": "repository-packages"
+    }
+  ],
+  "default_agent": "claude",
+  "dependencies": {
+    "app.latex": [],
+    "app.obsidian": [],
+    "app.typora": [],
+    "tool.research-cli": []
+  },
+  "hardware": "generic",
+  "platform": {
+    "contract_major": 4,
+    "id": "omarchy"
+  },
+  "schema": 2,
+  "selected": [
+    "app.latex",
+    "app.obsidian",
+    "app.typora",
+    "tool.research-cli"
+  ],
+  "target_home": "/tmp/arch-hypr-bootstrap-fixture-home"
+}

@@ -42,7 +42,7 @@
 
 ## Persistence and safety
 
-- Source lives under `payload/todoist/.config/omarchy/plugins/kuba.tasks/` and the matching helper payload.
+- The Omarchy plugin lives under `omarchy/payload/todoist/.config/omarchy/plugins/kuba.tasks/`. The portable helper lives under `common/payload/todoist-helper/`.
 - The active equivalent lives under `~/.config/omarchy/plugins/kuba.tasks/`; no Omarchy-owned source is edited.
 - The Omarchy 4 payload uses the stock `omarchy.agents` widget and inserts `kuba.tasks` after it.
 - The existing dirty worktree belongs to the user. Only Todoist integration lines and files may change.

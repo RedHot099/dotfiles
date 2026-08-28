@@ -23,8 +23,18 @@ if ! rg -n '^WantedBy=graphical-session\.target$' "$SERVICE_FILE" >/dev/null; th
   exit 1
 fi
 
-if ! rg -n '^ExecStop=/usr/bin/bash -lc .*(findmnt|mountpoint).*(fusermount3|umount).*\|\| true' "$SERVICE_FILE" >/dev/null; then
-  echo "service should tolerate missing or busy mount during stop" >&2
+if ! rg -n '^Type=notify$' "$SERVICE_FILE" >/dev/null; then
+  echo "rclone mount should notify systemd when it is ready" >&2
+  exit 1
+fi
+
+if ! rg -n '^Exec(StartPre|Stop)=%h/\.local/bin/rclone-mount-helper ' "$SERVICE_FILE" >/dev/null; then
+  echo "service should use the reviewed mount helper" >&2
+  exit 1
+fi
+
+if rg -n '/usr/bin/(bash|sh) -[lc]' "$SERVICE_FILE" >/dev/null; then
+  echo "service must not hide mount operations in a shell command" >&2
   exit 1
 fi
 

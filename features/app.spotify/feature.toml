@@ -1,8 +1,0 @@
-id = "app.spotify"
-label = "Spotify"
-description = "Spotify desktop client"
-default = false
-visible = true
-group = "Communication and media"
-packages = ["spotify"]
-commands = ["spotify"]

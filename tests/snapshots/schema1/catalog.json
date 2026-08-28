@@ -1,0 +1,830 @@
+{
+  "agent.claude": {
+    "aur": [],
+    "auth": [
+      {
+        "command": "claude auth login",
+        "contains": null,
+        "label": "Claude",
+        "probe": "claude auth status"
+      }
+    ],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [
+      "claude@2.1.246"
+    ],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "agent.codex": {
+    "aur": [],
+    "auth": [
+      {
+        "command": "codex login",
+        "contains": null,
+        "label": "Codex",
+        "probe": "codex login status"
+      }
+    ],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [
+      "codex@0.149.1"
+    ],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "agent.copilot": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [
+      "copilot@1.0.80"
+    ],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "agent.crush": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [
+      "crush@0.91.1"
+    ],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "agent.cursor": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [
+      "cursor-cli"
+    ],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "agent.gemini": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [
+      "gemini@0.57.0"
+    ],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "agent.grok": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [
+      "npm:@xai-official/grok@1.0.5"
+    ],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "agent.opencode": {
+    "aur": [],
+    "auth": [
+      {
+        "command": "opencode auth login",
+        "contains": "credential",
+        "label": "OpenCode",
+        "probe": "opencode auth list"
+      }
+    ],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [
+      "opencode@1.18.23"
+    ],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "ai-development": {
+    "aur": [],
+    "auth": [],
+    "files": [
+      {
+        "source": "payload/ai-development",
+        "target": "."
+      }
+    ],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [
+      "agent.claude",
+      "agent.codex",
+      "agent.opencode",
+      "tool.github",
+      "tool.runtimes",
+      "app.vscode",
+      "app.t3code",
+      "user-skills"
+    ],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "app.caprine": {
+    "aur": [
+      "caprine"
+    ],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "app.cursor": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [
+      "cursor-bin"
+    ],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "app.filelight": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [
+      "filelight"
+    ],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "app.google-chrome": {
+    "aur": [
+      "google-chrome"
+    ],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "app.latex": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [
+      "biber",
+      "texlive-basic",
+      "texlive-bibtexextra",
+      "texlive-binextra",
+      "texlive-fontsrecommended",
+      "texlive-latexextra",
+      "texlive-mathscience"
+    ],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "app.losslesscut": {
+    "aur": [
+      "losslesscut-bin"
+    ],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "app.obsidian": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [
+      "obsidian"
+    ],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "app.signal": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [
+      "signal-desktop"
+    ],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "app.spotify": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [
+      "spotify"
+    ],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "app.steam": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [
+      "steam",
+      "lib32-mangohud"
+    ],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "app.t3code": {
+    "aur": [],
+    "auth": [],
+    "files": [
+      {
+        "source": "payload/t3code",
+        "target": "."
+      }
+    ],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [
+      "app.t3code-nightly"
+    ],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "app.t3code-nightly": {
+    "aur": [
+      "t3code-nightly-bin"
+    ],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "app.typora": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [
+      "typora"
+    ],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "app.vesktop": {
+    "aur": [
+      "vesktop"
+    ],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "app.vscode": {
+    "aur": [],
+    "auth": [],
+    "files": [
+      {
+        "source": "payload/vscode",
+        "target": "."
+      }
+    ],
+    "github_ssh_user": null,
+    "packages": [
+      "visual-studio-code-bin"
+    ],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "cloud.google-drive": {
+    "aur": [],
+    "auth": [
+      {
+        "command": "rclone config",
+        "contains": "gdrive:",
+        "label": "Google Drive remote",
+        "probe": "rclone listremotes"
+      }
+    ],
+    "files": [
+      {
+        "source": "payload/cloud-google-drive",
+        "target": "."
+      }
+    ],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [
+      "tool.rclone"
+    ],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": [
+      "rclone-google-drive.service"
+    ]
+  },
+  "cloud.onedrive": {
+    "aur": [],
+    "auth": [
+      {
+        "command": "rclone config",
+        "contains": "onedrive:",
+        "label": "OneDrive remote",
+        "probe": "rclone listremotes"
+      }
+    ],
+    "files": [
+      {
+        "source": "payload/cloud-onedrive",
+        "target": "."
+      }
+    ],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [
+      "tool.rclone"
+    ],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": [
+      "rclone-onedrive.service"
+    ]
+  },
+  "core-desktop": {
+    "aur": [],
+    "auth": [],
+    "files": [
+      {
+        "source": "payload/core-desktop",
+        "target": "."
+      }
+    ],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [
+      "todoist",
+      "themes",
+      "notifications-calendar"
+    ],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "notifications-calendar": {
+    "aur": [],
+    "auth": [],
+    "files": [
+      {
+        "source": "payload/notifications",
+        "target": "."
+      }
+    ],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "session-autostart": {
+    "aur": [],
+    "auth": [],
+    "files": [
+      {
+        "source": "payload/session-autostart",
+        "target": "."
+      }
+    ],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [
+      "core-desktop",
+      "app.google-chrome",
+      "app.t3code",
+      "app.caprine"
+    ],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "ssh-access": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": "RedHot099",
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "ssh-firewall": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [
+      "ssh-access"
+    ],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": true,
+    "units": []
+  },
+  "system.coolercontrol": {
+    "aur": [
+      "coolercontrol-bin",
+      "coolercontrold-bin"
+    ],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "system.gpu-tools": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [
+      "nvidia-settings",
+      "mesa-utils",
+      "vulkan-tools"
+    ],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "system.solaar": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [
+      "solaar"
+    ],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "system.tailscale": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [
+      "tailscale"
+    ],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "themes": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [
+      {
+        "revision": "8ab3d0211f8627551fc9a7ecea5b578f9721639e",
+        "target": ".config/omarchy/themes/akane",
+        "url": "https://github.com/Grenish/omarchy-akane-theme"
+      },
+      {
+        "revision": "21aa0f7d354aabe7b278117144773a07708db942",
+        "target": ".config/omarchy/themes/all-hallows-eve",
+        "url": "https://github.com/guilhermetk/omarchy-all-hallows-eve-theme"
+      },
+      {
+        "revision": "c1fc95a579bf5c5e1d3b9edd43b1df501b5bd5c9",
+        "target": ".config/omarchy/themes/void",
+        "url": "https://github.com/vyrx-dev/omarchy-void-theme.git"
+      }
+    ],
+    "requires": [],
+    "theme": "akane",
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "todoist": {
+    "aur": [],
+    "auth": [
+      {
+        "command": "td auth login",
+        "contains": null,
+        "label": "Todoist",
+        "probe": "td auth status"
+      }
+    ],
+    "files": [
+      {
+        "source": "payload/todoist",
+        "target": "."
+      }
+    ],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [
+      "tool.node"
+    ],
+    "theme": null,
+    "tools": [
+      "npm:@doist/todoist-cli@4.0.0"
+    ],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "tool.aws": {
+    "aur": [
+      "aws-cli-bin"
+    ],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "tool.github": {
+    "aur": [],
+    "auth": [
+      {
+        "command": "gh auth login",
+        "contains": null,
+        "label": "GitHub",
+        "probe": "gh auth status"
+      }
+    ],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [
+      "gh@2.98.0"
+    ],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "tool.node": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [
+      "node@24.20.0"
+    ],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "tool.python": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [
+      "python@3.14.7"
+    ],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "tool.rclone": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [
+      "rclone"
+    ],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "tool.research-cli": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [
+      "xmlstarlet",
+      "yq",
+      "libqalculate"
+    ],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "tool.runtimes": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [
+      "tool.node",
+      "tool.python"
+    ],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "tool.rust": {
+    "aur": [],
+    "auth": [],
+    "files": [],
+    "github_ssh_user": null,
+    "packages": [
+      "rust"
+    ],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  },
+  "user-skills": {
+    "aur": [],
+    "auth": [],
+    "files": [
+      {
+        "source": "payload/user-skills",
+        "target": "."
+      }
+    ],
+    "github_ssh_user": null,
+    "packages": [],
+    "repositories": [],
+    "requires": [],
+    "theme": null,
+    "tools": [],
+    "ufw_ssh_limit": false,
+    "units": []
+  }
+}

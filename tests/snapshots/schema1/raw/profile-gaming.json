@@ -1,0 +1,27 @@
+{
+  "actions": [
+    {
+      "data": {
+        "packages": [
+          "steam",
+          "lib32-mangohud"
+        ]
+      },
+      "feature": "app.steam",
+      "id": "2a5f56379e6f263a",
+      "kind": "packages"
+    }
+  ],
+  "default_agent": "claude",
+  "dependencies": {
+    "app.steam": []
+  },
+  "digest": "85c550ea56cb22fdeb0af2563fe93990baf3e8eb08c91e1b02f33d8b5dd0efd4",
+  "hardware": "generic",
+  "omarchy_major": 4,
+  "schema": 1,
+  "selected": [
+    "app.steam"
+  ],
+  "target_home": "/tmp/arch-hypr-bootstrap-fixture-home"
+}

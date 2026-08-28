@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  printf 'Usage: %s [--fresh-profile]\n' "${0##*/}" >&2
+}
+
+fresh_profile=0
+case "${1-}" in
+  "")
+    ;;
+  --fresh-profile)
+    fresh_profile=1
+    ;;
+  -h|--help)
+    usage
+    exit 0
+    ;;
+  *)
+    usage
+    exit 2
+    ;;
+esac
+
+userdata="${T3CODE_USERDATA_DIR:-$HOME/.t3/userdata}"
+backup_root="${T3CODE_BACKUP_ROOT:-$HOME/.local/state/t3code-backups}"
+backup_dir="$backup_root/$(date +%Y%m%d-%H%M%S)"
+expected_userdata="$(readlink -m "$HOME/.t3/userdata")"
+resolved_userdata="$(readlink -m "$userdata")"
+
+if [[ "$resolved_userdata" != "$expected_userdata" ]] || [[ -L "$userdata" ]]; then
+  printf 'Refusing unsafe T3 userdata path: %s\n' "$userdata" >&2
+  exit 2
+fi
+userdata="$resolved_userdata"
+
+copy_if_exists() {
+  local source="$1"
+  local destination="$2"
+
+  if [[ -e "$source" ]]; then
+    mkdir -p "$(dirname "$destination")"
+    cp -a "$source" "$destination"
+  fi
+}
+
+stop_t3code() {
+  pkill -u "$USER" -f '[t]3code-nightly-bin/(t3code|AppRun)' 2>/dev/null || true
+  for _ in {1..20}; do
+    if ! pgrep -u "$USER" -f '[t]3code-nightly-bin/(t3code|AppRun)' >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 0.25
+  done
+  pkill -KILL -u "$USER" -f '[t]3code-nightly-bin/(t3code|AppRun)' 2>/dev/null || true
+}
+
+mkdir -p "$backup_dir"
+
+if [[ ! -d "$userdata" ]]; then
+  printf 'T3 userdata directory does not exist: %s\n' "$userdata" >&2
+  exit 0
+fi
+
+if (( fresh_profile )); then
+  printf 'Backing up full T3 userdata to %s/userdata\n' "$backup_dir"
+  cp -a "$userdata" "$backup_dir/userdata"
+
+  stop_t3code
+
+  rm -rf "$userdata"
+  mkdir -p "$userdata"
+
+  copy_if_exists "$backup_dir/userdata/settings.json" "$userdata/settings.json"
+  copy_if_exists "$backup_dir/userdata/client-settings.json" "$userdata/client-settings.json"
+  copy_if_exists "$backup_dir/userdata/keybindings.json" "$userdata/keybindings.json"
+  copy_if_exists "$backup_dir/userdata/secrets" "$userdata/secrets"
+  copy_if_exists "$backup_dir/userdata/environment-id" "$userdata/environment-id"
+
+  printf 'Created fresh T3 profile with preserved settings/keybindings/secrets.\n'
+  exit 0
+fi
+
+printf 'Backing up selected T3 userdata to %s/userdata\n' "$backup_dir"
+mkdir -p "$backup_dir/userdata"
+copy_if_exists "$userdata/settings.json" "$backup_dir/userdata/settings.json"
+copy_if_exists "$userdata/client-settings.json" "$backup_dir/userdata/client-settings.json"
+copy_if_exists "$userdata/keybindings.json" "$backup_dir/userdata/keybindings.json"
+copy_if_exists "$userdata/state.sqlite" "$backup_dir/userdata/state.sqlite"
+
+stop_t3code
+
+if [[ -f "$userdata/state.sqlite" ]] && command -v sqlite3 >/dev/null 2>&1; then
+  sqlite3 "$userdata/state.sqlite" 'PRAGMA wal_checkpoint(TRUNCATE); VACUUM;'
+fi
+
+find "$userdata/logs" -type f \( \
+  -path "$userdata/logs/server.trace.ndjson.*" -o \
+  -path "$userdata/logs/provider/*.log.*" \
+\) -delete 2>/dev/null || true
+
+printf 'T3 cleanup complete.\n'

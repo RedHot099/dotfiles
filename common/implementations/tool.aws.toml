@@ -1,0 +1,4 @@
+schema = 2
+id = "tool.aws"
+package_requirements = ["aws-cli-bin"]
+commands = ["aws"]

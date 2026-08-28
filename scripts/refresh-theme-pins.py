@@ -11,7 +11,9 @@ from pathlib import Path
 def main() -> int:
     parser = argparse.ArgumentParser(description="Review or refresh pinned custom theme commits")
     parser.add_argument("--write", action="store_true", help="Write the reported remote HEAD commits")
-    parser.add_argument("--catalog", type=Path, default=Path("features/themes/feature.toml"))
+    parser.add_argument(
+        "--catalog", type=Path, default=Path("omarchy/implementations/themes.toml")
+    )
     args = parser.parse_args()
     content = args.catalog.read_text()
     data = tomllib.loads(content)

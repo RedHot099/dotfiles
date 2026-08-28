@@ -1,8 +1,0 @@
-id = "tool.python"
-label = "Python runtime"
-description = "Pinned Python runtime for development tools"
-default = false
-visible = false
-group = "Development"
-mise = ["python@3.14"]
-commands = ["python3"]

@@ -1,0 +1,4 @@
+schema = 2
+id = "app.filelight"
+package_requirements = ["filelight"]
+commands = ["filelight"]

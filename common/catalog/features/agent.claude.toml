@@ -1,0 +1,8 @@
+schema = 2
+id = "agent.claude"
+label = "Claude"
+description = "Claude Code CLI and portable settings"
+group = "AI"
+default = false
+visible = false
+requires = []

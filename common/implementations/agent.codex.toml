@@ -1,0 +1,9 @@
+schema = 2
+id = "agent.codex"
+tools = ["codex@0.149.1"]
+commands = ["codex"]
+
+[[authentication]]
+label = "Codex"
+command = ["codex", "login"]
+probe = ["codex", "login", "status"]

@@ -1,0 +1,8 @@
+schema = 2
+id = "app.vesktop"
+label = "Vesktop"
+description = "Discord-compatible desktop client"
+group = "Communication and media"
+default = false
+visible = true
+requires = []

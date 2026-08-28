@@ -1,8 +1,0 @@
-id = "agent.copilot"
-label = "GitHub Copilot CLI"
-description = "Optional GitHub Copilot coding agent"
-default = false
-visible = true
-group = "Optional AI agents"
-mise = ["copilot@latest"]
-commands = ["copilot"]

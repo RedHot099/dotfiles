@@ -1,0 +1,4 @@
+schema = 2
+id = "app.losslesscut"
+package_requirements = ["losslesscut-bin"]
+commands = ["losslesscut"]

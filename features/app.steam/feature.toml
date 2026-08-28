@@ -1,8 +1,0 @@
-id = "app.steam"
-label = "Steam"
-description = "Steam and MangoHud"
-default = false
-visible = true
-group = "Gaming"
-packages = ["steam", "lib32-mangohud"]
-commands = ["steam"]

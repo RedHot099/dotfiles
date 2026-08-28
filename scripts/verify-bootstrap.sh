@@ -6,18 +6,27 @@ cd "$repo_root"
 
 PYTHONPATH=lib python3 -m unittest discover -s tests -p 'test*.py'
 python3 -m compileall -q lib scripts/capture-user-skills.py
+PYTHONPATH=lib ./scripts/verify-schema2-parity.py
+
+if ! command -v luac >/dev/null 2>&1; then
+  echo "luac is required to verify Hyprland payloads" >&2
+  exit 1
+fi
+while IFS= read -r -d '' lua_file; do
+  luac -p "$lua_file"
+done < <(find common omarchy cachy -type f -name '*.lua' -print0)
 
 if command -v shellcheck >/dev/null 2>&1; then
-  mapfile -t shell_files < <(find bootstrap payload -type f -perm -u+x -exec file {} \; | awk -F: '/shell script/{print $1}')
+  mapfile -t shell_files < <(find bootstrap common omarchy cachy -type f -perm -u+x -exec file {} \; | awk -F: '/shell script/{print $1}')
   shellcheck "${shell_files[@]}"
 fi
 
-if find payload -path '*/.config/waybar*' -o -path '*/.config/mako*' -o -path '*/.config/hypr/hypridle.conf' -o -path '*/.config/hypr/hyprlock.conf' | grep -q .; then
+if find common omarchy cachy -path '*/.config/waybar*' -o -path '*/.config/mako*' -o -path '*/.config/hypr/hypridle.conf' -o -path '*/.config/hypr/hyprlock.conf' | grep -q .; then
   echo "Legacy Omarchy payload detected" >&2
   exit 1
 fi
 
-if rg --hidden -i -I -n --glob '!.git/**' '/home/kuba|1password|crash-reporter-id' payload; then
+if rg --hidden -i -I -n --glob '!.git/**' '/home/kuba|1password|crash-reporter-id' common omarchy cachy; then
   echo "Machine-specific path or excluded application detected" >&2
   exit 1
 fi
@@ -40,9 +49,10 @@ grep -qx 'Changed: 0' "$temporary/second.txt"
 
 ./scripts/verify-todoist-integration.sh
 qmllint -I /usr/share/omarchy/shell \
-  payload/notifications/.config/omarchy/plugins/kuba.notifications/components/NotificationCard.qml
-rg -q 'function snoozeGoogleCalendar' payload/notifications/.config/omarchy/plugins/kuba.notifications/Service.qml
-./scripts/test-rclone-onedrive-service.sh payload/cloud-onedrive/.config/systemd/user/rclone-onedrive.service
-./scripts/test-rclone-onedrive-service.sh payload/cloud-google-drive/.config/systemd/user/rclone-google-drive.service
+  omarchy/payload/notifications/.config/omarchy/plugins/kuba.notifications/components/NotificationCard.qml
+rg -q 'function snoozeGoogleCalendar' omarchy/payload/notifications/.config/omarchy/plugins/kuba.notifications/Service.qml
+./scripts/test-rclone-onedrive-service.sh common/payload/cloud-onedrive/.config/systemd/user/rclone-onedrive.service
+./scripts/test-rclone-onedrive-service.sh common/payload/cloud-google-drive/.config/systemd/user/rclone-google-drive.service
+./scripts/test-t3code-safety.sh
 
 echo "Bootstrap verification passed."

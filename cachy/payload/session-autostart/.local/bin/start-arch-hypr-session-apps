@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+uwsm app -- google-chrome-stable &
+sleep 2
+uwsm app -- t3code &
+sleep 2
+uwsm app -- caprine &
+sleep 2
+uwsm app -- google-chrome-stable --app=https://youtube.com &

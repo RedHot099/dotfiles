@@ -1,0 +1,4 @@
+schema = 2
+id = "app.google-chrome"
+package_requirements = ["google-chrome"]
+commands = ["google-chrome-stable"]

@@ -1,0 +1,4 @@
+schema = 2
+id = "system.coolercontrol"
+package_requirements = ["coolercontrol-bin", "coolercontrold-bin"]
+commands = ["coolercontrol", "coolercontrold"]

@@ -1,0 +1,4 @@
+schema = 2
+id = "app.caprine"
+package_requirements = ["caprine"]
+commands = ["caprine"]

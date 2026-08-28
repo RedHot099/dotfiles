@@ -1,8 +1,0 @@
-id = "agent.crush"
-label = "Crush"
-description = "Optional Crush coding agent"
-default = false
-visible = true
-group = "Optional AI agents"
-mise = ["crush@latest"]
-commands = ["crush"]

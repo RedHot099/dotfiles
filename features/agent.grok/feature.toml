@@ -1,8 +1,0 @@
-id = "agent.grok"
-label = "Grok CLI"
-description = "Optional Grok coding agent"
-default = false
-visible = true
-group = "Optional AI agents"
-mise = ["npm:@xai-official/grok@latest"]
-commands = ["grok"]

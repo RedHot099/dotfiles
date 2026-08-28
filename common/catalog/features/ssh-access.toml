@@ -1,0 +1,8 @@
+schema = 2
+id = "ssh-access"
+label = "Remote SSH access"
+description = "Authorize reviewed GitHub keys and enable the native SSH server"
+group = "System"
+default = false
+visible = true
+requires = []

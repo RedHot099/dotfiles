@@ -1,8 +1,0 @@
-id = "tool.rclone"
-label = "rclone"
-description = "Cloud storage client"
-default = false
-visible = false
-group = "Cloud"
-packages = ["rclone"]
-commands = ["rclone"]

@@ -1,0 +1,4 @@
+schema = 2
+id = "app.cursor"
+package_requirements = ["cursor-bin"]
+commands = ["cursor"]

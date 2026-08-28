@@ -1,0 +1,4 @@
+schema = 2
+id = "tool.node"
+tools = ["node@24.20.0"]
+commands = ["node"]

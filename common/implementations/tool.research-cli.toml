@@ -1,0 +1,4 @@
+schema = 2
+id = "tool.research-cli"
+package_requirements = ["xmlstarlet", "yq", "libqalculate"]
+commands = ["xmlstarlet", "yq", "qalc"]

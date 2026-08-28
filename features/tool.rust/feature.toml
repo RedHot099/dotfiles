@@ -1,8 +1,0 @@
-id = "tool.rust"
-label = "Rust toolchain"
-description = "Rust compiler and Cargo"
-default = false
-visible = true
-group = "Development"
-packages = ["rust"]
-commands = ["cargo"]

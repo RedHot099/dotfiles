@@ -1,8 +1,0 @@
-id = "system.gpu-tools"
-label = "GPU diagnostic tools"
-description = "NVIDIA, Mesa, and Vulkan utilities"
-default = false
-visible = true
-group = "System tools"
-packages = ["nvidia-settings", "mesa-utils", "vulkan-tools"]
-commands = ["nvidia-settings", "glxinfo", "vulkaninfo"]

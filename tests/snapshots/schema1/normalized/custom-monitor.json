@@ -1,0 +1,1069 @@
+{
+  "actions": [
+    {
+      "data": {
+        "commands": [
+          "td"
+        ],
+        "tools": [
+          "npm:@doist/todoist-cli@4.0.0"
+        ]
+      },
+      "feature": "todoist",
+      "kind": "pinned-tool"
+    },
+    {
+      "data": {
+        "commands": [
+          "node"
+        ],
+        "tools": [
+          "node@24.20.0"
+        ]
+      },
+      "feature": "tool.node",
+      "kind": "pinned-tool"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "260852a7b902957065dfab0b66c7ca4c5a67ad1edf8d439bf4cd31fd94531130",
+        "symlink": null,
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/size_fdiag"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "0b54c990c179bf95d5342ff9f6765fcfbb427f5d589df76d7ff8bd3c44797494",
+        "symlink": null,
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/size_bdiag"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "84842822cb8515199b023a96cce7f137f2d5387e596d4e8b69d26c68c0968a39",
+        "symlink": "size_fdiag",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/nwse-resize"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "9a8813173ddd9863943b8028a143b4a7109335621a35c69b02c29cf73c5cf6f7",
+        "symlink": "default",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/top_left_arrow"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "f75f5dde89ae01d0f7800f99d1d8eb184ebfec90a0c223e0590c9f8d70788db0",
+        "symlink": null,
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/help"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "75c2bf3ba3549b8f51f200075492d5c8b63fd0a30fa1b7fd6e62c39d29dfd836",
+        "symlink": null,
+        "target": ".config/gtk-4.0/settings.ini"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "a77f5e9d15a9e5bed2025b4ae5ebfc207155370ff7b5aa1e0035ae4edd8811aa",
+        "symlink": null,
+        "target": ".config/hypr/autostart.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "e3dc59bf119a30f3e4a712c048902350dad188e4ebfd9a718820d3145e43d57a",
+        "symlink": null,
+        "target": ".config/nvim/lua/plugins/snacks-animated-scrolling-off.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "be558eebf8c1419b09bad24a5141a4e8501664d3b364b32d8dc44f3275506ad1",
+        "symlink": "size_hor",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/ew-resize"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "4ccfbd23e44748896f5795ddbaf52cce8f1e59b1021da136c7b4c711e334ba05",
+        "symlink": null,
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/wait"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "f98c966b1670d71ffc26620a6ff885a73ab355b370bff6082cea3215ee580a29",
+        "symlink": null,
+        "target": ".config/omarchy/branding/screensaver.txt"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "8d9057544e7640862e859b07bb6369fa25fa630737c9ab597f954f9e66e430bd",
+        "symlink": "../../../../.local/state/omarchy/current/theme/neovim.lua",
+        "target": ".config/nvim/lua/plugins/theme.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "7a4c31d9bcc2cb4ebcf03e202ac89f8e654aba21025aa86588b4cd825c73b499",
+        "symlink": "pointer",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/e29285e634086352946a0e7090d73106"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "63d2e5791b16e3eb6efcd9f5dbc100e9356ee3cb58f35a436787f52c221dbca3",
+        "symlink": null,
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/pointer"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "66e08c24e34333bff36aadae949dc2dbd28200a0a0b08de71b1196b2dbaf5f5f",
+        "symlink": null,
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/size_ver"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "256cebeda4eaf38eaa8d655a88fd5d00d105c391c0b9ce03966c03c893d6849d",
+        "symlink": null,
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/default"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "7a4c31d9bcc2cb4ebcf03e202ac89f8e654aba21025aa86588b4cd825c73b499",
+        "symlink": "pointer",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/dnd-link"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "b38511ab2f77012f782fd360225d772bcfcc36e10fef13550fac7d4c8ddde795",
+        "symlink": null,
+        "target": ".config/alacritty/alacritty.toml"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "902c14a9c154c50ef8410c18a8fa32050457a375b092cda02c41dfd9aea25764",
+        "symlink": null,
+        "target": ".local/share/icons/Maverick Pointy Dark/index.theme"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "fb61b5f16a0e3fb01cf4e01deb0269561d14da85b4d98a988bef951215500760",
+        "symlink": null,
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/progress"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "2b660374a8a977808b3b1941fb284a6def7da264ecb862887768be54e6254677",
+        "symlink": null,
+        "target": ".config/omarchy/shell.json"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "4c78709c1531a0b6bee877a0eb5ff6140e6f5154dd405a1e5c1b8bb5d2f4ad94",
+        "symlink": null,
+        "target": ".config/nvim/init.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "f284e46933d658c493bafc852fe1bb46f54e5dbe479c251a739139517d4683ec",
+        "symlink": null,
+        "target": ".config/nvim/.gitignore"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 436,
+        "sha256": "8d95abb21edfd9fb84caa2fe4f6bf90bb2579fcb378a4e59313d1cb0587474e2",
+        "symlink": null,
+        "target": ".config/nvim/lua/config/keymaps.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "7a4c31d9bcc2cb4ebcf03e202ac89f8e654aba21025aa86588b4cd825c73b499",
+        "symlink": "pointer",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/grabbing"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "7a4c31d9bcc2cb4ebcf03e202ac89f8e654aba21025aa86588b4cd825c73b499",
+        "symlink": "pointer",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/left_ptr"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "9969960a98455417b5f3781772f01528a64bb450e5f9db57734713ae920bd84a",
+        "symlink": null,
+        "target": ".config/nvim/README.md"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "7a4c31d9bcc2cb4ebcf03e202ac89f8e654aba21025aa86588b4cd825c73b499",
+        "symlink": "pointer",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/left_ptr_hand"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "9a8813173ddd9863943b8028a143b4a7109335621a35c69b02c29cf73c5cf6f7",
+        "symlink": "default",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/arrow"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "47b43c0693cd98857383c367bc39a152d08c0ecf63144f90747358f2ca1b7f29",
+        "symlink": "not-allowed",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/dnd-no-drop"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "24dbae47f0f2271c20356f144209bd1a7973af01823113d57f3a711c28ae18bb",
+        "symlink": "fleur",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/move"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "91f35aaa6d3b0cb853d1e64a26484ed1823a2c1b55e8e05d2dad1091bb2a09d4",
+        "symlink": null,
+        "target": ".config/hypr/input.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "205a8e050acf48373be15fd3f7d0f3f3d8abe3eb0d74bd35f05a6c6161096b75",
+        "symlink": null,
+        "target": ".config/nvim/lazy-lock.json"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "ae433c9f0a03b0bd9cb46f27a66d621b9a5ffb335c442b6bae801a8f8908c304",
+        "symlink": null,
+        "target": ".icons/default/index.theme"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "6062ae32ae10fbd6aaf630198e7f37fff6b1912a1007735d7e841c75c38d91b6",
+        "symlink": "wait",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/left_ptr_watch"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "5e27ebfe77359f9a42a478fb01671962801fbba6846cc72c19c7313ccd8333be",
+        "symlink": null,
+        "target": ".config/nvim/lua/plugins/disable-news-alert.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "7a4c31d9bcc2cb4ebcf03e202ac89f8e654aba21025aa86588b4cd825c73b499",
+        "symlink": "pointer",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/pointing_hand"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "bd833dc094e3546b5fad512e61cfb09f3032c2a4461c23be7bd90851de80688e",
+        "symlink": null,
+        "target": ".config/nvim/plugin/after/transparency.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "9a8813173ddd9863943b8028a143b4a7109335621a35c69b02c29cf73c5cf6f7",
+        "symlink": "default",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/08e8e1c95fe2fc01f976f1e063a24ccd"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "7a4c31d9bcc2cb4ebcf03e202ac89f8e654aba21025aa86588b4cd825c73b499",
+        "symlink": "pointer",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/grab"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "47b43c0693cd98857383c367bc39a152d08c0ecf63144f90747358f2ca1b7f29",
+        "symlink": "not-allowed",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/03b6e0fcb3499374a867c041f52298f0"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "1952af0868bdd30ce66a5ee86360ea2135322a5b1fb4439204c4a3d4c3da31d0",
+        "symlink": null,
+        "target": ".config/environment.d/cursor.conf"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "75c2bf3ba3549b8f51f200075492d5c8b63fd0a30fa1b7fd6e62c39d29dfd836",
+        "symlink": null,
+        "target": ".config/gtk-3.0/settings.ini"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "aa92efbcf5d36d33bea743df55b706c36731cf3d71464b8103a3e5eeed6b1120",
+        "symlink": null,
+        "target": ".config/nvim/lua/config/options.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 436,
+        "sha256": "bd4478b9868f8c2824216530158703441a7259bc66b3fe6d2f206e6c380c67a6",
+        "symlink": null,
+        "target": ".config/nvim/lua/plugins/python.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "f3e6612a5a703e058893aa2ebaf583c903c8534cb0c00811550455a94adf692a",
+        "symlink": "help",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/question_arrow"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "ccb2b3a99fe03698bdacaf41b98a48126c70fa38eaa1970e14e7309c876a9635",
+        "symlink": null,
+        "target": ".config/nvim/lua/config/autocmds.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "195ea4039196e976d6a37305e09dc0750a97affa597fdb2e625a328c46c14cb9",
+        "symlink": "size_bdiag",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/nesw-resize"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "7a4c31d9bcc2cb4ebcf03e202ac89f8e654aba21025aa86588b4cd825c73b499",
+        "symlink": "pointer",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/dnd-copy"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "1ba08a963fcb645cdfd46775218024c9fb057819fa8f91619353b35c543075e2",
+        "symlink": null,
+        "target": ".config/nvim/lua/plugins/all-themes.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "symlink": null,
+        "target": ".config/nvim/LICENSE"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "7a4c31d9bcc2cb4ebcf03e202ac89f8e654aba21025aa86588b4cd825c73b499",
+        "symlink": "pointer",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/link"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "f2ab713582bf0c5cdff6abc4f6a5dee5f08729eadedac5c4a70f733e62d60e05",
+        "symlink": "progress",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/00000000000000020006000e7e9ffc3f"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "63aa20143c71b637fe374676a7a8e3e3da705605c0453c445e0acfa1e7e3038d",
+        "symlink": null,
+        "target": ".config/nvim/lua/plugins/example.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "e11b5459b4ab8c5dfd9f5fab67a5242ec9c475838fe777a7a9a2199b4b9e56f2",
+        "symlink": null,
+        "target": ".config/nvim/lazyvim.json"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "b275a607fc0c864535ec6f51f3dd412147113e6b06d291ac58d4f0801d6e9315",
+        "symlink": "text",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/xterm"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "d975689ecb179a28dab42ae3a3022799b09bd33250f31b0e3364078ce8243689",
+        "symlink": "crosshair",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/cross"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "7a4c31d9bcc2cb4ebcf03e202ac89f8e654aba21025aa86588b4cd825c73b499",
+        "symlink": "pointer",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/9d800788f1b08800ae810202380a0822"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "10229da34e227566753a3acdea62dd896366ccd8d40c34d0d9cf0a2eb342ed8a",
+        "symlink": null,
+        "target": ".config/nvim/lua/plugins/omarchy-theme-hotreload.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "083907aed25680472b8cd5b490b53f6960cb05560ccee179f44e834459713cd1",
+        "symlink": null,
+        "target": ".config/hypr/hyprland.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "1819a5b64b71521f214b374bdb3b4dd7531a2b91b881c0803e0029811da7f3e4",
+        "symlink": null,
+        "target": ".config/nvim/.neoconf.json"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "8ad573163f71937f54a2974371c39fb8d839ff86ec0dc86c1c030c716704cea4",
+        "symlink": "up-arrow",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/center_ptr"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "f79304f6a641bf17438c688d9615fea4757b5a1d39c7ade1d182d7f0dfe905de",
+        "symlink": null,
+        "target": ".config/hypr/looknfeel.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 384,
+        "sha256": "5bd45e1d1a86253c75b9457e9d706b2a19426f7a563ad78a59cf370005048d6d",
+        "symlink": null,
+        "target": ".config/kitty/kitty.conf"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 384,
+        "sha256": "a5165f8a0a93c6d7262aaae6c00c11617ffb2f35bafca73f458b6549a9dca5cf",
+        "symlink": null,
+        "target": ".config/foot/foot.ini"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "8a033e8ef60e7d2d5ad8ff8fcc3215376ea09decda9e4bb7cc0a9dc9800c03e3",
+        "symlink": null,
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/not-allowed"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "24dbae47f0f2271c20356f144209bd1a7973af01823113d57f3a711c28ae18bb",
+        "symlink": "fleur",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/dnd-move"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "64582bab5e9bfb8539234e894ee49df30fdffefd520aa07ec71d327e423da566",
+        "symlink": null,
+        "target": ".config/ghostty/config"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "3cb0194af512088c82debb10ddb2e5d14d98160f201053eb3f15f76603f55d75",
+        "symlink": "size_ver",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/ns-resize"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "4fce57f783a14d1def73248f39ed7df6bae7d10288da4a046a59db334157d526",
+        "symlink": null,
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/pencil"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "7a4c31d9bcc2cb4ebcf03e202ac89f8e654aba21025aa86588b4cd825c73b499",
+        "symlink": "pointer",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/hand1"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "f2ab713582bf0c5cdff6abc4f6a5dee5f08729eadedac5c4a70f733e62d60e05",
+        "symlink": "progress",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/half-busy"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "5fe8adced2fe67e410e177477a7272d1807b3fedc81fbc3f030dd479bc046b76",
+        "symlink": null,
+        "target": ".config/omarchy/branding/about.txt"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "14653a615b10689aa91915f45c284d07d5e7cb6c5f21fdbbf82c7664b9db4eb0",
+        "symlink": null,
+        "target": ".config/nvim/lua/config/lazy.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "7db6a86edbccfbad16c6b840e02b8c6c01df8c3b7a063798747cab649cb26d80",
+        "symlink": null,
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/fleur"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "175c9cf08f6c60e06ba2bb5da7007d44d4147bd66efd06ddc7961a42b8fe2762",
+        "symlink": null,
+        "target": ".config/hypr/bindings.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "59841fbcee7b707144c6a470e96e96e96062d7a59d2e45bac445984d863e1af2",
+        "symlink": null,
+        "target": ".config/nvim/stylua.toml"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "b275a607fc0c864535ec6f51f3dd412147113e6b06d291ac58d4f0801d6e9315",
+        "symlink": "text",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/ibeam"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "e97525383fe39492947b1ec38ac36801460787fd475e73516e5c9abcf605eede",
+        "symlink": null,
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/text"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "7d299c04b95b3b253a84779eabf428bd3a8ecaf70307a5a38ad2978bb27ee7ad",
+        "symlink": null,
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/size_hor"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "47b43c0693cd98857383c367bc39a152d08c0ecf63144f90747358f2ca1b7f29",
+        "symlink": "not-allowed",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/no-drop"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "6062ae32ae10fbd6aaf630198e7f37fff6b1912a1007735d7e841c75c38d91b6",
+        "symlink": "wait",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/watch"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "65ebdb749ef93488da3efab11565ba6d8e8ee9704b9d682c75b5b896daa8e595",
+        "symlink": null,
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/up-arrow"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "7a4c31d9bcc2cb4ebcf03e202ac89f8e654aba21025aa86588b4cd825c73b499",
+        "symlink": "pointer",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/hand2"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "47b43c0693cd98857383c367bc39a152d08c0ecf63144f90747358f2ca1b7f29",
+        "symlink": "not-allowed",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/forbidden"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 511,
+        "sha256": "24dbae47f0f2271c20356f144209bd1a7973af01823113d57f3a711c28ae18bb",
+        "symlink": "fleur",
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/all-scroll"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "13866998b55c5257aaa14d69ff973ebce27e6cf9759cb328d2b1bfbb97da4b7f",
+        "symlink": null,
+        "target": ".local/share/icons/Maverick Pointy Dark/cursors/crosshair"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "b7b1ea55dac842c97ac1f322224ee3dde4000d43d23738ca92c8a4c8754e7a3e",
+        "target": ".config/hypr/monitors.lua"
+      },
+      "feature": "core-desktop",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "1705cf0d794310a6d1aa22ab1cc95f626edebec2380f187f73395a650484f613",
+        "symlink": null,
+        "target": ".config/omarchy/plugins/kuba.notifications/Service.qml"
+      },
+      "feature": "notifications-calendar",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "331b041c2fa4556ce6e2d65d21c8e108d712f427321dc64499e627dc57fbf45d",
+        "symlink": null,
+        "target": ".config/omarchy/plugins/kuba.notifications/manifest.json"
+      },
+      "feature": "notifications-calendar",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "e7c3241d4881023affcfdddf383d7684ca7470253b31545e394d45f3010066ac",
+        "symlink": null,
+        "target": ".config/omarchy/plugins/kuba.notifications/components/NotificationCard.qml"
+      },
+      "feature": "notifications-calendar",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "d45dc8debd8946a48a909a126dd755ba9f95846382a85afdd6fd1e8921f5d131",
+        "symlink": null,
+        "target": ".config/omarchy/plugins/kuba.notifications/NotificationLogic.js"
+      },
+      "feature": "notifications-calendar",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "3789e06b190d98f6478f0686bb0c80801a9650568c64c21f3b58e800bd6f8107",
+        "symlink": null,
+        "target": ".config/omarchy/plugins/kuba.tasks/TaskView.js"
+      },
+      "feature": "todoist",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "65720099e1a4a72ed743d60a412d99250b79bbd00aaec3f6a48cfb93446f0049",
+        "symlink": null,
+        "target": ".config/omarchy/plugins/kuba.tasks/manifest.json"
+      },
+      "feature": "todoist",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "8ff42dd5042d12795bba19f1fadc73ebd70cde968a2c3c48418e1dac3654313a",
+        "symlink": null,
+        "target": ".config/omarchy/plugins/kuba.tasks/Service.qml"
+      },
+      "feature": "todoist",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 493,
+        "sha256": "b03b34d56e5b852b88ff134c623b6131805528cd715c648ed8a334887f3d704a",
+        "symlink": null,
+        "target": ".local/bin/omarchy-todoist"
+      },
+      "feature": "todoist",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "8640bfca8e7383493b2f5162e25617deba7c91aba832e9420f01880885282b18",
+        "symlink": null,
+        "target": ".config/omarchy/plugins/kuba.tasks/Panel.qml"
+      },
+      "feature": "todoist",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "revision": "8ab3d0211f8627551fc9a7ecea5b578f9721639e",
+        "target": ".config/omarchy/themes/akane",
+        "url": "https://github.com/Grenish/omarchy-akane-theme"
+      },
+      "feature": "themes",
+      "kind": "pinned-git"
+    },
+    {
+      "data": {
+        "revision": "21aa0f7d354aabe7b278117144773a07708db942",
+        "target": ".config/omarchy/themes/all-hallows-eve",
+        "url": "https://github.com/guilhermetk/omarchy-all-hallows-eve-theme"
+      },
+      "feature": "themes",
+      "kind": "pinned-git"
+    },
+    {
+      "data": {
+        "revision": "c1fc95a579bf5c5e1d3b9edd43b1df501b5bd5c9",
+        "target": ".config/omarchy/themes/void",
+        "url": "https://github.com/vyrx-dev/omarchy-void-theme.git"
+      },
+      "feature": "themes",
+      "kind": "pinned-git"
+    },
+    {
+      "data": {
+        "name": "akane"
+      },
+      "feature": "themes",
+      "kind": "omarchy-theme"
+    },
+    {
+      "data": {
+        "command": "td auth login",
+        "label": "Todoist",
+        "probe": "td auth status",
+        "probe_contains": null
+      },
+      "feature": "todoist",
+      "kind": "manual-authentication"
+    }
+  ],
+  "default_agent": "claude",
+  "dependencies": {
+    "core-desktop": [
+      "todoist",
+      "themes",
+      "notifications-calendar"
+    ],
+    "notifications-calendar": [],
+    "themes": [],
+    "todoist": [
+      "tool.node"
+    ],
+    "tool.node": []
+  },
+  "hardware": "custom",
+  "platform": {
+    "contract_major": 4,
+    "id": "omarchy"
+  },
+  "schema": 2,
+  "selected": [
+    "core-desktop",
+    "notifications-calendar",
+    "themes",
+    "todoist",
+    "tool.node"
+  ],
+  "target_home": "/tmp/arch-hypr-bootstrap-fixture-home"
+}

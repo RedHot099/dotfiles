@@ -1,0 +1,8 @@
+schema = 2
+id = "cloud.onedrive"
+label = "OneDrive"
+description = "OneDrive mount through rclone"
+group = "Cloud"
+default = false
+visible = true
+requires = ["tool.rclone"]

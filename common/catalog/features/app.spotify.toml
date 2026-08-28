@@ -1,0 +1,8 @@
+schema = 2
+id = "app.spotify"
+label = "Spotify"
+description = "Spotify desktop client"
+group = "Communication and media"
+default = false
+visible = true
+requires = []

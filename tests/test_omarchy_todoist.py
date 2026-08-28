@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-HELPER = ROOT / "payload" / "todoist" / ".local" / "bin" / "omarchy-todoist"
+HELPER = ROOT / "common" / "payload" / "todoist-helper" / ".local" / "bin" / "todoist-helper"
 
 
 FAKE_TD = r'''#!/usr/bin/env python3
@@ -104,9 +104,9 @@ class TodoistHelperTests(unittest.TestCase):
         self.log = self.temp / "td-argv.jsonl"
         self.env = {
             **os.environ,
-            "OMARCHY_TODOIST_TD_BIN": str(self.fake_td),
-            "OMARCHY_TODOIST_STATE_DIR": str(self.temp / "state"),
-            "OMARCHY_TODOIST_NOW": "2026-08-24T12:00:00+02:00",
+            "TODOIST_HELPER_TD_BIN": str(self.fake_td),
+            "TODOIST_HELPER_STATE_DIR": str(self.temp / "state"),
+            "TODOIST_HELPER_NOW": "2026-08-24T12:00:00+02:00",
             "FAKE_TD_LOG": str(self.log),
         }
 

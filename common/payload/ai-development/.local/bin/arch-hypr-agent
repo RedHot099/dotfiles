@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+agent_file="${XDG_CONFIG_HOME:-$HOME/.config}/arch-hypr-bootstrap/default-agent"
+agent="claude"
+if [[ -f "$agent_file" ]]; then
+  IFS= read -r agent < "$agent_file"
+fi
+
+case "$agent" in
+  claude|codex|opencode) ;;
+  *)
+    echo "Unsupported default agent: $agent" >&2
+    exit 2
+    ;;
+esac
+
+exec uwsm app -- xdg-terminal-exec -- "$agent"

@@ -1,0 +1,4 @@
+schema = 2
+id = "app.obsidian"
+package_requirements = ["obsidian"]
+commands = ["obsidian"]

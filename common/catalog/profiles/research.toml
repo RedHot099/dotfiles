@@ -1,0 +1,5 @@
+schema = 2
+id = "research"
+label = "Research"
+default = false
+features = ["app.obsidian", "app.typora", "app.latex", "tool.research-cli"]

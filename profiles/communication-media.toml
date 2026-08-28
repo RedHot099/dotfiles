@@ -1,4 +1,0 @@
-id = "communication-media"
-label = "Communication and media"
-default = false
-features = ["app.google-chrome", "app.caprine", "app.signal", "app.spotify", "app.vesktop", "app.losslesscut"]

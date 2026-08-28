@@ -1,0 +1,9 @@
+schema = 2
+id = "agent.claude"
+tools = ["claude@2.1.246"]
+commands = ["claude"]
+
+[[authentication]]
+label = "Claude"
+command = ["claude", "auth", "login"]
+probe = ["claude", "auth", "status"]

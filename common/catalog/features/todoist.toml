@@ -1,0 +1,8 @@
+schema = 2
+id = "todoist"
+label = "Todoist tasks widget"
+description = "Todoist CLI helper and Omarchy Shell tasks plugin"
+group = "Desktop"
+default = false
+visible = false
+requires = ["tool.node", "todoist-helper"]

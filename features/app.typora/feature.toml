@@ -1,8 +1,0 @@
-id = "app.typora"
-label = "Typora"
-description = "Markdown editor"
-default = false
-visible = true
-group = "Research"
-packages = ["typora"]
-commands = ["typora"]

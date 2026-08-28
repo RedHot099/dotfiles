@@ -1,0 +1,8 @@
+schema = 2
+id = "todoist-helper"
+label = "Todoist helper"
+description = "Portable Todoist CLI protocol and cache"
+group = "Technical"
+default = false
+visible = false
+requires = []

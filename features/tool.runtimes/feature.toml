@@ -1,7 +1,0 @@
-id = "tool.runtimes"
-label = "Development runtimes"
-description = "Stable Node.js and Python runtimes"
-default = false
-visible = false
-group = "Development"
-requires = ["tool.node", "tool.python"]

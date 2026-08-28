@@ -1,0 +1,86 @@
+{
+  "actions": [
+    {
+      "data": {
+        "packages": [
+          "signal-desktop"
+        ]
+      },
+      "feature": "app.signal",
+      "id": "9362218fb861b855",
+      "kind": "packages"
+    },
+    {
+      "data": {
+        "packages": [
+          "spotify"
+        ]
+      },
+      "feature": "app.spotify",
+      "id": "58968476b87e3072",
+      "kind": "packages"
+    },
+    {
+      "data": {
+        "packages": [
+          "caprine"
+        ]
+      },
+      "feature": "app.caprine",
+      "id": "18628562ea5d3e24",
+      "kind": "aur"
+    },
+    {
+      "data": {
+        "packages": [
+          "google-chrome"
+        ]
+      },
+      "feature": "app.google-chrome",
+      "id": "94df7060fc938dd1",
+      "kind": "aur"
+    },
+    {
+      "data": {
+        "packages": [
+          "losslesscut-bin"
+        ]
+      },
+      "feature": "app.losslesscut",
+      "id": "7501049ac282a1a5",
+      "kind": "aur"
+    },
+    {
+      "data": {
+        "packages": [
+          "vesktop"
+        ]
+      },
+      "feature": "app.vesktop",
+      "id": "7e799963c0e1651d",
+      "kind": "aur"
+    }
+  ],
+  "default_agent": "claude",
+  "dependencies": {
+    "app.caprine": [],
+    "app.google-chrome": [],
+    "app.losslesscut": [],
+    "app.signal": [],
+    "app.spotify": [],
+    "app.vesktop": []
+  },
+  "digest": "922c296a0f4ab8e810e8e571f7bbeb6cb9e531717cc42d8089c88927edaebd07",
+  "hardware": "generic",
+  "omarchy_major": 4,
+  "schema": 1,
+  "selected": [
+    "app.caprine",
+    "app.google-chrome",
+    "app.losslesscut",
+    "app.signal",
+    "app.spotify",
+    "app.vesktop"
+  ],
+  "target_home": "/tmp/arch-hypr-bootstrap-fixture-home"
+}

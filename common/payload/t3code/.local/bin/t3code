@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+self="$(readlink -f "${BASH_SOURCE[0]}")"
+default_model="${T3CODE_DEFAULT_MODEL:-gpt-5.5}"
+state_db="${T3CODE_STATE_DB:-$HOME/.t3/userdata/state.sqlite}"
+pinned_appdir="${T3CODE_APPDIR:-/opt/t3code-nightly-bin}"
+t3code_profile="${T3CODE_PROFILE_DIR:-$HOME/.config/T3 Code (Alpha)}"
+startup_log="${T3CODE_STARTUP_LOG:-$HOME/.local/state/t3code-startup.log}"
+runtime_dir="${XDG_RUNTIME_DIR:-$HOME/.local/state/arch-hypr-bootstrap/runtime}"
+mkdir -p "$runtime_dir"
+chmod 700 "$runtime_dir"
+single_instance_lock="$runtime_dir/t3code-$UID.lock"
+
+log_startup() {
+  mkdir -p "$(dirname "$startup_log")"
+  printf '[%s] %s\n' "$(date --iso-8601=seconds)" "$*" >>"$startup_log"
+}
+
+t3_backend_listening() {
+  ss -ltnp 2>/dev/null | rg -q '127\.0\.0\.1:(3773|3774).*t3code'
+}
+
+t3_process_running() {
+  pgrep -u "$USER" -f '[t]3code-nightly-bin/(t3code|AppRun)' >/dev/null 2>&1
+}
+
+if [[ "${T3CODE_FORCE_NEW:-0}" != "1" ]]; then
+  exec 8>"$single_instance_lock"
+  if ! flock -n 8; then
+    log_startup "another t3code wrapper is already starting; exiting"
+    exit 0
+  fi
+
+  if t3_backend_listening || t3_process_running; then
+    log_startup "t3code already running; exiting instead of spawning duplicate"
+    exit 0
+  fi
+fi
+
+if [[ "$default_model" =~ ^[A-Za-z0-9._:/-]+$ ]] && [[ -f "$state_db" ]] && command -v sqlite3 >/dev/null 2>&1; then
+  sqlite3 "$state_db" \
+    "update projection_projects set default_model_selection_json = json_object('provider', 'codex', 'model', '$default_model') where default_model_selection_json is null or json_extract(default_model_selection_json, '$.provider') = 'codex';" \
+    >/dev/null 2>&1 || true
+fi
+
+ensure_polish_spellcheck() {
+  local dictionary_source=""
+  local candidate
+  for candidate in \
+    "$HOME/.config/chromium/Dictionaries/pl-PL-3-0.bdic" \
+    "$HOME/.config/google-chrome/Dictionaries/pl-PL-3-0.bdic" \
+    "$HOME/.config/obsidian/Dictionaries/pl-PL-3-0.bdic"; do
+    if [[ -f "$candidate" ]]; then
+      dictionary_source="$candidate"
+      break
+    fi
+  done
+
+  if [[ -n "$dictionary_source" ]]; then
+    mkdir -p "$t3code_profile/Dictionaries"
+    cp -f "$dictionary_source" "$t3code_profile/Dictionaries/pl-PL-3-0.bdic"
+  fi
+
+  if command -v jq >/dev/null 2>&1; then
+    mkdir -p "$t3code_profile"
+    local preferences="$t3code_profile/Preferences"
+    local tmp_preferences
+    tmp_preferences="$(mktemp)"
+
+    if [[ ! -s "$preferences" ]]; then
+      printf '{}\n' >"$preferences"
+    fi
+
+    if jq '.spellcheck.dictionaries = ((.spellcheck.dictionaries // []) + ["pl-PL"] | unique) | .spellcheck.dictionary = ""' \
+      "$preferences" >"$tmp_preferences"; then
+      mv "$tmp_preferences" "$preferences"
+    else
+      rm -f "$tmp_preferences"
+    fi
+  fi
+}
+
+ensure_polish_spellcheck
+
+if [[ -x "$pinned_appdir/t3code" ]]; then
+  log_startup "launching pinned t3code from $pinned_appdir"
+  export APPDIR="$pinned_appdir"
+
+  if [[ -z "${CODEX_CLI_PATH-}" ]] && command -v codex >/dev/null 2>&1; then
+    export CODEX_CLI_PATH="$(command -v codex)"
+  fi
+
+  export PATH="$pinned_appdir:$pinned_appdir/usr/bin:$pinned_appdir/usr/sbin:$PATH"
+  export XDG_DATA_DIRS="$pinned_appdir/usr/share${XDG_DATA_DIRS:+:$XDG_DATA_DIRS}"
+  export GSETTINGS_SCHEMA_DIR="$pinned_appdir/usr/share/glib-2.0/schemas${GSETTINGS_SCHEMA_DIR:+:$GSETTINGS_SCHEMA_DIR}"
+
+  extra_flags=(--password-store=gnome-libsecret)
+  if [[ -n "${WAYLAND_DISPLAY-}" || "${XDG_SESSION_TYPE-}" == "wayland" ]]; then
+    extra_flags+=(--enable-features=UseOzonePlatform --ozone-platform=wayland --ozone-platform-hint=wayland)
+  else
+    extra_flags+=(--ozone-platform-hint=auto)
+  fi
+
+  exec "$pinned_appdir/t3code" "${extra_flags[@]}" "$@"
+fi
+
+while IFS= read -r candidate; do
+  [[ -z "$candidate" ]] && continue
+  if [[ "$(readlink -f "$candidate")" != "$self" ]]; then
+    exec "$candidate" "$@"
+  fi
+done < <(type -aP t3code-nightly 2>/dev/null || true)
+
+log_startup "t3code unavailable"
+echo "T3 Code Nightly is not available. Select it in the bootstrap package review." >&2
+exit 1

@@ -1,0 +1,4 @@
+schema = 2
+id = "system.gpu-tools"
+package_requirements = ["nvidia-settings", "mesa-utils", "vulkan-tools"]
+commands = ["nvidia-settings", "glxinfo", "vulkaninfo"]

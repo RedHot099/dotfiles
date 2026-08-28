@@ -1,0 +1,8 @@
+schema = 2
+id = "app.latex"
+label = "LaTeX toolchain"
+description = "Biber and the TeX Live packages used by the current setup"
+group = "Research"
+default = false
+visible = true
+requires = []

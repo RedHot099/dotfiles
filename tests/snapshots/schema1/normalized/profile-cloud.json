@@ -1,0 +1,111 @@
+{
+  "actions": [
+    {
+      "data": {
+        "packages": [
+          "rclone"
+        ]
+      },
+      "feature": "tool.rclone",
+      "kind": "repository-packages"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "daf846d51c90d0762ac79678bd2b4b6fade520b638c2bc707d0203387d6f4448",
+        "symlink": null,
+        "target": ".config/systemd/user/rclone-google-drive.service"
+      },
+      "feature": "cloud.google-drive",
+      "kind": "user-file"
+    },
+    {
+      "data": {
+        "mode": 420,
+        "sha256": "6d838722f456d99741303743c1371a3bc9c9beb7350a9f13f97d6215c042abda",
+        "symlink": null,
+        "target": ".config/systemd/user/rclone-onedrive.service"
+      },
+      "feature": "cloud.onedrive",
+      "kind": "user-file"
+    },
+    {
+      "data": {},
+      "feature": "cloud.google-drive",
+      "kind": "user-daemon-reload"
+    },
+    {
+      "data": {},
+      "feature": "cloud.onedrive",
+      "kind": "user-daemon-reload"
+    },
+    {
+      "data": {
+        "command": "rclone config",
+        "label": "Google Drive remote",
+        "probe": "rclone listremotes",
+        "probe_contains": "gdrive:"
+      },
+      "feature": "cloud.google-drive",
+      "kind": "manual-authentication"
+    },
+    {
+      "data": {
+        "command": "rclone config",
+        "label": "OneDrive remote",
+        "probe": "rclone listremotes",
+        "probe_contains": "onedrive:"
+      },
+      "feature": "cloud.onedrive",
+      "kind": "manual-authentication"
+    },
+    {
+      "data": {
+        "auth_probes": [
+          {
+            "command": "rclone listremotes",
+            "contains": "gdrive:"
+          }
+        ],
+        "name": "rclone-google-drive.service"
+      },
+      "feature": "cloud.google-drive",
+      "kind": "user-unit"
+    },
+    {
+      "data": {
+        "auth_probes": [
+          {
+            "command": "rclone listremotes",
+            "contains": "onedrive:"
+          }
+        ],
+        "name": "rclone-onedrive.service"
+      },
+      "feature": "cloud.onedrive",
+      "kind": "user-unit"
+    }
+  ],
+  "default_agent": "claude",
+  "dependencies": {
+    "cloud.google-drive": [
+      "tool.rclone"
+    ],
+    "cloud.onedrive": [
+      "tool.rclone"
+    ],
+    "tool.rclone": []
+  },
+  "hardware": "generic",
+  "platform": {
+    "contract_major": 4,
+    "id": "omarchy"
+  },
+  "schema": 2,
+  "selected": [
+    "cloud.google-drive",
+    "cloud.onedrive",
+    "tool.rclone"
+  ],
+  "target_home": "/tmp/arch-hypr-bootstrap-fixture-home"
+}

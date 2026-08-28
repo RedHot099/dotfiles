@@ -1,0 +1,8 @@
+schema = 2
+id = "tool.runtimes"
+label = "Development runtimes"
+description = "Stable Node.js and Python runtimes"
+group = "Development"
+default = false
+visible = false
+requires = ["tool.node", "tool.python"]

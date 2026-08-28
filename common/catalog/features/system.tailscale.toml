@@ -1,0 +1,8 @@
+schema = 2
+id = "system.tailscale"
+label = "Tailscale"
+description = "Tailscale client"
+group = "Cloud"
+default = false
+visible = true
+requires = []

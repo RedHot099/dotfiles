@@ -1,0 +1,5 @@
+schema = 2
+id = "ai-development"
+label = "AI development"
+default = true
+features = ["ai-development"]

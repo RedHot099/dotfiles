@@ -1,8 +1,0 @@
-id = "tool.research-cli"
-label = "Research CLI tools"
-description = "XML, YAML, and calculation tools"
-default = false
-visible = false
-group = "Research"
-packages = ["xmlstarlet", "yq", "libqalculate"]
-commands = ["xmlstarlet", "yq", "qalc"]

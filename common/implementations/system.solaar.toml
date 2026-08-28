@@ -1,0 +1,4 @@
+schema = 2
+id = "system.solaar"
+package_requirements = ["solaar"]
+commands = ["solaar"]

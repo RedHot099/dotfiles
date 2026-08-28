@@ -1,0 +1,8 @@
+schema = 2
+id = "tool.github"
+label = "GitHub CLI"
+description = "GitHub command-line client"
+group = "AI"
+default = false
+visible = false
+requires = []

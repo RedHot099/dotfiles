@@ -1,0 +1,8 @@
+schema = 2
+id = "agent.crush"
+label = "Crush"
+description = "Optional Crush coding agent"
+group = "Optional AI agents"
+default = false
+visible = true
+requires = []
