@@ -2,6 +2,7 @@ import tempfile
 import unittest
 from dataclasses import replace
 from pathlib import Path
+from unittest.mock import patch
 
 from bootstrap.audit import audit_install
 from bootstrap.catalog import CatalogError, load_workspace
@@ -17,6 +18,37 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class SchemaTwoExecutorTests(unittest.TestCase):
+    @patch("bootstrap.executor.apply_repository_packages", return_value=True)
+    @patch("bootstrap.executor.review_aur_actions")
+    @patch("bootstrap.executor.os.geteuid", return_value=1000)
+    def test_real_package_apply_receives_platform_facts(
+        self, _geteuid, _review_aur, apply_repository_packages
+    ):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory) / "home"
+            facts = replace(detect_platform(cachy_probe()), target_home=str(home))
+            workspace = load_workspace(ROOT, "cachy")
+            plan = plan_install(
+                ROOT,
+                workspace,
+                facts,
+                HostState(frozenset(), frozenset()),
+                {"system.tailscale"},
+                PlanInputs("generic", "claude"),
+                StaticPackageProvider(),
+            )
+
+            apply_install(
+                ROOT, workspace, plan, facts, system_changes=True, interactive=True
+            )
+
+            package_action = next(
+                action for action in plan.actions if action.kind.value == "repository-packages"
+            )
+            apply_repository_packages.assert_called_once_with(
+                package_action, workspace, facts
+            )
+
     def test_isolated_apply_converges_and_audit_is_read_only(self):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory) / "home"
