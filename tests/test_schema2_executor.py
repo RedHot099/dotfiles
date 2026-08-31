@@ -6,9 +6,9 @@ from unittest.mock import patch
 
 from bootstrap.audit import audit_install
 from bootstrap.catalog import CatalogError, load_workspace
-from bootstrap.domain import PlanHostMismatch
-from bootstrap.executor import apply_install
-from bootstrap.planner import HostState, PlanInputs, plan_install
+from bootstrap.domain import ActionKind, PlanHostMismatch
+from bootstrap.executor import apply_install, authenticate, command_environment
+from bootstrap.planner import HostState, PlanInputs, action, action_order, plan_install
 from bootstrap.platform import detect_platform
 from bootstrap.packages import StaticPackageProvider
 from tests.test_schema2_domain import cachy_probe, omarchy_probe
@@ -18,6 +18,67 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class SchemaTwoExecutorTests(unittest.TestCase):
+    def test_privileged_convergence_precedes_optional_authentication(self):
+        feature = "test"
+        authentication = action(
+            ActionKind.MANUAL_AUTHENTICATION,
+            feature,
+            {
+                "label": "Test",
+                "command": ("test", "login"),
+                "probe": ("test", "status"),
+                "probe_contains": None,
+            },
+        )
+
+        privileged_actions = (
+            action(
+                ActionKind.AUTHORIZED_SSH_KEYS,
+                feature,
+                {"username": "tester", "keys": (), "fingerprints": ()},
+            ),
+            action(
+                ActionKind.SYSTEM_UNIT,
+                feature,
+                {"name": "sshd.service", "enabled": True, "start": True},
+            ),
+            action(
+                ActionKind.FIREWALL_RULE,
+                feature,
+                {"backend": "ufw", "port": 22, "rule": "limit"},
+            ),
+        )
+        for privileged_action in privileged_actions:
+            with self.subTest(kind=privileged_action.kind):
+                self.assertLess(action_order(privileged_action), action_order(authentication))
+
+    def test_command_environment_exposes_target_home_mise_shims(self):
+        environment = command_environment("/home/tester")
+
+        self.assertEqual(
+            environment["PATH"].split(":", 1)[0],
+            "/home/tester/.local/share/mise/shims",
+        )
+
+    @patch("bootstrap.executor.run_probe", return_value=True)
+    @patch("bootstrap.executor.run")
+    @patch("builtins.input", return_value="n")
+    def test_manual_authentication_can_be_deferred(self, _input, run, probe):
+        item = action(
+            ActionKind.MANUAL_AUTHENTICATION,
+            "agent.codex",
+            {
+                "label": "Codex",
+                "command": ("codex", "login"),
+                "probe": ("codex", "login", "status"),
+                "probe_contains": None,
+            },
+        )
+
+        self.assertFalse(authenticate(item, command_environment("/home/tester")))
+        run.assert_not_called()
+        probe.assert_not_called()
+
     @patch("bootstrap.executor.apply_repository_packages", return_value=True)
     @patch("bootstrap.executor.review_aur_actions")
     @patch("bootstrap.executor.os.geteuid", return_value=1000)

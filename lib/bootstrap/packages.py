@@ -424,8 +424,10 @@ def installed_versions(packages: Iterable[str]) -> dict[str, str]:
         )
         if probe.returncode == 0:
             fields = probe.stdout.strip().split()
-            if len(fields) != 2 or fields[0] != package:
+            if len(fields) != 2:
                 raise CatalogError(f"pacman returned invalid installed state for {package}")
+            if fields[0] != package:
+                continue
             result[package] = fields[1]
     return result
 

@@ -14,7 +14,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from .catalog import CatalogError, Workspace
+from .catalog import CatalogError, SYSTEM_UNIT_ALLOWLIST, Workspace
 from .domain import ActionKind, ExecutionPlan, PlannedAction, assert_plan_matches_host
 from .files import HomeFiles
 from .platform import PlatformFacts
@@ -98,6 +98,7 @@ def _apply_locked(
     interactive: bool,
     skipped: set[str],
 ) -> ApplyResult:
+    environment = command_environment(plan.target_home)
     journal_target = f"{STATE_ROOT}/journals/{plan.digest}.json"
     journal = read_json(home.read_text(journal_target), {"completed": [], "skipped_features": []})
     completed = set(strings(journal.get("completed")))
@@ -144,41 +145,53 @@ def _apply_locked(
             did_change = apply_aur_package(item)
             changed += int(did_change)
             unchanged += int(not did_change)
-        elif action_satisfied(item, home):
+        elif action_satisfied(item, home, environment):
             unchanged += 1
         elif item.kind is ActionKind.PINNED_TOOL:
             run(("mise", "use", "-g", *strings(item.data["tools"])))
             changed += 1
         elif item.kind is ActionKind.USER_UNIT:
             probes = item.data.get("auth_probes", ())
-            if not all(run_probe(tuple(strings(probe["command"])), optional_string(probe.get("contains"))) for probe in probes):
+            if not all(
+                run_probe(
+                    tuple(strings(probe["command"])),
+                    optional_string(probe.get("contains")),
+                    environment,
+                )
+                for probe in probes
+            ):
                 simulated += 1
                 continue
             run(("/usr/bin/systemctl", "--user", "enable", "--now", str(item.data["name"])))
             changed += 1
         elif item.kind is ActionKind.SYSTEM_UNIT:
             name = str(item.data["name"])
-            if name != "sshd.service":
+            if name not in SYSTEM_UNIT_ALLOWLIST:
                 raise CatalogError(f"system unit is not allowlisted: {name}")
-            run(("/usr/bin/sudo", "/usr/bin/sshd", "-t"))
+            if name == "sshd.service":
+                run(("/usr/bin/sudo", "/usr/bin/sshd", "-t"))
             run(("/usr/bin/sudo", "/usr/bin/systemctl", "enable", "--now", name))
             changed += 1
         elif item.kind is ActionKind.PINNED_GIT_ASSET:
             apply_repository(Path(plan.target_home), plan.digest, item)
             changed += 1
         elif item.kind is ActionKind.OMARCHY_THEME:
-            environment = dict(os.environ, HOME=plan.target_home, OMARCHY_THEME_HEADLESS="1")
-            run(("omarchy", "theme", "set", str(item.data["name"])), environment=environment)
+            theme_environment = dict(
+                os.environ,
+                HOME=plan.target_home,
+                OMARCHY_THEME_HEADLESS="1",
+            )
+            run(
+                ("omarchy", "theme", "set", str(item.data["name"])),
+                environment=theme_environment,
+            )
             changed += 1
         elif item.kind is ActionKind.MANUAL_AUTHENTICATION:
-            command = tuple(strings(item.data["command"]))
-            run(command)
-            if not run_probe(
-                tuple(strings(item.data["probe"])),
-                optional_string(item.data.get("probe_contains")),
-            ):
-                raise RuntimeError(f"authentication did not pass: {item.data['label']}")
-            changed += 1
+            if authenticate(item, environment):
+                changed += 1
+            else:
+                simulated += 1
+                continue
         elif item.kind is ActionKind.AUTHORIZED_SSH_KEYS:
             install_ssh(home, tuple(strings(item.data["keys"])))
             changed += 1
@@ -458,7 +471,11 @@ def install_ssh(home: HomeFiles, keys: tuple[str, ...]) -> None:
     )
 
 
-def action_satisfied(item: PlannedAction, home: HomeFiles) -> bool:
+def action_satisfied(
+    item: PlannedAction,
+    home: HomeFiles,
+    environment: dict[str, str] | None = None,
+) -> bool:
     if item.kind in {ActionKind.REPOSITORY_PACKAGES, ActionKind.AUR_BUILD}:
         return all(package_installed(name) for name in strings(item.data["packages"]))
     if item.kind is ActionKind.PINNED_TOOL:
@@ -482,7 +499,9 @@ def action_satisfied(item: PlannedAction, home: HomeFiles) -> bool:
         return current is not None and current.strip() == item.data["name"]
     if item.kind is ActionKind.MANUAL_AUTHENTICATION:
         return run_probe(
-            tuple(strings(item.data["probe"])), optional_string(item.data.get("probe_contains"))
+            tuple(strings(item.data["probe"])),
+            optional_string(item.data.get("probe_contains")),
+            environment,
         )
     if item.kind is ActionKind.AUTHORIZED_SSH_KEYS:
         current = set((home.read_text(".ssh/authorized_keys") or "").splitlines())
@@ -569,9 +588,40 @@ def tool_installed(selector: str) -> bool:
     ).returncode
 
 
-def run_probe(argv: tuple[str, ...], contains: str | None) -> bool:
+def command_environment(target_home: str) -> dict[str, str]:
+    environment = dict(os.environ)
+    shims = str(Path(target_home) / ".local/share/mise/shims")
+    environment["PATH"] = f"{shims}:{environment.get('PATH', '')}"
+    return environment
+
+
+def authenticate(item: PlannedAction, environment: dict[str, str]) -> bool:
+    label = str(item.data["label"])
+    if input(f"Authenticate {label} now? [y/N] ").strip().lower() not in {"y", "yes"}:
+        return False
+    run(tuple(strings(item.data["command"])), environment=environment)
+    if not run_probe(
+        tuple(strings(item.data["probe"])),
+        optional_string(item.data.get("probe_contains")),
+        environment,
+    ):
+        raise RuntimeError(f"authentication did not pass: {label}")
+    return True
+
+
+def run_probe(
+    argv: tuple[str, ...],
+    contains: str | None,
+    environment: dict[str, str] | None = None,
+) -> bool:
     try:
-        result = subprocess.run(argv, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        result = subprocess.run(
+            argv,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            env=environment,
+        )
     except OSError:
         return False
     return result.returncode == 0 and (contains is None or contains in result.stdout)

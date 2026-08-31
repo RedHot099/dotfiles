@@ -1,2 +1,7 @@
 schema = 2
 id = "tool.runtimes"
+package_requirements = ["mise"]
+
+[[files]]
+source = "payload/tool-runtimes"
+target = "."

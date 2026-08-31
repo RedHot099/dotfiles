@@ -54,8 +54,6 @@ class LocalHostProbe:
     def capabilities(self) -> frozenset[str]:
         commands = ("pacman", "mise", "hyprctl", "uwsm", "noctalia", "ufw", "systemctl")
         available = {command for command in commands if shutil.which(command)}
-        if os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
-            available.add("graphical-session")
         return frozenset(available)
 
     @cached_property

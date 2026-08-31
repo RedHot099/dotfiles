@@ -22,6 +22,8 @@ RENAMED_FEATURES = {
     "tool.rclone",
     "cloud.google-drive",
     "cloud.onedrive",
+    "tool.runtimes",
+    "system.tailscale",
 }
 
 

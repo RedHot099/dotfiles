@@ -7,6 +7,12 @@ package = "openssh"
 repositories = ["core", "cachyos-core-v3", "cachyos-core-v4", "cachyos-core-znver4"]
 
 [[bindings]]
+requirement = "mise"
+provider = "repository"
+package = "mise"
+repositories = ["extra", "cachyos-extra-v3", "cachyos-extra-v4", "cachyos-extra-znver4"]
+
+[[bindings]]
 requirement = "cachyos-hypr-noctalia"
 provider = "repository"
 package = "cachyos-hypr-noctalia"
@@ -21,10 +27,9 @@ revision = "3dfb688acd5c2a14b2919eb4435007e08223a293"
 
 [[bindings]]
 requirement = "cursor-bin"
-provider = "aur"
+provider = "repository"
 package = "cursor-bin"
-url = "https://aur.archlinux.org/cursor-bin.git"
-revision = "5eeb12f85a62d03c5dfb5f29ac7ebe7641fbeb62"
+repositories = ["cachyos"]
 
 [[bindings]]
 requirement = "spotify"
@@ -242,7 +247,6 @@ revision = "9645efce884fee954eb4691c0b9130516772b878"
 
 [[bindings]]
 requirement = "vesktop"
-provider = "aur"
+provider = "repository"
 package = "vesktop"
-url = "https://aur.archlinux.org/vesktop.git"
-revision = "3568dd18516babd9d1256ffaa196bea72e151efd"
+repositories = ["cachyos"]

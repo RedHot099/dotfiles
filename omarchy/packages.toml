@@ -7,6 +7,12 @@ package = "openssh"
 repositories = ["core"]
 
 [[bindings]]
+requirement = "mise"
+provider = "repository"
+package = "mise"
+repositories = ["extra"]
+
+[[bindings]]
 requirement = "cursor-cli"
 provider = "repository"
 package = "cursor-cli"

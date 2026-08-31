@@ -8,6 +8,7 @@ from .domain import ActionKind, ExecutionPlan, PlannedAction, assert_plan_matche
 from .executor import (
     action_satisfied,
     aur_installed_exact,
+    command_environment,
     optional_string,
     run_probe,
     strings,
@@ -89,7 +90,9 @@ def audit_action(item: PlannedAction, home: HomeFiles, isolated: bool) -> AuditF
         return AuditFinding(status, kind, item.feature, "tools present" if not missing else "missing tools: " + ", ".join(missing))
     if item.kind is ActionKind.MANUAL_AUTHENTICATION:
         ready = run_probe(
-            tuple(strings(item.data["probe"])), optional_string(item.data.get("probe_contains"))
+            tuple(strings(item.data["probe"])),
+            optional_string(item.data.get("probe_contains")),
+            command_environment(str(home.path)),
         )
         return AuditFinding(
             "PASS" if ready else "WARN",
@@ -99,7 +102,7 @@ def audit_action(item: PlannedAction, home: HomeFiles, isolated: bool) -> AuditF
         )
     if item.kind is ActionKind.USER_DAEMON_RELOAD:
         return AuditFinding("PASS", kind, item.feature, "daemon reload is an apply transition")
-    satisfied = action_satisfied(item, home)
+    satisfied = action_satisfied(item, home, command_environment(str(home.path)))
     status = "WARN" if isolated and not satisfied else "PASS" if satisfied else "FAIL"
     return AuditFinding(status, kind, item.feature, "matches" if satisfied else "not converged")
 

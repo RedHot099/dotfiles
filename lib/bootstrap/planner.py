@@ -383,12 +383,12 @@ def action_order(item: PlannedAction) -> tuple[int, str, str, str]:
         ActionKind.PINNED_GIT_ASSET: 5,
         ActionKind.OMARCHY_THEME: 6,
         ActionKind.NOCTALIA_THEME: 6,
-        ActionKind.MANUAL_AUTHENTICATION: 7,
-        ActionKind.USER_UNIT: 8,
-        ActionKind.AUTHORIZED_SSH_KEYS: 9,
-        ActionKind.REVOKED_SSH_KEY: 9,
-        ActionKind.SYSTEM_UNIT: 10,
-        ActionKind.FIREWALL_RULE: 11,
+        ActionKind.AUTHORIZED_SSH_KEYS: 7,
+        ActionKind.REVOKED_SSH_KEY: 7,
+        ActionKind.SYSTEM_UNIT: 8,
+        ActionKind.FIREWALL_RULE: 9,
+        ActionKind.MANUAL_AUTHENTICATION: 10,
+        ActionKind.USER_UNIT: 11,
         ActionKind.VERIFICATION_PROBE: 12,
     }
     target = str(item.data.get("target", ""))

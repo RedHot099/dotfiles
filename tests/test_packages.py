@@ -1,10 +1,13 @@
 import base64
+import subprocess
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from bootstrap.catalog import CatalogError, PackageBinding, load_workspace
 from bootstrap.packages import (
     AurRecipe,
+    installed_versions,
     repository_names,
     parse_srcinfo,
     parse_transaction,
@@ -14,6 +17,50 @@ from bootstrap.packages import (
 
 
 class PackageSafetyTests(unittest.TestCase):
+    @patch("bootstrap.packages.subprocess.run")
+    def test_virtual_provider_does_not_count_as_the_planned_package(self, run):
+        run.return_value = subprocess.CompletedProcess(
+            ("pacman", "-Q", "mise"),
+            0,
+            stdout="mise-bin 2026.8.14-1\n",
+        )
+
+        self.assertEqual(installed_versions(("mise",)), {})
+
+    def test_tailscale_enables_only_its_reviewed_daemon(self):
+        root = Path(__file__).resolve().parents[1]
+
+        for platform in ("omarchy", "cachy"):
+            with self.subTest(platform=platform):
+                workspace = load_workspace(root, platform)
+                implementation = workspace.implementations["system.tailscale"]
+                self.assertEqual(implementation.system_units, ("tailscaled.service",))
+
+    def test_runtime_tools_install_mise_from_each_distribution(self):
+        root = Path(__file__).resolve().parents[1]
+
+        for platform in ("omarchy", "cachy"):
+            with self.subTest(platform=platform):
+                workspace = load_workspace(root, platform)
+                implementation = workspace.implementations["tool.runtimes"]
+                binding = workspace.package_bindings["mise"]
+                self.assertIn("mise", implementation.package_requirements)
+                self.assertEqual(binding.provider, "repository")
+
+    def test_cachy_cursor_uses_the_signed_distribution_repository(self):
+        workspace = load_workspace(Path(__file__).resolve().parents[1], "cachy")
+        binding = workspace.package_bindings["cursor-bin"]
+
+        self.assertEqual(binding.provider, "repository")
+        self.assertEqual(binding.repositories, ("cachyos",))
+
+    def test_cachy_vesktop_uses_the_signed_distribution_repository(self):
+        workspace = load_workspace(Path(__file__).resolve().parents[1], "cachy")
+        binding = workspace.package_bindings["vesktop"]
+
+        self.assertEqual(binding.provider, "repository")
+        self.assertEqual(binding.repositories, ("cachyos",))
+
     def test_cachy_tailscale_accepts_the_official_znver4_extra_repository(self):
         workspace = load_workspace(Path(__file__).resolve().parents[1], "cachy")
         binding = workspace.package_bindings["tailscale"]

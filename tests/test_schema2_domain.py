@@ -1,7 +1,9 @@
 import json
+import os
 import unittest
 from dataclasses import dataclass, replace
 from pathlib import Path
+from unittest.mock import patch
 
 from bootstrap.domain import (
     ActionKind,
@@ -210,6 +212,12 @@ class SchemaTwoPlanTests(unittest.TestCase):
 
 
 class RepositoryFingerprintTests(unittest.TestCase):
+    def test_capabilities_do_not_depend_on_the_calling_graphical_session(self):
+        probe = LocalHostProbe(Path("/home/tester"))
+
+        with patch.dict(os.environ, {"HYPRLAND_INSTANCE_SIGNATURE": "instance"}):
+            self.assertNotIn("graphical-session", probe.capabilities())
+
     def test_fingerprint_tracks_repository_order_siglevel_and_usage(self):
         probe = FixtureLocalHostProbe(
             {

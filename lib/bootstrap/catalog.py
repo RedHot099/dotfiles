@@ -21,6 +21,7 @@ TOOL_RE = re.compile(
     r"[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9_.-]+)?"
 )
 GIT_COMMIT_RE = re.compile(r"[0-9a-fA-F]{40}")
+SYSTEM_UNIT_ALLOWLIST = frozenset({"sshd.service", "tailscaled.service"})
 COMMON_PLATFORM_REFERENCE_RE = re.compile(
     rb"/usr/share/omarchy"
     rb"|(?:^|[/\s\"'])\.config/omarchy(?:[/\s\"']|$)"
@@ -583,7 +584,7 @@ def _validate_implementations(
             ):
                 raise CatalogError(f"unsafe user unit name in {feature_id}: {unit}")
         for unit in implementation.system_units:
-            if unit != "sshd.service":
+            if unit not in SYSTEM_UNIT_ALLOWLIST:
                 raise CatalogError(f"system unit is not allowlisted in {feature_id}: {unit}")
         if implementation.default_agent_target is not None:
             _claim_target(_target(implementation.default_agent_target), feature_id, target_owners)
