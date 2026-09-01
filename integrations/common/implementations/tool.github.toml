@@ -1,0 +1,8 @@
+schema = 2
+id = "tool.github"
+commands = ["gh"]
+
+[[authentication]]
+label = "GitHub"
+command = ["gh", "auth", "login"]
+probe = ["gh", "auth", "status"]

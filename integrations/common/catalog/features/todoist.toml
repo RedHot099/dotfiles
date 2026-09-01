@@ -1,0 +1,8 @@
+schema = 2
+id = "todoist"
+label = "Todoist"
+description = "Todoist CLI, helper, authentication, and platform widget when available"
+group = "Productivity"
+default = true
+visible = true
+requires = ["todoist-helper"]

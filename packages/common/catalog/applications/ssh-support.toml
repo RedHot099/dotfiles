@@ -1,0 +1,9 @@
+schema = 1
+id = "ssh-support"
+label = "SSH integration dependencies"
+group = "Technical dependencies"
+default = true
+visible = false
+requirements = ["openssh"]
+tools = []
+commands = ["ssh", "sshd"]

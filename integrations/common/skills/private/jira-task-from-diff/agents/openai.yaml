@@ -1,0 +1,4 @@
+interface:
+  display_name: "Jira Task From Diff"
+  short_description: "Draft a concise Jira task from the current branch diff."
+  default_prompt: "Generate a Jira task description from the current branch diff against master."

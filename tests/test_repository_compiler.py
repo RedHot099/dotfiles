@@ -30,14 +30,19 @@ class RepositoryCompilerTests(unittest.TestCase):
 
     def test_curated_application_defaults_match_the_approved_set(self):
         repository = compile_repository(ROOT, PlatformId.CACHY)
-        selected = {item.id for item in repository.applications.values() if item.default}
+        selected = {
+            item.id
+            for item in repository.applications.values()
+            if item.default and item.visible
+        }
 
         self.assertEqual(
             selected,
             {
-                "aws-cli", "caprine", "chromium", "cursor", "github-cli",
+                "aws-cli", "caprine", "chromium", "claude-code", "codex",
+                "cursor", "cursor-agent", "github-cli",
                 "google-chrome", "mise", "neovim", "obsidian", "rust",
-                "signal", "spotify", "steam", "t3-code", "tailscale",
+                "signal", "spotify", "steam", "t3-code", "tailscale", "opencode",
                 "typora", "vesktop", "visual-studio-code",
             },
         )

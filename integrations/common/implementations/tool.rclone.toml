@@ -1,0 +1,7 @@
+schema = 2
+id = "tool.rclone"
+commands = ["rclone"]
+
+[[files]]
+source = "payload/tool-rclone"
+target = "."

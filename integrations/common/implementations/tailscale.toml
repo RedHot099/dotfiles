@@ -1,0 +1,9 @@
+schema = 2
+id = "tailscale"
+commands = ["tailscale"]
+system_units = ["tailscaled.service"]
+
+[[authentication]]
+label = "Tailscale"
+command = ["tailscale", "up"]
+probe = ["tailscale", "status"]

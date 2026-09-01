@@ -1,0 +1,33 @@
+schema = 1
+
+[[harnesses]]
+id = "agents"
+label = "Agents standard"
+target = ".agents/skills"
+default = true
+
+[[harnesses]]
+id = "claude"
+label = "Claude Code"
+target = ".claude/skills"
+default = true
+
+[[harnesses]]
+id = "codex"
+label = "Codex"
+target = ".codex/skills"
+default = true
+protected = [".system"]
+
+[[harnesses]]
+id = "opencode"
+label = "OpenCode"
+target = ".config/opencode/skills"
+default = true
+
+[[harnesses]]
+id = "cursor"
+label = "Cursor"
+target = ".cursor/skills"
+default = true
+protected = ["skills-cursor"]

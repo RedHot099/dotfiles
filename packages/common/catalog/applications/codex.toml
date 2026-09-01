@@ -1,0 +1,8 @@
+schema = 1
+id = "codex"
+label = "Codex"
+group = "AI agents"
+default = true
+requirements = ["mise"]
+tools = ["codex@0.149.1"]
+commands = ["codex"]

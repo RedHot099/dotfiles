@@ -1,0 +1,16 @@
+[Unit]
+Description=Rclone Google Drive mount
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=notify
+ExecStartPre=%h/.local/bin/rclone-mount-helper prepare GoogleDrive google-drive-vfs
+ExecStart=/usr/bin/rclone mount gdrive: %h/GoogleDrive --config %h/.config/rclone/rclone.conf --cache-dir %h/.cache/rclone/google-drive-vfs --vfs-cache-mode full --vfs-write-back 30s --dir-cache-time 10m --poll-interval 1m --vfs-cache-max-size 20G --vfs-cache-max-age 24h --umask 022 --log-level INFO
+ExecStop=%h/.local/bin/rclone-mount-helper cleanup GoogleDrive google-drive-vfs
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=20
+
+[Install]
+WantedBy=graphical-session.target

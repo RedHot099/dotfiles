@@ -1,0 +1,8 @@
+schema = 2
+id = "core-desktop"
+label = "Core desktop"
+description = "Hyprland, platform bar, input, workspaces, bindings, and window rules"
+group = "Desktop"
+default = true
+visible = true
+requires = ["themes", "notifications-calendar", "desktop-portable"]

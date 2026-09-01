@@ -1,0 +1,59 @@
+[accessibility]
+ui_scale = 1.0
+
+[bar.default]
+center = ["clock"]
+concave_edge_corners = false
+end = ["media", "tray", "notifications", "bluetooth", "network", "volume", "brightness", "battery", "session"]
+margin_edge = 0
+margin_ends = 0
+radius_bottom_left = 0
+radius_bottom_right = 0
+radius_top_left = 0
+radius_top_right = 0
+scale = 1.0
+start = ["launcher", "workspaces"]
+thickness = 26
+
+[shell]
+launch_apps_as_systemd_services = true
+polkit_agent = true
+
+[shell.panel]
+open_near_click_control_center = true
+session_placement = "floating"
+session_position = "center"
+
+[shell.screenshot]
+copy_to_clipboard = false
+pipe_command = "satty -f -"
+pipe_to_command = true
+save_to_file = false
+
+[theme]
+mode = "dark"
+source = "wallpaper"
+wallpaper_scheme = "m3-tonal-spot"
+
+[widget.clock]
+color = "secondary"
+format = "{:%A %H:%M}"
+
+[widget.media]
+hide_when_no_media = true
+title_scroll = "on_hover"
+
+[widget.session]
+color = "error"
+
+[widget.tray]
+capsule = true
+capsule_fill = "on_secondary"
+
+[widget.workspaces]
+active_pill_size = 2.5
+capsule = true
+capsule_fill = "on_primary"
+inactive_pill_size = 1.0
+pill_scale = 0.8
+show_labels = true

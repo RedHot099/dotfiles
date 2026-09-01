@@ -1,0 +1,9 @@
+schema = 2
+id = "agent.opencode"
+commands = ["opencode"]
+
+[[authentication]]
+label = "OpenCode"
+command = ["opencode", "auth", "login"]
+probe = ["opencode", "auth", "list"]
+probe_contains = "credential"

@@ -1,0 +1,14 @@
+schema = 2
+id = "core-desktop"
+monitor_profiles = true
+monitor_target = ".config/hypr/config/monitors.lua"
+
+[[files]]
+source = "payload/core-desktop"
+target = "."
+
+[[fragments]]
+target = ".config/hypr/hyprland.lua"
+begin_marker = "-- BEGIN arch-hypr-bootstrap"
+end_marker = "-- END arch-hypr-bootstrap"
+content = "require(\"user.bootstrap\")"

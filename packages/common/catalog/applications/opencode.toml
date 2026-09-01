@@ -1,0 +1,8 @@
+schema = 1
+id = "opencode"
+label = "OpenCode"
+group = "AI agents"
+default = true
+requirements = ["mise"]
+tools = ["opencode@1.18.23"]
+commands = ["opencode"]

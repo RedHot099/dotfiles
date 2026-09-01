@@ -1,0 +1,26 @@
+schema = 1
+
+[[groups]]
+id = "workflow"
+label = "Core workflow"
+patterns = ["architect", "arena", "figure-it-out", "show-me-your-work", "wizard"]
+
+[[groups]]
+id = "coding"
+label = "Coding and review"
+patterns = ["*code*", "*review*", "tdd", "blast-radius", "diagnosing-bugs"]
+
+[[groups]]
+id = "research"
+label = "Research and writing"
+patterns = ["research", "why", "how", "teach", "writing-*", "technical-writing"]
+
+[[groups]]
+id = "linux"
+label = "Linux and desktop"
+patterns = ["omarchy", "diagnose-crash"]
+
+[[groups]]
+id = "other"
+label = "Other"
+patterns = ["*"]

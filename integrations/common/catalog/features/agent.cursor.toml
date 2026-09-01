@@ -1,0 +1,8 @@
+schema = 2
+id = "agent.cursor"
+label = "Cursor Agent"
+description = "Optional Cursor coding agent"
+group = "AI agents"
+default = true
+visible = true
+requires = []

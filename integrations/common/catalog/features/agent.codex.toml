@@ -1,0 +1,8 @@
+schema = 2
+id = "agent.codex"
+label = "Codex"
+description = "OpenAI Codex CLI and portable settings"
+group = "AI"
+default = true
+visible = true
+requires = []

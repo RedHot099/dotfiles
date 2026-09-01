@@ -1,0 +1,9 @@
+schema = 1
+id = "cloud-support"
+label = "Cloud integration dependencies"
+group = "Technical dependencies"
+default = true
+visible = false
+requirements = ["rclone", "fuse3", "util-linux"]
+tools = []
+commands = ["rclone", "mountpoint"]

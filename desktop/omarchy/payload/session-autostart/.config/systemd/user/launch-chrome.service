@@ -1,0 +1,9 @@
+[Unit]
+Description=Launch Google Chrome after system startup
+After=wait-system-running.service graphical-session.target wayland-session-waitenv.service
+Wants=launch-t3.service
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/start-session-chrome

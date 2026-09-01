@@ -14,6 +14,7 @@ class Application:
     label: str
     group: str
     default: bool
+    visible: bool
     requirements: tuple[str, ...]
     tools: tuple[str, ...]
     commands: tuple[str, ...]

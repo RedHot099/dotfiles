@@ -1,0 +1,9 @@
+[Unit]
+Description=Launch T3 Code after graphical session is ready
+After=graphical-session.target wayland-session-waitenv.service wait-system-running.service
+Wants=launch-caprine.service
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/start-session-t3

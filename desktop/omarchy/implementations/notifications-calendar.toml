@@ -1,0 +1,6 @@
+schema = 2
+id = "notifications-calendar"
+
+[[files]]
+source = "payload/notifications"
+target = "."

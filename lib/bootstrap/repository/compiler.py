@@ -4,7 +4,12 @@ import hashlib
 import tomllib
 from pathlib import Path
 
-from ..catalog import CatalogError, load_package_bindings, load_workspace
+from ..catalog import (
+    CatalogError,
+    load_package_bindings,
+    load_workspace,
+    load_workspace_from_roots,
+)
 from ..domain import PlatformId, WorkflowId
 from .model import Application, RepositoryModel, WorkflowModel
 
@@ -12,9 +17,22 @@ from .model import Application, RepositoryModel, WorkflowModel
 def compile_repository(root: Path, platform: PlatformId | str) -> RepositoryModel:
     selected = platform if isinstance(platform, PlatformId) else PlatformId(platform)
     legacy = load_workspace(root, selected)
+    desktop = load_workspace_from_roots(
+        root,
+        selected,
+        root / "desktop/common",
+        root / f"desktop/{selected.value}",
+    )
+    integrations = load_workspace_from_roots(
+        root,
+        selected,
+        root / "integrations/common",
+        root / f"integrations/{selected.value}",
+    )
     workflows = {
-        workflow: WorkflowModel(workflow, legacy)
-        for workflow in WorkflowId
+        WorkflowId.PACKAGES: WorkflowModel(WorkflowId.PACKAGES, legacy),
+        WorkflowId.DESKTOP: WorkflowModel(WorkflowId.DESKTOP, desktop),
+        WorkflowId.INTEGRATIONS: WorkflowModel(WorkflowId.INTEGRATIONS, integrations),
     }
     digest = _repository_digest(root, selected, legacy.source_digest)
     applications = _load_applications(root / "packages/common/catalog/applications")
@@ -49,6 +67,10 @@ def _repository_digest(root: Path, platform: PlatformId, legacy_digest: str) -> 
     digest.update(f"{platform.value}\0{legacy_digest}\0".encode())
     paths = [
         *sorted((root / "packages/common").rglob("*")),
+        *sorted((root / "desktop/common").rglob("*")),
+        *sorted((root / f"desktop/{platform.value}").rglob("*")),
+        *sorted((root / "integrations/common").rglob("*")),
+        *sorted((root / f"integrations/{platform.value}").rglob("*")),
         root / f"packages/{platform.value}/packages.toml",
     ]
     for path in paths:
@@ -75,7 +97,7 @@ def _load_applications(directory: Path) -> dict[str, Application]:
             "schema", "id", "label", "group", "default", "requirements",
             "tools", "commands",
         }
-        allowed = required | {"hardware_hint"}
+        allowed = required | {"hardware_hint", "visible"}
         fields = set(data)
         if not required <= fields or not fields <= allowed or data["schema"] != 1:
             raise CatalogError(f"invalid application schema: {path}")
@@ -93,6 +115,7 @@ def _load_applications(directory: Path) -> dict[str, Application]:
             str(data["label"]),
             str(data["group"]),
             bool(data["default"]),
+            bool(data.get("visible", True)),
             tuple(data["requirements"]),
             tuple(data["tools"]),
             tuple(data["commands"]),

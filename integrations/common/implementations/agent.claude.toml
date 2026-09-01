@@ -1,0 +1,8 @@
+schema = 2
+id = "agent.claude"
+commands = ["claude"]
+
+[[authentication]]
+label = "Claude"
+command = ["claude", "auth", "login"]
+probe = ["claude", "auth", "status"]

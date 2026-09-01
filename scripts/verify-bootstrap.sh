@@ -3,6 +3,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
+content_roots=(common omarchy cachy packages desktop integrations)
 
 PYTHONPATH=lib python3 -m unittest discover -s tests -p 'test*.py'
 python3 -m compileall -q lib scripts/capture-user-skills.py
@@ -14,19 +15,19 @@ if ! command -v luac >/dev/null 2>&1; then
 fi
 while IFS= read -r -d '' lua_file; do
   luac -p "$lua_file"
-done < <(find common omarchy cachy -type f -name '*.lua' -print0)
+done < <(find "${content_roots[@]}" -type f -name '*.lua' -print0)
 
 if command -v shellcheck >/dev/null 2>&1; then
-  mapfile -t shell_files < <(find bootstrap common omarchy cachy -type f -perm -u+x -exec file {} \; | awk -F: '/shell script/{print $1}')
+  mapfile -t shell_files < <(find bootstrap "${content_roots[@]}" -type f -perm -u+x -exec file {} \; | awk -F: '/shell script/{print $1}')
   shellcheck "${shell_files[@]}"
 fi
 
-if find common omarchy cachy -path '*/.config/waybar*' -o -path '*/.config/mako*' -o -path '*/.config/hypr/hypridle.conf' -o -path '*/.config/hypr/hyprlock.conf' | grep -q .; then
+if find "${content_roots[@]}" -path '*/.config/waybar*' -o -path '*/.config/mako*' -o -path '*/.config/hypr/hypridle.conf' -o -path '*/.config/hypr/hyprlock.conf' | grep -q .; then
   echo "Legacy Omarchy payload detected" >&2
   exit 1
 fi
 
-if rg --hidden -i -I -n --glob '!.git/**' '/home/kuba|1password|crash-reporter-id' common omarchy cachy; then
+if rg --hidden -i -I -n --glob '!.git/**' '/home/kuba|1password|crash-reporter-id' "${content_roots[@]}"; then
   echo "Machine-specific path or excluded application detected" >&2
   exit 1
 fi

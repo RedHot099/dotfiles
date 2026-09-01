@@ -1,0 +1,8 @@
+schema = 2
+id = "tailscale"
+label = "Tailscale"
+description = "Enable the daemon and leave device authentication in the login queue"
+group = "Remote access"
+default = true
+visible = true
+requires = []

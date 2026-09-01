@@ -1,0 +1,9 @@
+schema = 1
+id = "todoist-cli"
+label = "Todoist CLI"
+group = "Technical dependencies"
+default = true
+visible = false
+requirements = ["mise"]
+tools = ["npm:@doist/todoist-cli@4.0.0"]
+commands = ["td"]

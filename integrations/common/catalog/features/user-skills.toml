@@ -1,0 +1,8 @@
+schema = 2
+id = "user-skills"
+label = "User agent skills"
+description = "Curated skills for every selected agent harness"
+group = "AI agents"
+default = true
+visible = true
+requires = []

@@ -1,0 +1,8 @@
+schema = 2
+id = "notifications-calendar"
+label = "Google Calendar"
+description = "Calendar Snooze on Omarchy and the standard Noctalia calendar on CachyOS"
+group = "Desktop"
+default = true
+visible = true
+requires = []

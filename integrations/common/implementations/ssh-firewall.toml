@@ -1,0 +1,3 @@
+schema = 2
+id = "ssh-firewall"
+firewall_rule = "ssh-limit"

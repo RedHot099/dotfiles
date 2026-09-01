@@ -1,0 +1,8 @@
+schema = 1
+id = "claude-code"
+label = "Claude Code"
+group = "AI agents"
+default = true
+requirements = ["mise"]
+tools = ["claude@2.1.246"]
+commands = ["claude"]

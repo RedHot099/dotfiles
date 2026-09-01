@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if "$HOME/.local/bin/hypr-find-client" '^(Code|code)$' '2' >/dev/null 2>&1; then
+  exit 0
+fi
+
+uwsm-app -- code >/dev/null 2>&1 &
+"$HOME/.local/bin/hypr-wait-client" '^(Code|code)$' '2' 15 >/dev/null

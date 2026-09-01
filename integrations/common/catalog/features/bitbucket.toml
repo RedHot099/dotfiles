@@ -1,0 +1,8 @@
+schema = 2
+id = "bitbucket"
+label = "Bitbucket"
+description = "Show later SSH authorization instructions without storing credentials or host keys"
+group = "Developer accounts"
+default = true
+visible = true
+requires = []

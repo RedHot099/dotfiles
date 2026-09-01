@@ -167,8 +167,24 @@ def load_workspace(root: Path, platform: PlatformId | str) -> Workspace:
 
     repository_root = root.resolve()
     selected_platform = _platform_id(platform)
-    common_root = repository_root / "common"
-    platform_root = repository_root / selected_platform.value
+    return load_workspace_from_roots(
+        repository_root,
+        selected_platform,
+        repository_root / "common",
+        repository_root / selected_platform.value,
+        repository_root / selected_platform.value / "packages.toml",
+    )
+
+
+def load_workspace_from_roots(
+    root: Path,
+    platform: PlatformId | str,
+    common_root: Path,
+    platform_root: Path,
+    package_path: Path | None = None,
+) -> Workspace:
+    repository_root = root.resolve()
+    selected_platform = _platform_id(platform)
 
     feature_manifests = _read_manifests(
         common_root / "catalog" / "features", repository_root
@@ -182,7 +198,11 @@ def load_workspace(root: Path, platform: PlatformId | str) -> Workspace:
     platform_manifests = _read_manifests(
         platform_root / "implementations", repository_root
     )
-    package_manifest = _read_optional_manifest(platform_root / "packages.toml", repository_root)
+    package_manifest = (
+        _read_optional_manifest(package_path, repository_root)
+        if package_path is not None
+        else None
+    )
     if not feature_manifests:
         raise CatalogError("no public features found")
 
@@ -193,7 +213,11 @@ def load_workspace(root: Path, platform: PlatformId | str) -> Workspace:
     common = _load_implementations(common_manifests, "common")
     selected = _load_implementations(platform_manifests, selected_platform.value)
     implementations = _compose_implementations(features, common, selected)
-    package_bindings = _load_package_bindings(package_manifest)
+    package_bindings = (
+        _load_package_bindings(package_manifest)
+        if package_manifest is not None
+        else {}
+    )
 
     payload_nodes, payload = _validate_implementations(
         repository_root,

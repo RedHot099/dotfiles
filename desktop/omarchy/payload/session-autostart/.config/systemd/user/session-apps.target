@@ -1,0 +1,5 @@
+[Unit]
+Description=Sequential session applications
+After=graphical-session.target wayland-session-waitenv.service
+Wants=wait-system-running.service launch-t3.service launch-chrome.service
+PartOf=graphical-session.target

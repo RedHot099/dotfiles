@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if (( $# != 3 )); then
+  echo "usage: rclone-mount-helper prepare|cleanup MOUNT CACHE" >&2
+  exit 2
+fi
+if [[ $1 != "prepare" && $1 != "cleanup" ]]; then
+  echo "usage: rclone-mount-helper prepare|cleanup MOUNT CACHE" >&2
+  exit 2
+fi
+
+operation=$1
+mount_name=$2
+cache_name=$3
+case "$mount_name:$cache_name" in
+  GoogleDrive:google-drive-vfs | OneDrive:onedrive-vfs) ;;
+  *)
+    echo "unsupported rclone mount target" >&2
+    exit 2
+    ;;
+esac
+
+mount_path=$HOME/$mount_name
+cache_path=$HOME/.cache/rclone/$cache_name
+if [[ -L $mount_path || -L $cache_path ]]; then
+  echo "rclone mount paths must not be symlinks" >&2
+  exit 1
+fi
+if [[ $operation == "prepare" ]]; then
+  mkdir -p -- "$mount_path" "$cache_path"
+fi
+mounted_target=$(/usr/bin/findmnt -rn -T "$mount_path" -o TARGET 2>/dev/null || true)
+if [[ $mounted_target == "$mount_path" ]]; then
+  /usr/bin/fusermount3 -uz -- "$mount_path" || /usr/bin/umount -l -- "$mount_path"
+fi

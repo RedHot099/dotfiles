@@ -1,0 +1,8 @@
+schema = 2
+id = "desktop-portable"
+label = "Portable desktop files"
+description = "Portable terminal and GTK configuration shared by Hyprland desktops"
+group = "Technical"
+default = false
+visible = false
+requires = []

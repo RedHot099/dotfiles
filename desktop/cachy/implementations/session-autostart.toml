@@ -1,0 +1,8 @@
+schema = 2
+id = "session-autostart"
+reload_user_daemon = true
+user_units = ["arch-hypr-session-apps.service"]
+
+[[files]]
+source = "payload/session-autostart"
+target = "."
