@@ -2,12 +2,13 @@ import unittest
 from pathlib import Path
 
 from bootstrap.domain import FeatureId, PlatformId, WorkflowId
-from bootstrap.domain import ActionKind, PackagesRequest
+from bootstrap.domain import ActionKind, DesktopRequest, IntegrationsRequest, PackagesRequest
+from bootstrap.planning.model import PackagesEvidence
 from bootstrap.planner import HostState
 from bootstrap.platform import detect_platform
 from bootstrap.packages import StaticPackageProvider
 from bootstrap.repository import compile_repository
-from bootstrap.workflows import plan_packages
+from bootstrap.workflows import plan_desktop, plan_integrations, plan_packages
 from tests.test_schema2_domain import cachy_probe
 
 
@@ -92,6 +93,38 @@ class RepositoryCompilerTests(unittest.TestCase):
     def test_feature_id_rejects_unsafe_names(self):
         with self.assertRaisesRegex(ValueError, "invalid feature id"):
             FeatureId(WorkflowId.PACKAGES, "../editor")
+
+    def test_desktop_and_integrations_cannot_plan_package_mutations(self):
+        repository = compile_repository(ROOT, PlatformId.CACHY)
+        facts = detect_platform(cachy_probe())
+        state = HostState(frozenset(), frozenset())
+        evidence = PackagesEvidence.create(frozenset(), frozenset())
+
+        desktop = plan_desktop(
+            ROOT,
+            repository,
+            facts,
+            state,
+            DesktopRequest(frozenset(), "generic"),
+            evidence,
+        )
+        integrations = plan_integrations(
+            ROOT,
+            repository,
+            facts,
+            state,
+            IntegrationsRequest(frozenset(), frozenset(), frozenset(), frozenset()),
+            evidence,
+        )
+
+        forbidden = {
+            ActionKind.REPOSITORY_PACKAGES,
+            ActionKind.AUR_BUILD,
+            ActionKind.PINNED_TOOL,
+        }
+        self.assertFalse(forbidden.intersection(item.kind for item in desktop.actions))
+        self.assertFalse(forbidden.intersection(item.kind for item in integrations.actions))
+        self.assertNotEqual(desktop.digest, integrations.digest)
 
 
 if __name__ == "__main__":
