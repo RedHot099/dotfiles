@@ -116,6 +116,35 @@ class HomeFiles:
         finally:
             os.close(parent)
 
+    def write_private_atomic(self, target: str, content: bytes) -> None:
+        parent, name = self._parent(target, create=True)
+        assert parent is not None
+        temporary = f".{name}.bootstrap-{secrets.token_hex(8)}"
+        try:
+            descriptor = os.open(
+                temporary,
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                0o600,
+                dir_fd=parent,
+            )
+            try:
+                view = memoryview(content)
+                while view:
+                    written = os.write(descriptor, view)
+                    view = view[written:]
+                os.fchmod(descriptor, 0o600)
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+            os.rename(temporary, name, src_dir_fd=parent, dst_dir_fd=parent)
+            os.fsync(parent)
+        finally:
+            try:
+                os.unlink(temporary, dir_fd=parent)
+            except FileNotFoundError:
+                pass
+            os.close(parent)
+
     def list_text_files(self, directory: str, suffix: str) -> dict[str, str]:
         parent, name = self._parent(f"{directory}/placeholder", create=False)
         if parent is None:
