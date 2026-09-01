@@ -2,7 +2,13 @@ import unittest
 from pathlib import Path
 
 from bootstrap.domain import FeatureId, PlatformId, WorkflowId
+from bootstrap.domain import ActionKind, PackagesRequest
+from bootstrap.planner import HostState
+from bootstrap.platform import detect_platform
+from bootstrap.packages import StaticPackageProvider
 from bootstrap.repository import compile_repository
+from bootstrap.workflows import plan_packages
+from tests.test_schema2_domain import cachy_probe
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,6 +61,28 @@ class RepositoryCompilerTests(unittest.TestCase):
                     for requirement in application.requirements
                 }
                 self.assertLessEqual(required, set(repository.package_bindings))
+
+    def test_packages_plan_contains_only_package_actions(self):
+        repository = compile_repository(ROOT, PlatformId.CACHY)
+        facts = detect_platform(cachy_probe())
+        selected = frozenset(
+            item.id for item in repository.applications.values() if item.default
+        )
+
+        plan = plan_packages(
+            repository,
+            facts,
+            HostState(frozenset(), frozenset()),
+            PackagesRequest(selected),
+            StaticPackageProvider(),
+        )
+
+        self.assertEqual(plan.header.workflow, WorkflowId.PACKAGES)
+        self.assertTrue(plan.actions)
+        self.assertLessEqual(
+            {item.kind for item in plan.actions},
+            {ActionKind.REPOSITORY_PACKAGES, ActionKind.AUR_BUILD, ActionKind.PINNED_TOOL},
+        )
 
     def test_feature_id_rejects_unsafe_names(self):
         with self.assertRaisesRegex(ValueError, "invalid feature id"):
