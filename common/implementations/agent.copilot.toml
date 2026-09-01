@@ -1,4 +1,0 @@
-schema = 2
-id = "agent.copilot"
-tools = ["copilot@1.0.80"]
-commands = ["copilot"]

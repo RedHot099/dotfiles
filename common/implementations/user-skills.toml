@@ -1,6 +1,0 @@
-schema = 2
-id = "user-skills"
-
-[[files]]
-source = "payload/user-skills"
-target = "."

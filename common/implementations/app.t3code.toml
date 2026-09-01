@@ -1,7 +1,0 @@
-schema = 2
-id = "app.t3code"
-commands = ["t3code"]
-
-[[files]]
-source = "payload/t3code"
-target = "."

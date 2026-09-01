@@ -1,8 +1,0 @@
-schema = 2
-id = "app.google-chrome"
-label = "Google Chrome"
-description = "Google Chrome browser"
-group = "Communication and media"
-default = false
-visible = true
-requires = []

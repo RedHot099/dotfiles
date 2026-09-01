@@ -1,8 +1,0 @@
-schema = 2
-id = "app.caprine"
-label = "Caprine"
-description = "Messenger desktop client"
-group = "Communication and media"
-default = false
-visible = true
-requires = []

@@ -204,6 +204,15 @@ def _apply_locked(
                 raise RuntimeError("UFW is not active; refusing to change firewall policy")
             run(("/usr/bin/sudo", "/usr/bin/ufw", "limit", "22/tcp"))
             changed += 1
+        elif item.kind is ActionKind.HYPRLAND_RELOAD:
+            if not os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
+                simulated += 1
+                continue
+            run(("/usr/bin/hyprctl", "reload"), environment=environment)
+            errors = capture(("/usr/bin/hyprctl", "configerrors"), environment=environment).strip()
+            if errors:
+                raise RuntimeError(f"Hyprland configuration errors after reload:\n{errors}")
+            changed += 1
         else:
             raise CatalogError(f"executor does not implement action: {item.kind.value}")
         completed.add(action_id)

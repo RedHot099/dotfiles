@@ -1,6 +1,0 @@
-schema = 2
-id = "desktop-portable"
-
-[[files]]
-source = "payload/desktop-portable"
-target = "."

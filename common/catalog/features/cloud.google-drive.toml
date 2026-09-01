@@ -1,8 +1,0 @@
-schema = 2
-id = "cloud.google-drive"
-label = "Google Drive"
-description = "Google Drive mount through rclone"
-group = "Cloud"
-default = false
-visible = true
-requires = ["tool.rclone"]

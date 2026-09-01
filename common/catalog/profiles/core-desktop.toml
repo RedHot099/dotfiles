@@ -1,5 +1,0 @@
-schema = 2
-id = "core-desktop"
-label = "Core desktop"
-default = true
-features = ["core-desktop"]

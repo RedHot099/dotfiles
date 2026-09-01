@@ -1,4 +1,0 @@
-schema = 2
-id = "app.latex"
-package_requirements = ["biber", "texlive-basic", "texlive-bibtexextra", "texlive-binextra", "texlive-fontsrecommended", "texlive-latexextra", "texlive-mathscience"]
-commands = ["biber", "latexmk"]

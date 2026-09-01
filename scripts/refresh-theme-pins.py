@@ -12,7 +12,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Review or refresh pinned custom theme commits")
     parser.add_argument("--write", action="store_true", help="Write the reported remote HEAD commits")
     parser.add_argument(
-        "--catalog", type=Path, default=Path("omarchy/implementations/themes.toml")
+        "--catalog", type=Path, default=Path("desktop/omarchy/implementations/themes.toml")
     )
     args = parser.parse_args()
     content = args.catalog.read_text()

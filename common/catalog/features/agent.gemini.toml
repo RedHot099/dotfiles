@@ -1,8 +1,0 @@
-schema = 2
-id = "agent.gemini"
-label = "Gemini CLI"
-description = "Optional Gemini coding agent"
-group = "Optional AI agents"
-default = false
-visible = true
-requires = []

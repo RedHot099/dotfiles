@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-STORE = ROOT / "common/payload/user-skills/.local/share/arch-hypr-bootstrap"
+STORE = ROOT / "integrations/common/payload/user-skills/.local/share/arch-hypr-bootstrap"
 
 
 class SkillPayloadTests(unittest.TestCase):
@@ -18,11 +18,13 @@ class SkillPayloadTests(unittest.TestCase):
         self.assertEqual(len(set(skill_ids)), 83)
         self.assertNotIn("omarchy", skill_ids)
         self.assertNotIn("diagnose-crash", skill_ids)
-        payload = ROOT / "common/payload/user-skills"
+        payload = ROOT / "integrations/common/payload/user-skills"
         for adapter in (
             payload / ".agents/skills",
             payload / ".claude/skills",
+            payload / ".codex/skills",
             payload / ".config/opencode/skills",
+            payload / ".cursor/skills",
         ):
             self.assertEqual({path.name for path in adapter.iterdir()}, set(skill_ids))
             self.assertTrue(all(path.is_symlink() for path in adapter.iterdir()))

@@ -1,4 +1,0 @@
-schema = 2
-id = "app.t3code-nightly"
-package_requirements = ["t3code-nightly-bin"]
-commands = ["t3code-nightly"]

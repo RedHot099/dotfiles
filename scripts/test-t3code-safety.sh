@@ -2,8 +2,8 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-launcher="$repo_root/common/payload/t3code/.local/bin/t3code"
-cleaner="$repo_root/common/payload/t3code/.local/bin/t3code-clean-state"
+launcher="$repo_root/desktop/common/payload/desktop-portable/.local/bin/t3code"
+cleaner="$repo_root/desktop/common/payload/desktop-portable/.local/bin/t3code-clean-state"
 
 if rg -n -- '--no-sandbox|yay -S' "$launcher"; then
   echo "T3 Code launcher bypasses the package or browser sandbox" >&2

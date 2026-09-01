@@ -22,28 +22,24 @@ SECRET_PATTERNS = (
 def main() -> int:
     parser = argparse.ArgumentParser(description="Capture reviewed user-owned agent skills")
     parser.add_argument("--home", type=Path, default=Path.home())
-    parser.add_argument("--destination", type=Path, default=Path("common/payload/user-skills"))
+    parser.add_argument("--destination", type=Path, default=Path("integrations/common/skills/private"))
     args = parser.parse_args()
     sources = (args.home / ".agents" / "skills", args.home / ".codex" / "skills")
     skills = discover(sources)
     destination = args.destination.resolve()
-    allowed_destination = (Path(__file__).resolve().parents[1] / "common/payload/user-skills").resolve()
+    allowed_destination = (Path(__file__).resolve().parents[1] / "integrations/common/skills/private").resolve()
     if destination != allowed_destination:
         raise SystemExit(f"Destination must be {allowed_destination}")
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=destination.parent, prefix=".skills-") as temporary_name:
         temporary = Path(temporary_name)
-        canonical = temporary / ".local" / "share" / "arch-hypr-bootstrap" / "agent-skills"
-        canonical.mkdir(parents=True)
         index = []
         for skill_id, source in sorted(skills.items()):
-            target = canonical / skill_id
+            target = temporary / skill_id
             shutil.copytree(source, target, symlinks=True)
             make_portable(skill_id, target)
             reject_secrets(target)
             index.append((skill_id, source.parent.parent.name, tree_hash(target)))
-        write_adapters(temporary, [item[0] for item in index])
-        write_index(temporary / ".local" / "share" / "arch-hypr-bootstrap" / "skills-index.toml", index)
         if destination.exists():
             shutil.rmtree(destination)
         shutil.copytree(temporary, destination, symlinks=True)
@@ -105,25 +101,6 @@ def reject_secrets(root: Path) -> None:
         for pattern in SECRET_PATTERNS:
             if pattern.search(content):
                 raise SystemExit(f"Secret-like content rejected: {path}")
-
-
-def write_adapters(root: Path, skill_ids: list[str]) -> None:
-    adapters = {
-        root / ".agents" / "skills": "../../.local/share/arch-hypr-bootstrap/agent-skills",
-        root / ".claude" / "skills": "../../.local/share/arch-hypr-bootstrap/agent-skills",
-        root / ".config" / "opencode" / "skills": "../../../.local/share/arch-hypr-bootstrap/agent-skills",
-    }
-    for directory, canonical in adapters.items():
-        directory.mkdir(parents=True)
-        for skill_id in skill_ids:
-            (directory / skill_id).symlink_to(f"{canonical}/{skill_id}")
-
-
-def write_index(path: Path, entries: list[tuple[str, str, str]]) -> None:
-    lines = ["schema = 1", f"count = {len(entries)}", ""]
-    for skill_id, origin, digest in entries:
-        lines.extend(("[[skills]]", f'id = "{skill_id}"', f'origin = "{origin}"', f'sha256 = "{digest}"', ""))
-    path.write_text("\n".join(lines))
 
 
 def tree_hash(root: Path) -> str:

@@ -1,8 +1,0 @@
-schema = 2
-id = "tool.aws"
-label = "AWS CLI"
-description = "Amazon Web Services command-line client"
-group = "Development"
-default = false
-visible = true
-requires = []

@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-HELPER = ROOT / "common" / "payload" / "todoist-helper" / ".local" / "bin" / "todoist-helper"
+HELPER = ROOT / "integrations" / "common" / "payload" / "todoist-helper" / ".local" / "bin" / "todoist-helper"
 
 
 FAKE_TD = r'''#!/usr/bin/env python3

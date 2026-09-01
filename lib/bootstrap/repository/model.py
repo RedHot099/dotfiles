@@ -24,7 +24,7 @@ class Application:
 @dataclass(frozen=True)
 class WorkflowModel:
     id: WorkflowId
-    workspace: Workspace
+    workspace: Workspace | None
 
 
 @dataclass(frozen=True)
@@ -39,7 +39,7 @@ class RepositoryModel:
         expected = frozenset(WorkflowId)
         if frozenset(self.workflows) != expected:
             raise ValueError("repository must contain every workflow")
-        if any(item.workspace.platform is not self.platform for item in self.workflows.values()):
+        if any(item.workspace is not None and item.workspace.platform is not self.platform for item in self.workflows.values()):
             raise ValueError("workflow platform does not match repository platform")
         object.__setattr__(self, "workflows", MappingProxyType(dict(self.workflows)))
         object.__setattr__(self, "applications", MappingProxyType(dict(self.applications)))

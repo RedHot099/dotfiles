@@ -1,8 +1,0 @@
-schema = 2
-id = "app.signal"
-label = "Signal"
-description = "Signal Desktop"
-group = "Communication and media"
-default = false
-visible = true
-requires = []

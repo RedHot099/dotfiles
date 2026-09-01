@@ -1,8 +1,0 @@
-schema = 2
-id = "app.typora"
-label = "Typora"
-description = "Markdown editor"
-group = "Research"
-default = false
-visible = true
-requires = []

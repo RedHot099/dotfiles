@@ -1,7 +1,0 @@
-schema = 2
-id = "ssh-access"
-package_requirements = ["openssh"]
-system_units = ["sshd.service"]
-github_ssh_user = "RedHot099"
-listens = true
-listening_ports = [22]

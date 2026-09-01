@@ -1,5 +1,0 @@
-schema = 2
-id = "system.tailscale"
-package_requirements = ["tailscale"]
-commands = ["tailscale"]
-system_units = ["tailscaled.service"]

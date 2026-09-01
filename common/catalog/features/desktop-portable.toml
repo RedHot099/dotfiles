@@ -1,8 +1,0 @@
-schema = 2
-id = "desktop-portable"
-label = "Portable desktop files"
-description = "Cursor, GTK, and editor configuration shared by Hyprland desktops"
-group = "Technical"
-default = false
-visible = false
-requires = []

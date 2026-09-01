@@ -1,4 +1,0 @@
-schema = 2
-id = "tool.rust"
-package_requirements = ["rust"]
-commands = ["cargo"]

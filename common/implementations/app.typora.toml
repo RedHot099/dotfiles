@@ -1,4 +1,0 @@
-schema = 2
-id = "app.typora"
-package_requirements = ["typora"]
-commands = ["typora"]

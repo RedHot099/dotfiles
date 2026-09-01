@@ -1,4 +1,0 @@
-interface:
-  display_name: "Python Review"
-  short_description: "Review branch diffs in Python repos"
-  default_prompt: "Use $python-review to review the current branch against master and produce a full report."

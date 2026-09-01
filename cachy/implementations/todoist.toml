@@ -1,4 +1,0 @@
-schema = 2
-id = "todoist"
-available = false
-unavailable_reason = "The portable Todoist helper is installed, but the Noctalia v5 bar plugin remains unavailable while the beta plugin API is not pinned and tested"

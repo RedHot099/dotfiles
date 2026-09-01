@@ -1,4 +1,0 @@
-schema = 2
-id = "agent.gemini"
-tools = ["gemini@0.57.0"]
-commands = ["gemini"]

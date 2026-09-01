@@ -1,8 +1,0 @@
-schema = 2
-id = "app.t3code"
-label = "T3 Code"
-description = "T3 Code nightly"
-group = "Development"
-default = false
-visible = false
-requires = ["app.t3code-nightly"]

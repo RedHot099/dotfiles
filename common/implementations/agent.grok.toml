@@ -1,4 +1,0 @@
-schema = 2
-id = "agent.grok"
-tools = ["npm:@xai-official/grok@1.0.5"]
-commands = ["grok"]

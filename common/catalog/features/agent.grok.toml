@@ -1,8 +1,0 @@
-schema = 2
-id = "agent.grok"
-label = "Grok CLI"
-description = "Optional Grok coding agent"
-group = "Optional AI agents"
-default = false
-visible = true
-requires = []

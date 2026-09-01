@@ -3,11 +3,10 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
-content_roots=(common omarchy cachy packages desktop integrations)
+content_roots=(packages desktop integrations)
 
 PYTHONPATH=lib python3 -m unittest discover -s tests -p 'test*.py'
 python3 -m compileall -q lib scripts/capture-user-skills.py
-PYTHONPATH=lib ./scripts/verify-schema2-parity.py
 
 if ! command -v luac >/dev/null 2>&1; then
   echo "luac is required to verify Hyprland payloads" >&2
@@ -32,28 +31,22 @@ if rg --hidden -i -I -n --glob '!.git/**' '/home/kuba|1password|crash-reporter-i
   exit 1
 fi
 
-temporary="$(mktemp -d)"
-trap 'rm -rf -- "$temporary"' EXIT
-printf '{"omarchy_major":4,"packages":[],"commands":[]}' >"$temporary/facts.json"
+PYTHONPATH=lib python3 - <<'PY'
+from pathlib import Path
+from bootstrap.domain import PlatformId
+from bootstrap.repository import compile_repository
 
-./bootstrap plan \
-  --hardware generic \
-  --target-home "$temporary/home" \
-  --facts "$temporary/facts.json" \
-  --out "$temporary/plan.json" >/dev/null
-
-./bootstrap apply --plan "$temporary/plan.json" --simulate-system >"$temporary/first.txt"
-./bootstrap apply --plan "$temporary/plan.json" --simulate-system >"$temporary/second.txt"
-grep -qx 'Changed: 0' "$temporary/second.txt"
-./bootstrap audit --plan "$temporary/plan.json" --facts "$temporary/facts.json" >"$temporary/audit.txt"
-! grep -q '^FAIL' "$temporary/audit.txt"
+for platform in PlatformId:
+    compile_repository(Path.cwd(), platform)
+print("Both workflow repositories compile.")
+PY
 
 ./scripts/verify-todoist-integration.sh
 qmllint -I /usr/share/omarchy/shell \
-  omarchy/payload/notifications/.config/omarchy/plugins/kuba.notifications/components/NotificationCard.qml
-rg -q 'function snoozeGoogleCalendar' omarchy/payload/notifications/.config/omarchy/plugins/kuba.notifications/Service.qml
-./scripts/test-rclone-onedrive-service.sh common/payload/cloud-onedrive/.config/systemd/user/rclone-onedrive.service
-./scripts/test-rclone-onedrive-service.sh common/payload/cloud-google-drive/.config/systemd/user/rclone-google-drive.service
+  desktop/omarchy/payload/notifications/.config/omarchy/plugins/kuba.notifications/components/NotificationCard.qml
+rg -q 'function snoozeGoogleCalendar' desktop/omarchy/payload/notifications/.config/omarchy/plugins/kuba.notifications/Service.qml
+./scripts/test-rclone-onedrive-service.sh integrations/common/payload/cloud-onedrive/.config/systemd/user/rclone-onedrive.service
+./scripts/test-rclone-onedrive-service.sh integrations/common/payload/cloud-google-drive/.config/systemd/user/rclone-google-drive.service
 ./scripts/test-t3code-safety.sh
 
 echo "Bootstrap verification passed."

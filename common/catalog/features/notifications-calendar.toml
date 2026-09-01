@@ -1,8 +1,0 @@
-schema = 2
-id = "notifications-calendar"
-label = "Google Calendar notification snooze"
-description = "Omarchy notification clone with Calendar snooze and middle-click support"
-group = "Desktop"
-default = false
-visible = false
-requires = []

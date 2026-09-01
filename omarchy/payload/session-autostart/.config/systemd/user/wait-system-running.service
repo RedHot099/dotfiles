@@ -1,8 +1,0 @@
-[Unit]
-Description=Wait for the system to finish starting
-After=graphical-session.target wayland-session-waitenv.service
-PartOf=graphical-session.target
-
-[Service]
-Type=oneshot
-ExecStart=/usr/bin/systemctl is-system-running --wait

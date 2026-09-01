@@ -1,8 +1,0 @@
-schema = 2
-id = "ai-development"
-default_agent_target = ".config/omarchy/defaults/agent"
-
-[[files]]
-source = "payload/ai-development"
-target = "."
-bundle = "common"

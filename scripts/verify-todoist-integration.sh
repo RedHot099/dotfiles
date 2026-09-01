@@ -2,8 +2,8 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-plugin_dir="$repo_root/omarchy/payload/todoist/.config/omarchy/plugins/kuba.tasks"
-helper="$repo_root/common/payload/todoist-helper/.local/bin/todoist-helper"
+plugin_dir="$repo_root/integrations/omarchy/payload/todoist/.config/omarchy/plugins/kuba.tasks"
+helper="$repo_root/integrations/common/payload/todoist-helper/.local/bin/todoist-helper"
 live=false
 
 if [[ "${1:-}" == "--live" ]]; then
@@ -14,10 +14,10 @@ elif [[ $# -gt 0 ]]; then
 fi
 
 python3 -m json.tool "$plugin_dir/manifest.json" >/dev/null
-python3 -m json.tool "$repo_root/omarchy/payload/core-desktop/.config/omarchy/shell.json" >/dev/null
+python3 -m json.tool "$repo_root/desktop/omarchy/payload/core-desktop/.config/omarchy/shell.json" >/dev/null
 test -x "$helper"
 
-python3 - "$repo_root/omarchy/payload/core-desktop/.config/omarchy/shell.json" <<'PY'
+python3 - "$repo_root/desktop/omarchy/payload/core-desktop/.config/omarchy/shell.json" <<'PY'
 import json
 import sys
 

@@ -4,7 +4,7 @@ import unittest
 from bootstrap.domain import PackagesRequest, PlatformId, WorkflowId
 from bootstrap.planning.model import PackagesPlan, PlanHeader, plan_from_dict
 from bootstrap.platform import detect_platform
-from tests.test_schema2_domain import cachy_probe
+from tests.fixtures import cachy_probe
 
 
 class WorkflowPlanTests(unittest.TestCase):

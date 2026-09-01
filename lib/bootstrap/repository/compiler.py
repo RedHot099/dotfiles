@@ -7,7 +7,6 @@ from pathlib import Path
 from ..catalog import (
     CatalogError,
     load_package_bindings,
-    load_workspace,
     load_workspace_from_roots,
 )
 from ..domain import PlatformId, WorkflowId
@@ -16,7 +15,6 @@ from .model import Application, RepositoryModel, WorkflowModel
 
 def compile_repository(root: Path, platform: PlatformId | str) -> RepositoryModel:
     selected = platform if isinstance(platform, PlatformId) else PlatformId(platform)
-    legacy = load_workspace(root, selected)
     desktop = load_workspace_from_roots(
         root,
         selected,
@@ -30,11 +28,11 @@ def compile_repository(root: Path, platform: PlatformId | str) -> RepositoryMode
         root / f"integrations/{selected.value}",
     )
     workflows = {
-        WorkflowId.PACKAGES: WorkflowModel(WorkflowId.PACKAGES, legacy),
+        WorkflowId.PACKAGES: WorkflowModel(WorkflowId.PACKAGES, None),
         WorkflowId.DESKTOP: WorkflowModel(WorkflowId.DESKTOP, desktop),
         WorkflowId.INTEGRATIONS: WorkflowModel(WorkflowId.INTEGRATIONS, integrations),
     }
-    digest = _repository_digest(root, selected, legacy.source_digest)
+    digest = _repository_digest(root, selected)
     applications = _load_applications(root / "packages/common/catalog/applications")
     bindings = load_package_bindings(
         root / f"packages/{selected.value}/packages.toml",
@@ -62,9 +60,9 @@ def _validate_repository(repository: RepositoryModel) -> None:
         raise CatalogError(f"unbound package requirements: {', '.join(sorted(missing))}")
 
 
-def _repository_digest(root: Path, platform: PlatformId, legacy_digest: str) -> str:
+def _repository_digest(root: Path, platform: PlatformId) -> str:
     digest = hashlib.sha256()
-    digest.update(f"{platform.value}\0{legacy_digest}\0".encode())
+    digest.update(f"{platform.value}\0".encode())
     paths = [
         *sorted((root / "packages/common").rglob("*")),
         *sorted((root / "desktop/common").rglob("*")),

@@ -1,4 +1,0 @@
-schema = 2
-id = "app.spotify"
-package_requirements = ["spotify"]
-commands = ["spotify"]

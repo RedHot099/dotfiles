@@ -1,8 +1,0 @@
-[Unit]
-Description=Launch Chromium after YouTube is ready
-After=launch-youtube.service graphical-session.target wayland-session-waitenv.service
-PartOf=graphical-session.target
-
-[Service]
-Type=oneshot
-ExecStart=%h/.local/bin/start-session-chromium

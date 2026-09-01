@@ -47,8 +47,32 @@ def plan_integrations(
         selected,
         PlanInputs("generic", "claude", github_keys=github_keys),
     )
-    invalid = {item.kind for item in legacy.actions} - ALLOWED_INTEGRATION_ACTIONS
+    actions = tuple(_selected_skill_action(item, request) for item in legacy.actions)
+    actions = tuple(item for item in actions if item is not None)
+    invalid = {item.kind for item in actions} - ALLOWED_INTEGRATION_ACTIONS
     if invalid:
         raise CatalogError(f"integrations plan contains forbidden actions: {', '.join(sorted(item.value for item in invalid))}")
     header = PlanHeader(3, WorkflowId.INTEGRATIONS, facts.fingerprint(), repository.source_digest, facts.target_home)
-    return IntegrationsPlan.create(header, request, evidence, legacy.actions, tuple(sorted(legacy.unavailable)))
+    return IntegrationsPlan.create(header, request, evidence, actions, tuple(sorted(legacy.unavailable)))
+
+
+def _selected_skill_action(item, request: IntegrationsRequest):
+    if item.feature != "user-skills" or item.kind is not ActionKind.USER_FILE:
+        return item
+    target = str(item.data["target"])
+    canonical = ".local/share/arch-hypr-bootstrap/agent-skills/"
+    harness_roots = {
+        "agents": ".agents/skills/",
+        "claude": ".claude/skills/",
+        "codex": ".codex/skills/",
+        "opencode": ".config/opencode/skills/",
+        "cursor": ".cursor/skills/",
+    }
+    if target.startswith(canonical):
+        skill = target[len(canonical):].split("/", 1)[0]
+        return item if skill in request.skills else None
+    for harness, prefix in harness_roots.items():
+        if target.startswith(prefix):
+            skill = target[len(prefix):].split("/", 1)[0]
+            return item if harness in request.harnesses and skill in request.skills else None
+    return item

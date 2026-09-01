@@ -1,8 +1,0 @@
-schema = 2
-id = "ssh-firewall"
-label = "SSH firewall access"
-description = "Add a rate-limited UFW rule for incoming SSH connections"
-group = "System"
-default = false
-visible = true
-requires = ["ssh-access"]

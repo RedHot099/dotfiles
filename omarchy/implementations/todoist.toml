@@ -1,6 +1,0 @@
-schema = 2
-id = "todoist"
-
-[[files]]
-source = "payload/todoist"
-target = "."

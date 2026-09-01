@@ -1,7 +1,0 @@
-schema = 2
-id = "session-autostart"
-reload_user_daemon = true
-
-[[files]]
-source = "payload/session-autostart"
-target = "."

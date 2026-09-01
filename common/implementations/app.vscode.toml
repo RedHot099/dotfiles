@@ -1,8 +1,0 @@
-schema = 2
-id = "app.vscode"
-package_requirements = ["visual-studio-code-bin"]
-commands = ["code"]
-
-[[files]]
-source = "payload/vscode"
-target = "."

@@ -1,8 +1,0 @@
-schema = 2
-id = "app.losslesscut"
-label = "LosslessCut"
-description = "Lossless video editor"
-group = "Communication and media"
-default = false
-visible = true
-requires = []

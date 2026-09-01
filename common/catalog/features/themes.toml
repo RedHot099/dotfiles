@@ -1,8 +1,0 @@
-schema = 2
-id = "themes"
-label = "Custom themes"
-description = "Pinned Akane, All Hallows Eve, and Void themes"
-group = "Desktop"
-default = false
-visible = false
-requires = []

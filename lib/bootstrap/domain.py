@@ -175,6 +175,7 @@ class ActionKind(StrEnum):
     REVOKED_SSH_KEY = "revoked-ssh-key"
     FIREWALL_RULE = "firewall-rule"
     VERIFICATION_PROBE = "verification-probe"
+    HYPRLAND_RELOAD = "hyprland-reload"
 
 
 _ACTION_DATA_FIELDS: dict[ActionKind, tuple[frozenset[str], frozenset[str]]] = {
@@ -236,6 +237,7 @@ _ACTION_DATA_FIELDS: dict[ActionKind, tuple[frozenset[str], frozenset[str]]] = {
         frozenset({"label", "command", "expected_exit"}),
         frozenset({"contains"}),
     ),
+    ActionKind.HYPRLAND_RELOAD: (frozenset(), frozenset()),
 }
 
 

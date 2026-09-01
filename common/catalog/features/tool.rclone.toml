@@ -1,8 +1,0 @@
-schema = 2
-id = "tool.rclone"
-label = "rclone"
-description = "Cloud storage client"
-group = "Cloud"
-default = false
-visible = false
-requires = []

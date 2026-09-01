@@ -1,8 +1,0 @@
-schema = 2
-id = "agent.copilot"
-label = "GitHub Copilot CLI"
-description = "Optional GitHub Copilot coding agent"
-group = "Optional AI agents"
-default = false
-visible = true
-requires = []

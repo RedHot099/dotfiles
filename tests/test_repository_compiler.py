@@ -9,7 +9,7 @@ from bootstrap.platform import detect_platform
 from bootstrap.packages import StaticPackageProvider
 from bootstrap.repository import compile_repository
 from bootstrap.workflows import plan_desktop, plan_integrations, plan_packages
-from tests.test_schema2_domain import cachy_probe
+from tests.fixtures import cachy_probe
 
 
 ROOT = Path(__file__).resolve().parents[1]

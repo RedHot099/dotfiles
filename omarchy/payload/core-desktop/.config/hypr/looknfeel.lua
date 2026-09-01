@@ -1,1 +1,0 @@
--- The selected hardware profile owns monitor-specific gaps and layout.

@@ -1,8 +1,0 @@
-schema = 2
-id = "tool.rust"
-label = "Rust toolchain"
-description = "Rust compiler and Cargo"
-group = "Development"
-default = false
-visible = true
-requires = []

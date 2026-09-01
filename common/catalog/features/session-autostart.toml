@@ -1,8 +1,0 @@
-schema = 2
-id = "session-autostart"
-label = "Start selected session apps"
-description = "Start Chrome, T3 Code, Caprine, YouTube, and Chromium after login"
-group = "Desktop"
-default = false
-visible = true
-requires = ["core-desktop", "app.google-chrome", "app.t3code", "app.caprine"]

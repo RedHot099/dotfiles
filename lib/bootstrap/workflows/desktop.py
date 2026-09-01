@@ -17,6 +17,7 @@ ALLOWED_DESKTOP_ACTIONS = frozenset(
         ActionKind.OMARCHY_THEME,
         ActionKind.NOCTALIA_THEME,
         ActionKind.USER_DAEMON_RELOAD,
+        ActionKind.HYPRLAND_RELOAD,
     }
 )
 
@@ -41,8 +42,15 @@ def plan_desktop(
         selected,
         PlanInputs(request.hardware, "claude", monitor_content),
     )
-    invalid = {item.kind for item in legacy.actions} - ALLOWED_DESKTOP_ACTIONS
+    actions = (*legacy.actions, _reload_action())
+    invalid = {item.kind for item in actions} - ALLOWED_DESKTOP_ACTIONS
     if invalid:
         raise CatalogError(f"desktop plan contains forbidden actions: {', '.join(sorted(item.value for item in invalid))}")
     header = PlanHeader(3, WorkflowId.DESKTOP, facts.fingerprint(), repository.source_digest, facts.target_home)
-    return DesktopPlan.create(header, request, evidence, legacy.actions, tuple(sorted(legacy.unavailable)))
+    return DesktopPlan.create(header, request, evidence, actions, tuple(sorted(legacy.unavailable)))
+
+
+def _reload_action():
+    from ..planner import action
+
+    return action(ActionKind.HYPRLAND_RELOAD, "core-desktop", {})

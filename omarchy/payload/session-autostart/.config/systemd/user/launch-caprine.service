@@ -1,9 +1,0 @@
-[Unit]
-Description=Launch Caprine after T3 Code is ready
-After=launch-t3.service graphical-session.target wayland-session-waitenv.service
-Wants=launch-youtube.service
-PartOf=graphical-session.target
-
-[Service]
-Type=oneshot
-ExecStart=%h/.local/bin/start-session-caprine
