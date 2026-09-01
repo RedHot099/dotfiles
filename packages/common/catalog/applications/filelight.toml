@@ -1,0 +1,8 @@
+schema = 1
+id = "filelight"
+label = "Filelight"
+group = "System tools"
+default = false
+requirements = ["filelight"]
+tools = []
+commands = ["filelight"]

@@ -1,0 +1,8 @@
+schema = 1
+id = "losslesscut"
+label = "LosslessCut"
+group = "Media"
+default = false
+requirements = ["losslesscut-bin"]
+tools = []
+commands = ["losslesscut"]

@@ -1,0 +1,8 @@
+schema = 1
+id = "signal"
+label = "Signal"
+group = "Communication"
+default = true
+requirements = ["signal-desktop"]
+tools = []
+commands = ["signal-desktop"]

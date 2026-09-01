@@ -1,0 +1,8 @@
+schema = 1
+id = "neovim"
+label = "Neovim"
+group = "Editors"
+default = true
+requirements = ["neovim"]
+tools = []
+commands = ["nvim"]

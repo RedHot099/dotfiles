@@ -226,6 +226,11 @@ def load_workspace(root: Path, platform: PlatformId | str) -> Workspace:
     )
 
 
+def load_package_bindings(path: Path, repository_root: Path) -> Mapping[str, PackageBinding]:
+    manifest = _read_optional_manifest(path, repository_root.resolve())
+    return MappingProxyType(dict(sorted(_load_package_bindings(manifest).items())))
+
+
 def _platform_id(value: PlatformId | str) -> PlatformId:
     try:
         return value if isinstance(value, PlatformId) else PlatformId(value)

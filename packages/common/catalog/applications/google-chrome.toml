@@ -1,0 +1,8 @@
+schema = 1
+id = "google-chrome"
+label = "Google Chrome"
+group = "Browsers"
+default = true
+requirements = ["google-chrome"]
+tools = []
+commands = ["google-chrome-stable"]

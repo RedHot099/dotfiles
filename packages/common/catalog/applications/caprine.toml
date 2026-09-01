@@ -1,0 +1,8 @@
+schema = 1
+id = "caprine"
+label = "Caprine"
+group = "Communication"
+default = true
+requirements = ["caprine"]
+tools = []
+commands = ["caprine"]

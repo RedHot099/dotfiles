@@ -1,0 +1,8 @@
+schema = 1
+id = "obsidian"
+label = "Obsidian"
+group = "Notes and documents"
+default = true
+requirements = ["obsidian"]
+tools = []
+commands = ["obsidian"]

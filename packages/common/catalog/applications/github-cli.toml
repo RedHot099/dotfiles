@@ -1,0 +1,8 @@
+schema = 1
+id = "github-cli"
+label = "GitHub CLI"
+group = "Development tools"
+default = true
+requirements = ["mise"]
+tools = ["gh@2.98.0"]
+commands = ["gh"]

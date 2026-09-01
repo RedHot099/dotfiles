@@ -1,0 +1,8 @@
+schema = 1
+id = "steam"
+label = "Steam"
+group = "Gaming"
+default = true
+requirements = ["steam", "lib32-mangohud"]
+tools = []
+commands = ["steam"]

@@ -1,0 +1,8 @@
+schema = 1
+id = "cursor"
+label = "Cursor"
+group = "Editors"
+default = true
+requirements = ["cursor-bin"]
+tools = []
+commands = ["cursor"]

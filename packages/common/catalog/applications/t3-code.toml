@@ -1,0 +1,8 @@
+schema = 1
+id = "t3-code"
+label = "T3 Code"
+group = "Editors"
+default = true
+requirements = ["t3code-nightly-bin"]
+tools = []
+commands = ["t3code"]

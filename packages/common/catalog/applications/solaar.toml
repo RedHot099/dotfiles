@@ -1,0 +1,9 @@
+schema = 1
+id = "solaar"
+label = "Solaar"
+group = "System tools"
+default = false
+requirements = ["solaar"]
+tools = []
+commands = ["solaar"]
+hardware_hint = "Compatible Logitech receiver detected"

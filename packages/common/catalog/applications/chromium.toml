@@ -1,0 +1,8 @@
+schema = 1
+id = "chromium"
+label = "Chromium"
+group = "Browsers"
+default = true
+requirements = ["chromium"]
+tools = []
+commands = ["chromium"]

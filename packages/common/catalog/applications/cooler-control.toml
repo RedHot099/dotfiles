@@ -1,0 +1,9 @@
+schema = 1
+id = "cooler-control"
+label = "CoolerControl"
+group = "System tools"
+default = false
+requirements = ["coolercontrol-bin", "coolercontrold-bin"]
+tools = []
+commands = ["coolercontrol", "coolercontrold"]
+hardware_hint = "Compatible cooling hardware detected"

@@ -1,0 +1,8 @@
+schema = 1
+id = "aws-cli"
+label = "AWS CLI"
+group = "Development tools"
+default = true
+requirements = ["aws-cli-bin"]
+tools = []
+commands = ["aws"]

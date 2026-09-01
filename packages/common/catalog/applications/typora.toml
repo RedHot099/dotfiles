@@ -1,0 +1,8 @@
+schema = 1
+id = "typora"
+label = "Typora"
+group = "Notes and documents"
+default = true
+requirements = ["typora"]
+tools = []
+commands = ["typora"]

@@ -1,0 +1,8 @@
+schema = 1
+id = "latex"
+label = "LaTeX with Biber"
+group = "Notes and documents"
+default = false
+requirements = ["biber", "texlive-basic", "texlive-bibtexextra", "texlive-binextra", "texlive-fontsrecommended", "texlive-latexextra", "texlive-mathscience"]
+tools = []
+commands = ["biber", "latexmk"]

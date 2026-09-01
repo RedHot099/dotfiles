@@ -30,6 +30,41 @@ class PlatformId(StrEnum):
     CACHY = "cachy"
 
 
+class WorkflowId(StrEnum):
+    PACKAGES = "packages"
+    DESKTOP = "desktop"
+    INTEGRATIONS = "integrations"
+
+
+@dataclass(frozen=True)
+class FeatureId:
+    workflow: WorkflowId
+    name: str
+
+    def __post_init__(self) -> None:
+        if not IDENTIFIER_RE.fullmatch(self.name):
+            raise ValueError(f"invalid feature id: {self.name!r}")
+
+
+@dataclass(frozen=True)
+class PackagesRequest:
+    applications: frozenset[str]
+
+
+@dataclass(frozen=True)
+class DesktopRequest:
+    features: frozenset[str]
+    hardware: str
+
+
+@dataclass(frozen=True)
+class IntegrationsRequest:
+    integrations: frozenset[str]
+    agents: frozenset[str]
+    skills: frozenset[str]
+    harnesses: frozenset[str]
+
+
 @dataclass(frozen=True)
 class PlatformFingerprint:
     platform: PlatformId

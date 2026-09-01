@@ -1,0 +1,8 @@
+schema = 1
+id = "mise"
+label = "mise"
+group = "Development tools"
+default = true
+requirements = ["mise"]
+tools = []
+commands = ["mise"]

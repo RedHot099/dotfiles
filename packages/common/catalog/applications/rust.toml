@@ -1,0 +1,8 @@
+schema = 1
+id = "rust"
+label = "Rust toolchain"
+group = "Development tools"
+default = true
+requirements = ["rust"]
+tools = []
+commands = ["cargo"]

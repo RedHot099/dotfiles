@@ -1,0 +1,8 @@
+schema = 1
+id = "vesktop"
+label = "Vesktop"
+group = "Communication"
+default = true
+requirements = ["vesktop"]
+tools = []
+commands = ["vesktop"]
