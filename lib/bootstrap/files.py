@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import os
 import secrets
+import shutil
 import stat
 from pathlib import Path, PurePosixPath
 
@@ -51,6 +52,42 @@ class HomeFiles:
                 os.close(descriptor)
         except FileNotFoundError:
             return None
+        finally:
+            os.close(parent)
+
+    def target_kind(self, target: str) -> str | None:
+        parent, name = self._parent(target, create=False)
+        if parent is None:
+            return None
+        try:
+            try:
+                mode = os.stat(name, dir_fd=parent, follow_symlinks=False).st_mode
+            except FileNotFoundError:
+                return None
+            if stat.S_ISDIR(mode):
+                return "directory"
+            if stat.S_ISLNK(mode):
+                return "symlink"
+            if stat.S_ISREG(mode):
+                return "file"
+            return "other"
+        finally:
+            os.close(parent)
+
+    def remove_exact(self, target: str) -> None:
+        parent, name = self._parent(target, create=False)
+        if parent is None:
+            return
+        try:
+            try:
+                mode = os.stat(name, dir_fd=parent, follow_symlinks=False).st_mode
+            except FileNotFoundError:
+                return
+            if stat.S_ISDIR(mode):
+                shutil.rmtree(name, dir_fd=parent)
+            else:
+                os.unlink(name, dir_fd=parent)
+            os.fsync(parent)
         finally:
             os.close(parent)
 

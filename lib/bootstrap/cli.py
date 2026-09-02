@@ -21,6 +21,7 @@ from .domain import (
     WorkflowId,
 )
 from .execution import apply_workflow_plan, execution_plan, execution_workspace
+from .files import HomeFiles
 from .host import LocalHostProbe
 from .planner import HostState
 from .planning.model import PackagesEvidence, WorkflowPlan, plan_from_dict
@@ -182,26 +183,35 @@ def interactive_workflow_plan(workflow, repository, facts) -> WorkflowPlan:
                 IntegrationsRequest(
                     selected - agents,
                     agents,
-                    select_skills(),
-                    select_harnesses(),
+                    select_skills(previous),
+                    select_harnesses(previous),
                 ),
                 evidence,
                 github_keys=github_keys,
             )
-    store.write_selection(SelectionRecord(workflow, selected, repository.source_digest))
+    saved = selected
+    if workflow is WorkflowId.INTEGRATIONS:
+        saved |= frozenset(f"skill:{item}" for item in plan.request.skills)
+        saved |= frozenset(f"harness:{item}" for item in plan.request.harnesses)
+    store.write_selection(SelectionRecord(workflow, saved, repository.source_digest))
     return plan
 
 
-def select_skills() -> frozenset[str]:
+def select_skills(previous: SelectionRecord | None) -> frozenset[str]:
     directory = ROOT / "integrations/common/skills/private"
-    rows = tuple(ChoiceRow(path.name, "Skills", path.name, True) for path in sorted(directory.iterdir()) if path.is_dir())
+    saved = {item.removeprefix("skill:") for item in previous.selected if item.startswith("skill:")} if previous else set()
+    rows = tuple(
+        ChoiceRow(path.name, "Skills", path.name, path.name in saved if saved else True)
+        for path in sorted(directory.iterdir()) if path.is_dir()
+    )
     return select("Select skills for every chosen harness", SelectorState(rows)).selected_ids()
 
 
-def select_harnesses() -> frozenset[str]:
+def select_harnesses(previous: SelectionRecord | None) -> frozenset[str]:
     data = tomllib.loads((ROOT / "integrations/common/harnesses.toml").read_text())
+    saved = {item.removeprefix("harness:") for item in previous.selected if item.startswith("harness:")} if previous else set()
     rows = tuple(
-        ChoiceRow(item["id"], "Harnesses", item["label"], bool(item.get("default", False)))
+        ChoiceRow(item["id"], "Harnesses", item["label"], item["id"] in saved if saved else bool(item.get("default", False)))
         for item in data["harnesses"]
     )
     return select("Select agent harnesses", SelectorState(rows)).selected_ids()
@@ -260,19 +270,16 @@ def detect_monitor_content() -> str | None:
 
 
 def save_workflow_plan(plan: WorkflowPlan) -> Path:
-    directory = Path(plan.header.target_home) / ".local/state/arch-hypr-bootstrap/plans" / plan.header.workflow.value
-    directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-    path = directory / f"{plan.digest}.json"
+    target = f".local/state/arch-hypr-bootstrap/plans/{plan.header.workflow.value}/{plan.digest}.json"
+    path = Path(plan.header.target_home) / target
     content = json.dumps(plan.to_dict(), indent=2, sort_keys=True) + "\n"
-    if path.exists():
-        if path.read_text() != content:
+    with HomeFiles(Path(plan.header.target_home)) as home:
+        existing = home.read_text(target)
+        if existing is not None and existing != content:
             raise PlanSchemaError("digest-addressed plan content differs from existing plan")
-        return path
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    with os.fdopen(descriptor, "w") as stream:
-        stream.write(content)
-        stream.flush()
-        os.fsync(stream.fileno())
+        if existing is None:
+            home.ensure_directory(f".local/state/arch-hypr-bootstrap/plans/{plan.header.workflow.value}", 0o700)
+            home.write_private_atomic(target, content.encode())
     return path
 
 

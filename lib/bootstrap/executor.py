@@ -16,7 +16,7 @@ from pathlib import Path
 
 from .catalog import CatalogError, SYSTEM_UNIT_ALLOWLIST, Workspace
 from .domain import ActionKind, ExecutionPlan, PlannedAction, assert_plan_matches_host
-from .files import HomeFiles
+from .files import FileBoundaryError, HomeFiles
 from .platform import PlatformFacts
 from .planner import render_fragment
 from .packages import (
@@ -105,6 +105,7 @@ def _apply_locked(
     skipped.update(strings(journal.get("skipped_features")))
     if system_changes:
         review_aur_actions(plan, skipped)
+        review_skill_collisions(plan, home)
         write_journal(home, journal_target, completed, skipped, plan.digest)
     sources = {
         (feature, entry.target, entry.sha256): entry
@@ -241,6 +242,38 @@ def review_aur_actions(plan: ExecutionPlan, skipped: set[str]) -> None:
         answer = input(f"Build and install reviewed AUR package {recipe.package_base}? [y/N] ")
         if answer.strip().lower() not in {"y", "yes"}:
             skipped.update(dependent_feature_closure(plan, item.feature))
+
+
+def review_skill_collisions(plan: ExecutionPlan, home: HomeFiles) -> None:
+    collisions: list[str] = []
+    for item in plan.actions:
+        if item.feature != "user-skills" or item.kind is not ActionKind.USER_FILE:
+            continue
+        target = str(item.data["target"])
+        kind = home.target_kind(target)
+        if kind is None:
+            continue
+        try:
+            matches = home.matches(
+                target,
+                str(item.data["sha256"]),
+                integer(item.data["mode"]),
+                optional_string(item.data.get("symlink")),
+            )
+        except FileBoundaryError:
+            matches = False
+        if not matches:
+            collisions.append(target)
+    if not collisions:
+        return
+    print("\nSkill paths that will be replaced without backup:")
+    for target in sorted(collisions):
+        print(f"  {target}")
+    answer = input("Replace exactly these selected skill paths? [y/N] ")
+    if answer.strip().lower() not in {"y", "yes"}:
+        raise CatalogError("skill collision replacement was declined")
+    for target in collisions:
+        home.remove_exact(target)
 
 
 def dependent_feature_closure(plan: ExecutionPlan, feature: str) -> set[str]:
