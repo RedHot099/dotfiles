@@ -2,6 +2,10 @@ schema = 2
 id = "agent.claude"
 commands = ["claude"]
 
+[[files]]
+source = "payload/ai-development/.claude/settings.json"
+target = ".claude/settings.json"
+
 [[authentication]]
 label = "Claude"
 command = ["claude", "auth", "login"]

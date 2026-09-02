@@ -7,6 +7,12 @@ package = "openssh"
 repositories = ["core"]
 
 [[bindings]]
+requirement = "ufw"
+provider = "repository"
+package = "ufw"
+repositories = ["extra"]
+
+[[bindings]]
 requirement = "chromium"
 provider = "repository"
 package = "chromium"

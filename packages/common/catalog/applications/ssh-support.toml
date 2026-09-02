@@ -4,6 +4,6 @@ label = "SSH integration dependencies"
 group = "Technical dependencies"
 default = true
 visible = false
-requirements = ["openssh"]
+requirements = ["openssh", "ufw"]
 tools = []
 commands = ["ssh", "sshd"]

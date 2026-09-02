@@ -18,7 +18,7 @@ IDENTIFIER_RE = re.compile(r"[a-z0-9][a-z0-9._-]*")
 
 
 class PlanSchemaError(ValueError):
-    """The serialized plan does not match schema 2."""
+    """The serialized plan does not match the supported schema."""
 
 
 class PlanHostMismatch(RuntimeError):
@@ -299,8 +299,8 @@ class ExecutionPlan:
     digest: str
 
     def __post_init__(self) -> None:
-        if self.schema != 2:
-            raise ValueError("ExecutionPlan accepts only schema 2")
+        if self.schema != 3:
+            raise ValueError("ExecutionPlan accepts only schema 3")
         _validate_sha256(self.workspace_digest, "workspace_digest")
         _validate_sha256(self.digest, "digest")
         _validate_absolute_path(self.target_home, "target_home")
@@ -368,7 +368,7 @@ class ExecutionPlan:
             actions=actions,
         )
         digest = _digest(content)
-        return cls(2, platform, workspace_digest, target_home, selected, dependencies, unavailable or {}, actions, digest)
+        return cls(3, platform, workspace_digest, target_home, selected, dependencies, unavailable or {}, actions, digest)
 
     def to_dict(self) -> dict[str, object]:
         content = _plan_content(
@@ -400,7 +400,7 @@ def parse_plan_json(serialized: str | bytes) -> ExecutionPlan:
         "plan",
     )
     schema = _integer(data["schema"], "schema")
-    if schema != 2:
+    if schema != 3:
         raise PlanSchemaError(f"unsupported plan schema: {schema}")
     try:
         platform = PlatformFingerprint.from_dict(data["platform"])
@@ -462,7 +462,7 @@ def _plan_content(
     actions: tuple[PlannedAction, ...],
 ) -> dict[str, object]:
     return {
-        "schema": 2,
+        "schema": 3,
         "platform": platform.to_dict(),
         "workspace_digest": workspace_digest,
         "target_home": target_home,

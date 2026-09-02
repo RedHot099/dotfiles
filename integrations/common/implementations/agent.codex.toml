@@ -2,6 +2,10 @@ schema = 2
 id = "agent.codex"
 commands = ["codex"]
 
+[[files]]
+source = "payload/ai-development/.codex/config.toml"
+target = ".codex/config.toml"
+
 [[authentication]]
 label = "Codex"
 command = ["codex", "login"]

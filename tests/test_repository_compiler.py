@@ -94,6 +94,20 @@ class RepositoryCompilerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "invalid feature id"):
             FeatureId(WorkflowId.PACKAGES, "../editor")
 
+    def test_integrations_report_missing_package_workflow_prerequisites(self):
+        repository = compile_repository(ROOT, PlatformId.CACHY)
+        facts = detect_platform(cachy_probe())
+
+        with self.assertRaisesRegex(Exception, "NEEDS PACKAGES: codex"):
+            plan_integrations(
+                ROOT,
+                repository,
+                facts,
+                HostState(frozenset(), frozenset()),
+                IntegrationsRequest(frozenset(), frozenset({"agent.codex"}), frozenset(), frozenset()),
+                PackagesEvidence.create(frozenset(), frozenset()),
+            )
+
     def test_desktop_and_integrations_cannot_plan_package_mutations(self):
         repository = compile_repository(ROOT, PlatformId.CACHY)
         facts = detect_platform(cachy_probe())

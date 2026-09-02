@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -10,6 +11,7 @@ import tomllib
 from pathlib import Path
 
 from .catalog import CatalogError, Workspace
+from .audit import audit_install
 from .domain import (
     DesktopRequest,
     IntegrationsRequest,
@@ -18,13 +20,14 @@ from .domain import (
     PlanSchemaError,
     WorkflowId,
 )
-from .execution import apply_workflow_plan, execution_workspace
+from .execution import apply_workflow_plan, execution_plan, execution_workspace
 from .host import LocalHostProbe
 from .planner import HostState
 from .planning.model import PackagesEvidence, WorkflowPlan, plan_from_dict
 from .platform import PlatformDetectionError, detect_platform
 from .repository import compile_repository
 from .state import SelectionRecord, StateStore
+from .ssh import fetch_github_keys, ssh_fingerprint
 from .tui.model import ChoiceRow, SelectorState
 from .tui.screens import select
 from .workflows import plan_desktop, plan_integrations, plan_packages
@@ -78,10 +81,14 @@ def workflow_command(workflow: WorkflowId, operation: str) -> int:
     if plan.header.repository_digest != repository.source_digest:
         raise CatalogError("repository changed after planning; run plan again")
     if operation == "audit":
-        if plan.header.platform != facts.fingerprint():
-            raise PlanHostMismatch("plan does not match current host capabilities")
-        print(f"{workflow.value.title()}: READY (plan {plan.digest[:12]} matches this host)")
-        return 0
+        findings = audit_install(
+            execution_workspace(repository, workflow),
+            execution_plan(repository, plan),
+            facts,
+        )
+        for finding in findings:
+            print(f"{finding.status:4} {finding.feature}: {finding.message}")
+        return int(any(finding.status == "FAIL" for finding in findings))
     if not confirm(f"Apply reviewed {workflow.value} plan {plan.digest[:12]}?"):
         print("Aborted.")
         return 1
@@ -154,9 +161,19 @@ def interactive_workflow_plan(workflow, repository, facts) -> WorkflowPlan:
             frozenset(state.packages | state.commands),
         )
         if workflow is WorkflowId.DESKTOP:
-            plan = plan_desktop(ROOT, repository, facts, state, DesktopRequest(selected, "generic"), evidence)
+            monitor = detect_monitor_content()
+            plan = plan_desktop(
+                ROOT,
+                repository,
+                facts,
+                state,
+                DesktopRequest(selected, "detected" if monitor else "generic"),
+                evidence,
+                monitor_content=monitor,
+            )
         else:
             agents = frozenset(item for item in selected if item.startswith("agent."))
+            github_keys = reviewed_github_keys(actual, selected)
             plan = plan_integrations(
                 ROOT,
                 repository,
@@ -169,6 +186,7 @@ def interactive_workflow_plan(workflow, repository, facts) -> WorkflowPlan:
                     select_harnesses(),
                 ),
                 evidence,
+                github_keys=github_keys,
             )
     store.write_selection(SelectionRecord(workflow, selected, repository.source_digest))
     return plan
@@ -187,6 +205,58 @@ def select_harnesses() -> frozenset[str]:
         for item in data["harnesses"]
     )
     return select("Select agent harnesses", SelectorState(rows)).selected_ids()
+
+
+def reviewed_github_keys(workspace: Workspace, selected: frozenset[str]) -> dict[str, tuple[str, ...]]:
+    usernames = {
+        workspace.implementations[feature].github_ssh_user
+        for feature in selected
+        if feature in workspace.implementations
+        and workspace.implementations[feature].github_ssh_user
+    }
+    reviewed: dict[str, tuple[str, ...]] = {}
+    for username in sorted(usernames):
+        assert username is not None
+        keys = fetch_github_keys(username)
+        print(f"\nGitHub public keys for {username}:")
+        for key in keys:
+            print(f"  {ssh_fingerprint(key)}")
+        if not confirm("Trust these public keys for incoming SSH access?"):
+            raise CatalogError("SSH key approval was declined")
+        reviewed[username] = keys
+    return reviewed
+
+
+def detect_monitor_content() -> str | None:
+    if not shutil.which("hyprctl") or not os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
+        return None
+    result = subprocess.run(
+        ("hyprctl", "monitors", "all", "-j"),
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+    )
+    monitors = json.loads(result.stdout)
+    if not isinstance(monitors, list) or not monitors:
+        return None
+    lines = ['hl.env("GDK_SCALE", "2")']
+    for monitor in monitors:
+        if not isinstance(monitor, dict) or monitor.get("disabled"):
+            continue
+        name = monitor.get("name")
+        values = (monitor.get("width"), monitor.get("height"), monitor.get("refreshRate"), monitor.get("x"), monitor.get("y"), monitor.get("scale"))
+        if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9._-]+", name):
+            raise CatalogError("Hyprland returned an unsafe monitor name")
+        width, height, refresh, x, y, scale = values
+        if not all(isinstance(value, (int, float)) and not isinstance(value, bool) for value in values):
+            raise CatalogError(f"Hyprland returned invalid geometry for {name}")
+        if width <= 0 or height <= 0 or refresh <= 0 or scale <= 0:
+            raise CatalogError(f"Hyprland returned invalid monitor values for {name}")
+        lines.append(
+            f'hl.monitor({{ output = "{name}", mode = "{int(width)}x{int(height)}@{float(refresh):.2f}", '
+            f'position = "{int(x)}x{int(y)}", scale = {float(scale):g} }})'
+        )
+    return "\n".join(lines) + "\n" if len(lines) > 1 else None
 
 
 def save_workflow_plan(plan: WorkflowPlan) -> Path:

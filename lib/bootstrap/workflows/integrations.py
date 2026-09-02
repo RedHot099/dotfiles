@@ -38,6 +38,9 @@ def plan_integrations(
 ) -> IntegrationsPlan:
     workspace = repository.workflow(WorkflowId.INTEGRATIONS).workspace
     requested = set(request.integrations) | set(request.agents)
+    missing = _missing_applications(repository, requested, evidence)
+    if missing:
+        raise CatalogError("NEEDS PACKAGES: " + ", ".join(sorted(missing)))
     selected = resolve_features(workspace, requested)
     legacy = plan_install(
         root,
@@ -76,3 +79,38 @@ def _selected_skill_action(item, request: IntegrationsRequest):
             skill = target[len(prefix):].split("/", 1)[0]
             return item if harness in request.harnesses and skill in request.skills else None
     return item
+
+
+def _missing_applications(repository, selected: set[str], evidence: PackagesEvidence) -> set[str]:
+    prerequisites = {
+        "agent.claude": "claude-code",
+        "agent.codex": "codex",
+        "agent.opencode": "opencode",
+        "agent.cursor": "cursor-agent",
+        "tool.github": "github-cli",
+        "tool.rclone": "cloud-support",
+        "cloud.google-drive": "cloud-support",
+        "cloud.onedrive": "cloud-support",
+        "todoist": "todoist-cli",
+        "todoist-helper": "todoist-cli",
+        "ssh-access": "ssh-support",
+        "ssh-firewall": "ssh-support",
+        "bitbucket": "ssh-support",
+        "tailscale": "tailscale",
+    }
+    available = set(evidence.installed)
+    missing: set[str] = set()
+    for feature in selected:
+        application_id = prerequisites.get(feature)
+        if application_id is None:
+            continue
+        application = repository.applications[application_id]
+        packages = {
+            repository.package_bindings[requirement].package
+            for requirement in application.requirements
+        }
+        commands_ready = bool(application.commands) and set(application.commands) <= available
+        packages_ready = bool(packages) and packages <= available
+        if not commands_ready and not packages_ready:
+            missing.add(application_id)
+    return missing

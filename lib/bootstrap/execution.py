@@ -20,15 +20,7 @@ def apply_workflow_plan(
     interactive: bool,
 ) -> ApplyResult:
     workspace = execution_workspace(repository, plan.header.workflow)
-    legacy = ExecutionPlan.create(
-        platform=plan.header.platform,
-        workspace_digest=repository.source_digest,
-        target_home=plan.header.target_home,
-        selected=_selected(plan),
-        dependencies={},
-        unavailable={item: "unavailable on this platform" for item in getattr(plan, "unavailable", ())},
-        actions=plan.actions,
-    )
+    legacy = execution_plan(repository, plan)
     return apply_install(
         root,
         workspace,
@@ -36,6 +28,18 @@ def apply_workflow_plan(
         facts,
         system_changes=system_changes,
         interactive=interactive,
+    )
+
+
+def execution_plan(repository: RepositoryModel, plan: WorkflowPlan) -> ExecutionPlan:
+    return ExecutionPlan.create(
+        platform=plan.header.platform,
+        workspace_digest=repository.source_digest,
+        target_home=plan.header.target_home,
+        selected=_selected(plan),
+        dependencies={},
+        unavailable={item: "unavailable on this platform" for item in getattr(plan, "unavailable", ())},
+        actions=plan.actions,
     )
 
 

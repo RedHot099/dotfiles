@@ -100,7 +100,7 @@ def audit_action(item: PlannedAction, home: HomeFiles, isolated: bool) -> AuditF
             item.feature,
             "authentication ready" if ready else f"manual login required: {item.data['label']}",
         )
-    if item.kind is ActionKind.USER_DAEMON_RELOAD:
+    if item.kind in {ActionKind.USER_DAEMON_RELOAD, ActionKind.HYPRLAND_RELOAD}:
         return AuditFinding("PASS", kind, item.feature, "daemon reload is an apply transition")
     satisfied = action_satisfied(item, home, command_environment(str(home.path)))
     status = "WARN" if isolated and not satisfied else "PASS" if satisfied else "FAIL"

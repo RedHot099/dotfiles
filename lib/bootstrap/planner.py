@@ -252,7 +252,7 @@ def plan_install(
         if implementation.monitor_profiles:
             content = inputs.monitor_content
             if content is None:
-                monitor = root / "common/hardware" / inputs.hardware / ".config/hypr/monitors.lua"
+                monitor = root / "desktop/common/hardware" / inputs.hardware / ".config/hypr/monitors.lua"
                 if not monitor.is_file():
                     raise CatalogError(f"unknown hardware profile: {inputs.hardware}")
                 content = monitor.read_text()

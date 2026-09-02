@@ -7,6 +7,12 @@ package = "openssh"
 repositories = ["core", "cachyos-core-v3", "cachyos-core-v4", "cachyos-core-znver4"]
 
 [[bindings]]
+requirement = "ufw"
+provider = "repository"
+package = "ufw"
+repositories = ["extra", "cachyos-extra-v3", "cachyos-extra-v4", "cachyos-extra-znver4"]
+
+[[bindings]]
 requirement = "chromium"
 provider = "repository"
 package = "chromium"

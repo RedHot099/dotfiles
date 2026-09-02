@@ -2,6 +2,14 @@ schema = 2
 id = "agent.opencode"
 commands = ["opencode"]
 
+[[files]]
+source = "payload/ai-development/.config/opencode/opencode.json"
+target = ".config/opencode/opencode.json"
+
+[[files]]
+source = "payload/ai-development/.config/opencode/tui.json"
+target = ".config/opencode/tui.json"
+
 [[authentication]]
 label = "OpenCode"
 command = ["opencode", "auth", "login"]
