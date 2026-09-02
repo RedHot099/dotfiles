@@ -27,6 +27,7 @@ class PlanHeader:
 @dataclass(frozen=True)
 class PackagesEvidence:
     selection_digest: str
+    selected: tuple[str, ...]
     installed: tuple[str, ...]
 
     @classmethod
@@ -34,7 +35,7 @@ class PackagesEvidence:
         selection_digest = hashlib.sha256(
             json.dumps(sorted(selected), separators=(",", ":")).encode()
         ).hexdigest()
-        return cls(selection_digest, tuple(sorted(installed)))
+        return cls(selection_digest, tuple(sorted(selected)), tuple(sorted(installed)))
 
 
 @dataclass(frozen=True)
@@ -164,6 +165,7 @@ class IntegrationsPlan:
 def _evidence_dict(evidence: PackagesEvidence) -> dict[str, object]:
     return {
         "selection_digest": evidence.selection_digest,
+        "selected": list(evidence.selected),
         "installed": list(evidence.installed),
     }
 
@@ -272,5 +274,6 @@ def _parse_evidence(request: dict[object, object]) -> PackagesEvidence:
     if not isinstance(value, dict):
         raise PlanSchemaError("request.package_evidence must be an object")
     digest = _required_string(value, "selection_digest")
+    selected = tuple(sorted(_string_set(value, "selected")))
     installed = tuple(sorted(_string_set(value, "installed")))
-    return PackagesEvidence(digest, installed)
+    return PackagesEvidence(digest, selected, installed)

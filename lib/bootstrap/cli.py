@@ -93,6 +93,8 @@ def workflow_command(workflow: WorkflowId, operation: str) -> int:
     if not confirm(f"Apply reviewed {workflow.value} plan {plan.digest[:12]}?"):
         print("Aborted.")
         return 1
+    if workflow is WorkflowId.PACKAGES and plan.actions:
+        subprocess.run(("/usr/bin/sudo", "-v"), check=True)
     result = apply_workflow_plan(
         ROOT,
         repository,
@@ -136,7 +138,7 @@ def interactive_workflow_plan(workflow, repository, facts) -> WorkflowPlan:
                 item.group,
                 item.label,
                 item.id in previous.selected if previous else item.default,
-                bool(item.commands) and all(command in state.commands for command in item.commands),
+                bool(item.commands) and all(shutil.which(command) for command in item.commands),
                 item.hardware_hint,
             )
             for item in repository.applications.values()
@@ -298,6 +300,8 @@ def print_workflow_plan(plan: WorkflowPlan) -> None:
     print(f"\nWorkflow: {plan.header.workflow.value}\nPlan: {plan.digest}")
     for item in plan.actions:
         print(f"  {item.kind.value}: {item.feature}")
+    if plan.header.workflow is WorkflowId.INTEGRATIONS and "bitbucket" in plan.request.integrations:
+        print("  Bitbucket: no credential is stored; add an SSH key to Bitbucket and clone with git@bitbucket.org later.")
 
 
 def detect_host_state(workspace: Workspace) -> HostState:

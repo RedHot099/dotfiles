@@ -33,6 +33,11 @@ def plan_desktop(
     monitor_content: str | None = None,
 ) -> DesktopPlan:
     workspace = repository.workflow(WorkflowId.DESKTOP).workspace
+    if "session-autostart" in request.features:
+        required = {"google-chrome", "chromium", "caprine", "t3-code"}
+        missing = required - set(evidence.selected)
+        if missing:
+            raise CatalogError("NEEDS PACKAGES: " + ", ".join(sorted(missing)))
     selected = resolve_features(workspace, set(request.features))
     legacy = plan_install(
         root,
