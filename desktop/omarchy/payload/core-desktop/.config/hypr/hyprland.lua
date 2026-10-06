@@ -20,10 +20,9 @@ o.window("^chromium$", { workspace = "6 silent" })
 o.window({ class = "steam", title = "Steam" }, { float = false })
 -- Big Picture opens as an oversized float (e.g. 2560x1600 on a 1080p panel).
 o.window({ class = "^steam$", title = "^Steam Big Picture Mode$" }, { fullscreen = true })
-o.window("^org.omarchy.btop$", { size = { 2200, 1100 }, center = true })
+-- Same share of the screen as 2200x1100 on the 3440x1440 ultrawide.
+o.window("^org.omarchy.btop$", { size = { "(monitor_w*0.64)", "(monitor_h*0.76)" }, center = true })
 
-hl.env("NVD_BACKEND", "direct")
-hl.env("LIBVA_DRIVER_NAME", "nvidia")
-hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
+-- GPU variables come from Omarchy's default/hypr/nvidia.lua, which detects the card.
 hl.env("HYPRCURSOR_THEME", "Maverick Pointy Dark")
 hl.env("XCURSOR_THEME", "Maverick Pointy Dark")
