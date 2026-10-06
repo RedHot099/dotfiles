@@ -1,0 +1,3 @@
+# Captured upstream skill files keep their original CRLF line endings.
+integrations/common/skills/private/diagram-design/** -whitespace
+integrations/common/payload/user-skills/.local/share/arch-hypr-bootstrap/agent-skills/diagram-design/** -whitespace

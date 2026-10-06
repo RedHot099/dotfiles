@@ -1,5 +1,5 @@
 schema = 1
-count = 92
+count = 93
 
 [[skills]]
 id = "architect"
@@ -70,6 +70,11 @@ sha256 = "cf08764345ea8423d3d29f678c98854aac121c51e4204470f864d5db21549603"
 id = "diagnosing-bugs"
 origin = ".agents"
 sha256 = "2e26386fb0dfa4a4d87292fbf51780f47040fca1dbbb02085f3c059e9b2da621"
+
+[[skills]]
+id = "diagram-design"
+origin = ".agents"
+sha256 = "3c7ec59059f3a712c16feee2f22bad5ddc8428bb1589639eadef6dec3427a430"
 
 [[skills]]
 id = "domain-modeling"
