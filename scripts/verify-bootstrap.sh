@@ -26,8 +26,14 @@ if find "${content_roots[@]}" -path '*/.config/waybar*' -o -path '*/.config/mako
   exit 1
 fi
 
-if rg --hidden -i -I -n --glob '!.git/**' '/home/kuba|1password|crash-reporter-id' "${content_roots[@]}"; then
-  echo "Machine-specific path or excluded application detected" >&2
+if rg --hidden -i -I -n --glob '!.git/**' '/home/kuba|crash-reporter-id' "${content_roots[@]}"; then
+  echo "Machine-specific path detected" >&2
+  exit 1
+fi
+
+# The login queue may open 1Password, but no 1Password data or settings ship.
+if find "${content_roots[@]}" -ipath '*1password*' ! -path 'integrations/common/*/1password.toml' | grep .; then
+  echo "1Password files detected" >&2
   exit 1
 fi
 
@@ -42,7 +48,8 @@ PY
 
 ./scripts/verify-todoist-integration.sh
 qmllint -I /usr/share/omarchy/shell \
-  desktop/omarchy/payload/notifications/.config/omarchy/plugins/kuba.notifications/components/NotificationCard.qml
+  desktop/omarchy/payload/notifications/.config/omarchy/plugins/kuba.notifications/components/NotificationCard.qml \
+  desktop/omarchy/payload/core-desktop/.config/omarchy/plugins/bar-orientation/Service.qml
 rg -q 'function snoozeGoogleCalendar' desktop/omarchy/payload/notifications/.config/omarchy/plugins/kuba.notifications/Service.qml
 ./scripts/test-rclone-onedrive-service.sh integrations/common/payload/cloud-onedrive/.config/systemd/user/rclone-onedrive.service
 ./scripts/test-rclone-onedrive-service.sh integrations/common/payload/cloud-google-drive/.config/systemd/user/rclone-google-drive.service

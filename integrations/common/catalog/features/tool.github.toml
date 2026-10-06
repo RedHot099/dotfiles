@@ -1,8 +1,8 @@
 schema = 2
 id = "tool.github"
-label = "GitHub CLI"
-description = "GitHub command-line client"
-group = "AI"
-default = false
-visible = false
-requires = []
+label = "GitHub"
+description = "Log in to the GitHub CLI, use SSH for Git, and upload the SSH key"
+group = "Developer accounts"
+default = true
+visible = true
+requires = ["ssh-key"]

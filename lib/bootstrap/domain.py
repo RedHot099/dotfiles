@@ -213,7 +213,7 @@ _ACTION_DATA_FIELDS: dict[ActionKind, tuple[frozenset[str], frozenset[str]]] = {
     ),
     ActionKind.MANUAL_AUTHENTICATION: (
         frozenset({"label", "command", "probe", "probe_contains"}),
-        frozenset(),
+        frozenset({"order"}),
     ),
     ActionKind.OMARCHY_THEME: (frozenset({"name"}), frozenset({"revision"})),
     ActionKind.AUTHORIZED_SSH_KEYS: (
@@ -613,7 +613,7 @@ def _validate_action_data(kind: ActionKind, data: Mapping[str, JsonValue]) -> No
     }
     sequence_fields = {"packages", "dependencies", "tools", "commands", "keys", "fingerprints"}
     boolean_fields = {"enabled", "start"}
-    integer_fields = {"mode", "port", "expected_exit"}
+    integer_fields = {"mode", "port", "expected_exit", "order"}
     nullable_string_fields = {"symlink", "probe_contains"}
     for field, value in data.items():
         if field in string_fields and not isinstance(value, str):

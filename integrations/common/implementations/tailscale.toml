@@ -5,5 +5,5 @@ system_units = ["tailscaled.service"]
 
 [[authentication]]
 label = "Tailscale"
-command = ["tailscale", "up"]
+command = ["sudo", "tailscale", "up"]
 probe = ["tailscale", "status"]

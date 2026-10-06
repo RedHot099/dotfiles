@@ -16,7 +16,7 @@ Setup runs three independent workflows in order:
 
 1. Packages installs selected applications and exact runtime tools.
 2. Desktop configures the monitor, Hyprland, Omarchy Shell, workspaces, shortcuts, themes, startup, and Calendar.
-3. Integrations configures AI agents, skills, cloud mounts, Todoist, GitHub SSH access, Tailscale, firewall rules, and Bitbucket readiness.
+3. Integrations configures AI agents, skills, cloud mounts, Todoist, GitHub SSH access, Tailscale, and firewall rules, then runs the login queue.
 
 Run a workflow separately when needed:
 
@@ -46,7 +46,9 @@ Desktop keeps the Google Calendar Snooze and Todoist widgets and does not instal
 
 The curated agents are Claude Code, Codex, OpenCode, and Cursor Agent. Skills are selected once and linked from one managed canonical tree into `.agents`, Claude, Codex, OpenCode, and Cursor harness roots. Codex `.system`, Cursor `skills-cursor`, and unrelated non-colliding skills remain untouched.
 
-The repository stores no tokens, sessions, browser profiles, rclone configuration, private SSH keys, host fingerprints, or `known_hosts` entries. Bitbucket uses Git and OpenSSH and provides login guidance only.
+The repository stores no tokens, sessions, browser profiles, rclone configuration, private SSH keys, host fingerprints, or `known_hosts` entries.
+
+The login queue asks before each login, in this order: an SSH key (created with `ssh-keygen` if `~/.ssh/id_ed25519` is missing), GitHub (`gh auth login` with SSH, which uploads the key), and Bitbucket (copies the key and opens the Bitbucket SSH key page). Then come the AI agents, AWS CLI, Docker Hub, 1Password, Tailscale, Google Drive, OneDrive, and Todoist. A declined, cancelled, or failed login stays in the queue and the workflow reports `INCOMPLETE`; run `./bootstrap integrations apply` again to retry it.
 
 Selections, digest-addressed plans, journals, and the global apply lock live under `~/.local/state/arch-hypr-bootstrap/`.
 

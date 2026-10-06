@@ -601,13 +601,23 @@ def authenticate(item: PlannedAction, environment: dict[str, str]) -> bool:
     label = str(item.data["label"])
     if input(f"Authenticate {label} now? [y/N] ").strip().lower() not in {"y", "yes"}:
         return False
-    run(tuple(strings(item.data["command"])), environment=environment)
+    # A failed or cancelled login leaves it in the login queue; it must not
+    # stop the remaining logins and services.
+    try:
+        run(tuple(strings(item.data["command"])), environment=environment)
+    except KeyboardInterrupt:
+        print(f"\n{label}: login cancelled; it stays in the login queue.")
+        return False
+    except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
+        print(f"{label}: login did not finish ({error}); it stays in the login queue.")
+        return False
     if not run_probe(
         tuple(strings(item.data["probe"])),
         optional_string(item.data.get("probe_contains")),
         environment,
     ):
-        raise RuntimeError(f"authentication did not pass: {label}")
+        print(f"{label}: login check did not pass; it stays in the login queue.")
+        return False
     return True
 
 

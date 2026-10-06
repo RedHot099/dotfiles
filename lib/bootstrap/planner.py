@@ -195,6 +195,7 @@ def plan_install(
                         "command": authentication.command,
                         "probe": authentication.probe,
                         "probe_contains": authentication.probe_contains,
+                        "order": authentication.order,
                     },
                 )
             )
@@ -325,7 +326,7 @@ def _json_ready(value: object) -> object:
     return value
 
 
-def action_order(item: PlannedAction) -> tuple[int, str, str, str]:
+def action_order(item: PlannedAction) -> tuple[int, int, str, str, str]:
     order = {
         ActionKind.REPOSITORY_PACKAGES: 0,
         ActionKind.AUR_BUILD: 1,
@@ -344,7 +345,11 @@ def action_order(item: PlannedAction) -> tuple[int, str, str, str]:
         ActionKind.VERIFICATION_PROBE: 12,
     }
     target = str(item.data.get("target", ""))
-    return order[item.kind], item.feature, target, item.kind.value
+    # Logins run in their catalog order so an SSH key exists before the
+    # accounts that upload it.
+    login_order = item.data.get("order", 0)
+    assert isinstance(login_order, int)
+    return order[item.kind], login_order, item.feature, target, item.kind.value
 
 
 def ssh_fingerprint(key: str) -> str:

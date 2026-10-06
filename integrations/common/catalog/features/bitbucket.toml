@@ -1,8 +1,8 @@
 schema = 2
 id = "bitbucket"
 label = "Bitbucket"
-description = "Show later SSH authorization instructions without storing credentials or host keys"
+description = "Add the SSH key to Bitbucket and check SSH access; no token is stored"
 group = "Developer accounts"
 default = true
 visible = true
-requires = []
+requires = ["ssh-key"]

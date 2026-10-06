@@ -4,5 +4,6 @@ commands = ["gh"]
 
 [[authentication]]
 label = "GitHub"
-command = ["gh", "auth", "login"]
+command = ["gh", "auth", "login", "--git-protocol", "ssh"]
 probe = ["gh", "auth", "status"]
+order = 20

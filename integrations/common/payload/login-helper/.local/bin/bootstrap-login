@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Logins and login checks for the bootstrap login queue that are more than one
+# command. Each login has a matching read-only *-status check.
+
+set -euo pipefail
+
+key="$HOME/.ssh/id_ed25519"
+
+usage() {
+  echo "usage: bootstrap-login <ssh-key|bitbucket|1password>[-status] | docker-status" >&2
+  exit 2
+}
+
+wait_for_enter() {
+  read -r -p "$1 Press Enter to continue. " _
+}
+
+ssh_key() {
+  if [[ -f $key.pub ]]; then
+    echo "Using the existing SSH key $key.pub"
+    return
+  fi
+  mkdir -p "$HOME/.ssh"
+  chmod 700 "$HOME/.ssh"
+  ssh-keygen -t ed25519 -C "$USER@$(uname -n)" -f "$key"
+}
+
+ssh_key_status() {
+  [[ -f $key && -f $key.pub ]]
+}
+
+bitbucket() {
+  ssh_key
+  if command -v wl-copy >/dev/null 2>&1; then
+    wl-copy <"$key.pub"
+    echo "Copied $key.pub to the clipboard:"
+  else
+    echo "Add this public key:"
+  fi
+  cat "$key.pub"
+  xdg-open "https://bitbucket.org/account/settings/ssh-keys/" >/dev/null 2>&1 || true
+  wait_for_enter "Add the key under Bitbucket > Personal settings > SSH keys."
+  # The first connection records Bitbucket's host key, so later checks can run
+  # in batch mode without writing to known_hosts.
+  ssh -T -o StrictHostKeyChecking=accept-new git@bitbucket.org || true
+}
+
+bitbucket_status() {
+  local reply
+  reply=$(ssh -T -o BatchMode=yes git@bitbucket.org 2>&1 || true)
+  [[ $reply == *"authenticated via ssh key"* ]]
+}
+
+onepassword() {
+  setsid -f 1password >/dev/null 2>&1
+  wait_for_enter "Sign in to 1Password in the window that opened."
+}
+
+onepassword_status() {
+  python3 - "$HOME/.config/1Password/1password.sqlite" <<'PY'
+import sqlite3, sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+if not path.is_file():
+    raise SystemExit(1)
+with sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True) as connection:
+    raise SystemExit(0 if connection.execute("select count(*) from accounts").fetchone()[0] else 1)
+PY
+}
+
+docker_status() {
+  local config="$HOME/.docker/config.json" store
+  [[ -f $config ]] || return 1
+  jq -e '.auths // {} | has("https://index.docker.io/v1/")' "$config" >/dev/null && return 0
+  store=$(jq -r '.credsStore // empty' "$config")
+  [[ -n $store ]] || return 1
+  [[ $("docker-credential-$store" list 2>/dev/null || true) == *"index.docker.io"* ]]
+}
+
+case "${1:-}" in
+  ssh-key) ssh_key ;;
+  ssh-key-status) ssh_key_status ;;
+  bitbucket) bitbucket ;;
+  bitbucket-status) bitbucket_status ;;
+  1password) onepassword ;;
+  1password-status) onepassword_status ;;
+  docker-status) docker_status ;;
+  *) usage ;;
+esac

@@ -1,0 +1,7 @@
+schema = 2
+id = "login-helper"
+commands = ["bootstrap-login"]
+
+[[files]]
+source = "payload/login-helper"
+target = "."

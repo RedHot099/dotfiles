@@ -1,0 +1,8 @@
+schema = 2
+id = "aws"
+label = "AWS CLI"
+description = "Configure AWS CLI credentials"
+group = "Developer accounts"
+default = true
+visible = true
+requires = []

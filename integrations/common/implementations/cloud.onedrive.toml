@@ -8,7 +8,7 @@ source = "payload/cloud-onedrive"
 target = "."
 
 [[authentication]]
-label = "OneDrive remote"
+label = "OneDrive (create an rclone remote named onedrive)"
 command = ["rclone", "config"]
 probe = ["rclone", "listremotes"]
 probe_contains = "onedrive:"

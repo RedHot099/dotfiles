@@ -8,7 +8,7 @@ source = "payload/cloud-google-drive"
 target = "."
 
 [[authentication]]
-label = "Google Drive remote"
+label = "Google Drive (create an rclone remote named gdrive)"
 command = ["rclone", "config"]
 probe = ["rclone", "listremotes"]
 probe_contains = "gdrive:"

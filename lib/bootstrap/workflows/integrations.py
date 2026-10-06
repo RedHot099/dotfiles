@@ -87,6 +87,7 @@ def _missing_applications(repository, selected: set[str], evidence: PackagesEvid
         "agent.opencode": "opencode",
         "agent.cursor": "cursor-agent",
         "tool.github": "github-cli",
+        "aws": "aws-cli",
         "tool.rclone": "cloud-support",
         "cloud.google-drive": "cloud-support",
         "cloud.onedrive": "cloud-support",
@@ -95,6 +96,7 @@ def _missing_applications(repository, selected: set[str], evidence: PackagesEvid
         "ssh-access": "ssh-support",
         "ssh-firewall": "ssh-support",
         "bitbucket": "ssh-support",
+        "ssh-key": "ssh-support",
         "tailscale": "tailscale",
     }
     available = set(evidence.installed)

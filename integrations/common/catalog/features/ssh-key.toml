@@ -1,0 +1,8 @@
+schema = 2
+id = "ssh-key"
+label = "SSH key"
+description = "Create an ed25519 SSH key for GitHub and Bitbucket when none exists"
+group = "Developer accounts"
+default = true
+visible = true
+requires = ["login-helper"]

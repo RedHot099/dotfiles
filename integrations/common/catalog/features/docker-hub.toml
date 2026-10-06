@@ -1,0 +1,8 @@
+schema = 2
+id = "docker-hub"
+label = "Docker Hub"
+description = "Log Docker in to Docker Hub"
+group = "Developer accounts"
+default = true
+visible = true
+requires = ["login-helper"]

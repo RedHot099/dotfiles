@@ -1,0 +1,8 @@
+schema = 2
+id = "login-helper"
+label = "Login helper"
+description = "Helper for multi-step logins and their checks"
+group = "Technical"
+default = false
+visible = false
+requires = []

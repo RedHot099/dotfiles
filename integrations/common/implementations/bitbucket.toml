@@ -1,3 +1,9 @@
 schema = 2
 id = "bitbucket"
 commands = ["git", "ssh"]
+
+[[authentication]]
+label = "Bitbucket"
+command = ["bootstrap-login", "bitbucket"]
+probe = ["bootstrap-login", "bitbucket-status"]
+order = 30

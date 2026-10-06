@@ -1,3 +1,9 @@
 schema = 2
 id = "agent.cursor"
 commands = ["cursor-agent"]
+
+[[authentication]]
+label = "Cursor Agent"
+command = ["cursor-agent", "login"]
+probe = ["cursor-agent", "status"]
+probe_contains = "Logged in"

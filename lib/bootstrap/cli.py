@@ -301,7 +301,7 @@ def print_workflow_plan(plan: WorkflowPlan) -> None:
     for item in plan.actions:
         print(f"  {item.kind.value}: {item.feature}")
     if plan.header.workflow is WorkflowId.INTEGRATIONS and "bitbucket" in plan.request.integrations:
-        print("  Bitbucket: no credential is stored; add an SSH key to Bitbucket and clone with git@bitbucket.org later.")
+        print("  Bitbucket: the login queue adds your SSH key to Bitbucket; no token is stored.")
 
 
 def detect_host_state(workspace: Workspace) -> HostState:

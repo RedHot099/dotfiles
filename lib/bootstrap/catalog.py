@@ -22,6 +22,7 @@ TOOL_RE = re.compile(
 )
 GIT_COMMIT_RE = re.compile(r"[0-9a-fA-F]{40}")
 SYSTEM_UNIT_ALLOWLIST = frozenset({"sshd.service", "tailscaled.service"})
+DEFAULT_AUTHENTICATION_ORDER = 100
 COMMON_PLATFORM_REFERENCE_RE = re.compile(
     rb"/usr/share/omarchy"
     rb"|(?:^|[/\s\"'])\.config/omarchy(?:[/\s\"']|$)"
@@ -67,6 +68,7 @@ class AuthenticationSpec:
     command: tuple[str, ...]
     probe: tuple[str, ...]
     probe_contains: str | None
+    order: int
 
 
 @dataclass(frozen=True)
@@ -890,11 +892,11 @@ def _repository_table(item: Mapping[str, object], path: Path) -> tuple[str, str,
 
 def _authentication_table(
     item: Mapping[str, object], path: Path
-) -> tuple[str, tuple[str, ...], tuple[str, ...], str | None]:
+) -> tuple[str, tuple[str, ...], tuple[str, ...], str | None, int]:
     _table_fields(
         item,
         {"label", "command", "probe"},
-        {"probe_contains"},
+        {"probe_contains", "order"},
         "authentication",
         path,
     )
@@ -903,7 +905,10 @@ def _authentication_table(
     contains = item.get("probe_contains")
     if contains is not None and (not isinstance(contains, str) or not contains):
         raise CatalogError(f"probe_contains must be a non-empty string in {path}")
-    return _table_string(item, "label", path), command, probe, contains
+    order = item.get("order", DEFAULT_AUTHENTICATION_ORDER)
+    if not isinstance(order, int) or isinstance(order, bool) or not 0 <= order <= 999:
+        raise CatalogError(f"authentication order must be an integer from 0 to 999 in {path}")
+    return _table_string(item, "label", path), command, probe, contains, order
 
 
 def _table_argv(item: Mapping[str, object], key: str, path: Path) -> tuple[str, ...]:

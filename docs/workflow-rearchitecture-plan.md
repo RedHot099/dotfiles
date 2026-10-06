@@ -345,13 +345,14 @@ Integrations owns:
 - the Todoist widget;
 - GitHub SSH access and public keys;
 - reviewed `sshd.service`, `tailscaled.service`, and UFW configuration;
-- Bitbucket readiness instructions.
+- Bitbucket SSH key upload;
+- AWS CLI, Docker Hub, and 1Password logins.
 
 Packages installs all required binaries. Integrations starts cloud units only after their authentication probes pass.
 
-Bitbucket installs no separate client. It requires Git and OpenSSH, stores no Bitbucket token, key, host fingerprint, or `known_hosts` entry, and performs no connection test. If no SSH key exists, the TUI may offer an explicit `ssh-keygen` wizard. It never generates a key without approval.
+Bitbucket installs no separate client. It requires Git and OpenSSH and stores no Bitbucket token. Its login copies the machine's SSH key, opens the Bitbucket SSH key page, and makes one SSH connection that records the host key in the user's `known_hosts`; the repository stores no key, host fingerprint, or `known_hosts` entry. Its check uses SSH batch mode and writes nothing. The separate SSH key login creates `~/.ssh/id_ed25519` with `ssh-keygen` only after the user approves it.
 
-The authentication queue lists every selected login. Skipping or cancelling one login continues to the next and produces `NEEDS LOGIN`.
+The authentication queue lists every selected login. An `order` value in the catalog runs the SSH key, GitHub, and Bitbucket logins first; the rest follow by feature. Skipping, cancelling, or failing one login continues to the next and produces `NEEDS LOGIN`.
 
 ## Skill supply chain
 

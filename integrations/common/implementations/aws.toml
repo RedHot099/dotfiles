@@ -1,0 +1,8 @@
+schema = 2
+id = "aws"
+commands = ["aws"]
+
+[[authentication]]
+label = "AWS CLI"
+command = ["aws", "configure"]
+probe = ["aws", "sts", "get-caller-identity"]

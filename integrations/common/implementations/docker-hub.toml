@@ -1,0 +1,8 @@
+schema = 2
+id = "docker-hub"
+commands = ["docker"]
+
+[[authentication]]
+label = "Docker Hub"
+command = ["docker", "login"]
+probe = ["bootstrap-login", "docker-status"]

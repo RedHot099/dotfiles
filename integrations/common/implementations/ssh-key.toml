@@ -1,0 +1,9 @@
+schema = 2
+id = "ssh-key"
+commands = ["ssh-keygen"]
+
+[[authentication]]
+label = "SSH key"
+command = ["bootstrap-login", "ssh-key"]
+probe = ["bootstrap-login", "ssh-key-status"]
+order = 10
