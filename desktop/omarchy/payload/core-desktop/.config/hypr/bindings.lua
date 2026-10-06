@@ -51,3 +51,22 @@ end
 
 hl.unbind("SUPER + mouse:274")
 o.bind("SUPER + mouse:274", "Snooze Google Calendar notification", "omarchy-shell notifications snoozeGoogleCalendar")
+
+-- SUPER + CTRL + 1..9 open the Nth bar panel. Omarchy counts panels in the
+-- right section, but the vertical layout of the bar-orientation plugin keeps
+-- them in the left (top) section, so count in whichever section holds them.
+local panel_section = [[$(jq -r 'if ((.bar.position // "top") | IN("left","right")) then "left" else "right" end' "$HOME/.config/omarchy/shell.json")]]
+for panel = 1, 9 do
+  local keys = "SUPER + CTRL + code:" .. tostring(panel + 9)
+  hl.unbind(keys)
+  o.bind(keys, "Bar panel " .. panel, "omarchy-shell -q shell togglePanelAt " .. panel_section .. " " .. tostring(panel))
+end
+
+-- On a vertical bar the bottom section is `right`. Dragging the workspace
+-- numbers into the center empties it, and an empty section has no drop
+-- target, so they cannot be dragged back.
+o.bind(
+  "SUPER + ALT + W",
+  "Workspace numbers to the bottom",
+  [[pos=$(jq -r '.bar.position // "top"' "$HOME/.config/omarchy/shell.json"); case "$pos" in left|right) omarchy bar move omarchy.workspaces --section right ;; esac]]
+)

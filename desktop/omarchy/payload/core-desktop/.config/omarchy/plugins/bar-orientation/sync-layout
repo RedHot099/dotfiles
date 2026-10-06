@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Keep one bar layout per orientation in ~/.config/omarchy/shell.json.
+#
+# The plugin's own entry in plugins[] stores the layouts and the orientation
+# seen on the previous run:
+#   { "id": "bar-orientation", "orientation": "horizontal",
+#     "layouts": { "horizontal": {...}, "vertical": {...} } }
+#
+# When the bar has moved between a horizontal edge (top, bottom) and a
+# vertical edge (left, right), the layout it left behind is saved for the old
+# orientation and the saved layout for the new orientation replaces
+# bar.layout. Otherwise the current bar.layout is saved for the current
+# orientation, so edits made on either edge are kept.
+#
+# Without an entry for the plugin the file is left alone: an unreadable user
+# file makes the shell fall back to packaged defaults, and writing those back
+# would replace the user's configuration.
+
+set -euo pipefail
+
+id="${1:-bar-orientation}"
+config="${HOME}/.config/omarchy/shell.json"
+
+[[ -f $config ]] || exit 0
+
+next=$(jq --arg id "$id" '
+  def mine: type == "object" and .id == $id;
+  def orientation:
+    if ((.bar.position // "top") | IN("left", "right")) then "vertical" else "horizontal" end;
+
+  if (.plugins | type) != "array" or (.bar.layout | type) != "object"
+     or ([.plugins[] | select(mine)] | length) == 0 then
+    .
+  else
+    orientation as $now
+    | (first(.plugins[] | select(mine)).orientation // "") as $last
+    | (first(.plugins[] | select(mine)).layouts[$now]? // null) as $saved
+    | ($last != "" and $last != $now) as $switched
+    | .bar.layout as $outgoing
+    | (if $switched and ($saved | type) == "object" then .bar.layout = $saved else . end)
+    | .bar.layout as $layout
+    | .plugins |= map(
+        if mine then
+          .orientation = $now
+          | .layouts = ((.layouts | if type == "object" then . else {} end)
+              + (if $switched then {($last): $outgoing} else {} end)
+              + {($now): $layout})
+        else . end)
+  end
+' "$config")
+
+[[ $(jq -c . <<<"$next") == "$(jq -c . "$config")" ]] && exit 0
+
+tmp=$(mktemp "${config}.XXXXXX")
+trap 'rm -f "$tmp"' EXIT
+printf '%s\n' "$next" >"$tmp"
+chmod --reference="$config" "$tmp"
+mv "$tmp" "$config"
+trap - EXIT
+
+if command -v omarchy-shell >/dev/null 2>&1; then
+  omarchy-shell shell reloadConfig >/dev/null 2>&1 || true
+fi

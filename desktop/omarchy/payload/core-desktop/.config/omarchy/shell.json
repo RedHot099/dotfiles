@@ -35,7 +35,37 @@
     }
   },
   "plugins": [
-    { "id": "kuba.notifications" }
+    { "id": "kuba.notifications" },
+    {
+      "id": "bar-orientation",
+      "layouts": {
+        "vertical": {
+          "left": [
+            { "id": "omarchy.menu" },
+            { "id": "omarchy.tailscale" },
+            { "id": "omarchy.agents" },
+            { "id": "kuba.tasks", "refreshIntervalSec": 60 },
+            { "id": "omarchy.bluetooth" },
+            { "id": "omarchy.network" },
+            { "id": "omarchy.audio" },
+            { "id": "omarchy.monitor" },
+            { "id": "omarchy.power" },
+            { "id": "omarchy.tray" }
+          ],
+          "center": [
+            { "id": "omarchy.indicators" },
+            { "id": "omarchy.microphone" },
+            { "id": "omarchy.clock", "format": "dddd HH:mm", "formatAlt": "d MMMM 'W'ww yyyy", "verticalFormat": "HH\n—\nmm" },
+            { "id": "omarchy.keyboard-layout" },
+            { "id": "omarchy.weather" },
+            { "id": "omarchy.system-update" }
+          ],
+          "right": [
+            { "id": "omarchy.workspaces" }
+          ]
+        }
+      }
+    }
   ],
   "disabledPlugins": [
     "omarchy.notifications"

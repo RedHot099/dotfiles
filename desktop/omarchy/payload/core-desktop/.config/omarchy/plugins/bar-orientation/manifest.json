@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "bar-orientation",
+  "name": "Bar orientation layouts",
+  "version": "2.0.0",
+  "author": "Jakub Eichner",
+  "license": "MIT",
+  "description": "Keeps a separate widget layout for the horizontal and the vertical bar and swaps them when the bar changes edge.",
+  "kinds": [
+    "service"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml"
+  }
+}
