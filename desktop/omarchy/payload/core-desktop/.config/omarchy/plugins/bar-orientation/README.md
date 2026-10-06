@@ -6,17 +6,24 @@ horizontal edge (top, bottom) and a vertical edge (left, right), the layout
 saved for the new orientation replaces `bar.layout`. Rearranging widgets on
 either edge updates that orientation's saved layout.
 
-It works with Omarchy 4 and needs `bash` and `jq`.
+It comes with `bar-orientation-tray`, a copy of Omarchy's system tray that can
+open its drawer downward on a vertical bar. It works with Omarchy 4 and needs
+`bash` and `jq`.
 
 ## Install
 
-Copy this directory, then load and enable the plugin:
+Copy both directories, then load and enable the plugins:
 
 ```bash
-cp -r bar-orientation ~/.config/omarchy/plugins/
+cp -r bar-orientation bar-orientation-tray ~/.config/omarchy/plugins/
 omarchy-shell shell rescanPlugins
 omarchy plugin enable bar-orientation
+omarchy plugin enable bar-orientation-tray
 ```
+
+The two are separate plugins because Omarchy keeps a service's settings in
+`plugins[]` and a bar widget's settings in its `bar.layout` entry. The tray is
+a clone of `omarchy.tray`, so enabling it replaces the built-in tray.
 
 Enabling adds `{ "id": "bar-orientation" }` to `plugins[]` in
 `~/.config/omarchy/shell.json`. The first sync saves the current layout for
@@ -35,6 +42,21 @@ You can also seed the other orientation's layout by hand:
 ```
 
 On a vertical bar, `left` is the top section and `right` is the bottom section.
+
+## Tray
+
+`bar-orientation-tray` behaves like the built-in tray. On a vertical bar the
+built-in tray puts its chevron above the pinned icons and slides the drawer
+upward. Set `revealDown` on the tray's layout entry to mirror it: pinned icons
+first, then a downward chevron, then the drawer. Use it when the tray ends the
+top section of a vertical bar:
+
+```json
+{ "id": "bar-orientation-tray", "revealDown": true }
+```
+
+Pinning or hiding an icon keeps `revealDown` and any other setting on the
+entry. The tray code is Omarchy's `omarchy.tray` (MIT) with these two changes.
 
 ## Behaviour
 

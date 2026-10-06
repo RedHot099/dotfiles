@@ -22,7 +22,7 @@
         { "id": "omarchy.system-update" }
       ],
       "right": [
-        { "id": "omarchy.tray" },
+        { "id": "bar-orientation-tray" },
         { "id": "omarchy.tailscale" },
         { "id": "omarchy.agents" },
         { "id": "kuba.tasks", "refreshIntervalSec": 60 },
@@ -50,7 +50,7 @@
             { "id": "omarchy.audio" },
             { "id": "omarchy.monitor" },
             { "id": "omarchy.power" },
-            { "id": "omarchy.tray" }
+            { "id": "bar-orientation-tray", "revealDown": true }
           ],
           "center": [
             { "id": "omarchy.indicators" },

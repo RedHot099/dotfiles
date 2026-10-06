@@ -49,7 +49,8 @@ PY
 ./scripts/verify-todoist-integration.sh
 qmllint -I /usr/share/omarchy/shell \
   desktop/omarchy/payload/notifications/.config/omarchy/plugins/kuba.notifications/components/NotificationCard.qml \
-  desktop/omarchy/payload/core-desktop/.config/omarchy/plugins/bar-orientation/Service.qml
+  desktop/omarchy/payload/core-desktop/.config/omarchy/plugins/bar-orientation/Service.qml \
+  desktop/omarchy/payload/core-desktop/.config/omarchy/plugins/bar-orientation-tray/Tray.qml
 rg -q 'function snoozeGoogleCalendar' desktop/omarchy/payload/notifications/.config/omarchy/plugins/kuba.notifications/Service.qml
 ./scripts/test-rclone-onedrive-service.sh integrations/common/payload/cloud-onedrive/.config/systemd/user/rclone-onedrive.service
 ./scripts/test-rclone-onedrive-service.sh integrations/common/payload/cloud-google-drive/.config/systemd/user/rclone-google-drive.service

@@ -117,8 +117,12 @@ class BarOrientationTests(unittest.TestCase):
         shell = json.loads((PLUGIN.parents[1] / "shell.json").read_text())
         entry = next(item for item in shell["plugins"] if item["id"] == "bar-orientation")
         self.assertEqual(set(entry["layouts"]["vertical"]), {"left", "center", "right"})
+        self.assertIn({"id": "bar-orientation-tray", "revealDown": True}, entry["layouts"]["vertical"]["left"])
+        self.assertIn({"id": "bar-orientation-tray"}, shell["bar"]["layout"]["right"])
         manifest = json.loads((PLUGIN / "manifest.json").read_text())
         self.assertEqual(manifest["id"], "bar-orientation")
+        tray = json.loads((PLUGIN.parent / "bar-orientation-tray/manifest.json").read_text())
+        self.assertEqual((tray["id"], tray["omarchy"]["clonedFrom"]), ("bar-orientation-tray", "omarchy.tray"))
 
 
 if __name__ == "__main__":

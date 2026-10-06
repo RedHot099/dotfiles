@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "bar-orientation-tray",
+  "name": "Bar orientation tray",
+  "version": "1.0.0",
+  "author": "Jakub Eichner",
+  "license": "MIT",
+  "description": "System tray that can open its drawer downward on a vertical bar",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Tray.qml"
+  },
+  "barWidget": {
+    "displayName": "Bar orientation tray",
+    "description": "System tray that can open its drawer downward on a vertical bar",
+    "category": "Status",
+    "allowMultiple": false
+  },
+  "omarchy": {
+    "clonedFrom": "omarchy.tray"
+  }
+}
