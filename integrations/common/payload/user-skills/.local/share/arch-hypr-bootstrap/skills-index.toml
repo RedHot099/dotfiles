@@ -1,5 +1,5 @@
 schema = 1
-count = 91
+count = 92
 
 [[skills]]
 id = "architect"
@@ -390,6 +390,11 @@ sha256 = "71d6f90642a76961c35e48c2501d029ce7fdc6e1e0d98035695a538ff82f9834"
 id = "technical-writing"
 origin = ".codex"
 sha256 = "18922b38427f795978859e20a8cae2123b19ca65671ae479cbee3c751b5c0bfd"
+
+[[skills]]
+id = "thermo-nuclear-code-quality-review"
+origin = ".agents"
+sha256 = "4bf4bf880a497d75d8cc260388cd9f935eb9dfe25d882ca4ac62c1da85a97ac6"
 
 [[skills]]
 id = "to-questionnaire"
