@@ -1,6 +1,7 @@
 .pragma library
 
 var TAB_IDS = ["all", "overdue", "today", "upcoming", "noDate", "completed"]
+var BAR_HORIZON_DAYS = 21
 
 function pad2(value) {
   return String(value).padStart(2, "0")
@@ -9,6 +10,31 @@ function pad2(value) {
 function localDate(nowMs) {
   var current = new Date(nowMs)
   return current.getFullYear() + "-" + pad2(current.getMonth() + 1) + "-" + pad2(current.getDate())
+}
+
+function shiftedLocalDate(nowMs, offsetDays) {
+  var date = new Date(nowMs)
+  date.setHours(12, 0, 0, 0)
+  date.setDate(date.getDate() + offsetDays)
+  return localDate(date.getTime())
+}
+
+// Bar badge: active tasks due today..today+horizon, plus everything overdue.
+// No-date and further-out tasks are left out of the count on purpose.
+function barSummary(snapshot, nowMs, horizonDays) {
+  var active = snapshot && Array.isArray(snapshot.active) ? snapshot.active : []
+  var days = horizonDays === undefined ? BAR_HORIZON_DAYS : horizonDays
+  var today = localDate(nowMs)
+  var horizon = shiftedLocalDate(nowMs, days)
+  var overdue = 0
+  var dueSoon = 0
+  active.forEach(function(task) {
+    if (!task || !task.due || !task.due.date) return
+    var due = String(task.due.date).slice(0, 10)
+    if (due < today) overdue += 1
+    else if (due <= horizon) dueSoon += 1
+  })
+  return { overdue: overdue, dueSoon: dueSoon, count: overdue + dueSoon }
 }
 
 function bucketFor(task, today) {

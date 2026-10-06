@@ -47,6 +47,27 @@ TestCase {
     verify(after.selectableTaskIds.indexOf("today-high") >= 0)
   }
 
+  function test_bar_summary_counts_overdue_and_three_weeks() {
+    var now = new Date(2026, 7, 24, 12).getTime()
+    var window = ({
+      active: [
+        { id: "late", due: { date: "2026-08-23" } },
+        { id: "today", due: { date: "2026-08-24" } },
+        { id: "edge-in", due: { date: "2026-09-14" } },
+        { id: "edge-out", due: { date: "2026-09-15" } },
+        { id: "datetime", due: { date: "2026-09-01T09:00:00" } },
+        { id: "free", due: null }
+      ],
+      completed: []
+    })
+    var summary = TaskView.barSummary(window, now)
+    compare(summary.overdue, 1)
+    compare(summary.dueSoon, 3)
+    compare(summary.count, 4)
+    compare(TaskView.barSummary(null, now).count, 0)
+    compare(TaskView.barSummary(window, now, 0).count, 2)
+  }
+
   function test_selection_is_stable_or_nearest() {
     var view = TaskView.buildView(snapshot, "today", "", new Date(2026, 7, 24, 12).getTime())
     compare(TaskView.reconcileSelection("today-low", 0, view), "today-low")

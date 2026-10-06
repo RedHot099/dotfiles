@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "TaskView.js" as TaskView
 
 Item {
   id: root
@@ -16,6 +17,14 @@ Item {
   readonly property bool hasSnapshot: snapshot !== null
   readonly property int activeCount: hasSnapshot && Array.isArray(snapshot.active) ? snapshot.active.length : -1
   readonly property bool stale: freshness && freshness.kind === "stale"
+  // Bar badge input, recomputed after every helper run so it tracks midnight.
+  property var _barSummary: null
+  readonly property int dueCount: _barSummary ? _barSummary.count : -1
+  readonly property int overdueCount: _barSummary ? _barSummary.overdue : 0
+  // "unknown" until the first refresh, then "ok", "offline" or "error".
+  property string syncState: "unknown"
+  readonly property bool offline: syncState === "offline"
+  readonly property bool syncProblem: syncState === "offline" || syncState === "error"
   readonly property bool refreshing: currentJob && currentJob.kind === "refresh"
   readonly property bool busy: worker.running || currentJob !== null || jobQueue.length > 0
 
@@ -189,6 +198,10 @@ Item {
     }
   }
 
+  function syncStateFor(code) {
+    return String(code || "") === "OFFLINE" ? "offline" : "error"
+  }
+
   function applyResult(exitCode, stdout, stderr) {
     var job = currentJob
     var payload = null
@@ -202,13 +215,17 @@ Item {
       lastError = publicError("INTERNAL_PROTOCOL", stderr || "Helper Todoist zwrócił niepoprawną odpowiedź.", true)
       if (job && job.kind === "action")
         operationFailed(job.requestId, job.operation, job.taskId, lastError.code, lastError.message)
+      else syncState = "error"
       settleJob(job)
       return
     }
 
     if (payload.ok) {
       if (payload.snapshot) _snapshot = payload.snapshot
-      if (payload.freshness) _freshness = payload.freshness
+      if (payload.freshness) {
+        _freshness = payload.freshness
+        syncState = payload.freshness.kind === "stale" ? syncStateFor(payload.freshness.reason) : "ok"
+      }
       lastWarning = payload.warning || null
       lastError = null
       if (job && job.kind === "action") {
@@ -230,11 +247,13 @@ Item {
       lastError = publicError(errorValue.code, errorValue.message, errorValue.retryable)
       if (job && job.kind === "action")
         operationFailed(job.requestId, job.operation, job.taskId, lastError.code, lastError.message)
+      else syncState = syncStateFor(lastError.code)
     }
     settleJob(job)
   }
 
   function settleJob(job) {
+    _barSummary = TaskView.barSummary(_snapshot, Date.now())
     if (job && job.kind === "action") setPending(job.key, null)
     currentJob = null
     pump()

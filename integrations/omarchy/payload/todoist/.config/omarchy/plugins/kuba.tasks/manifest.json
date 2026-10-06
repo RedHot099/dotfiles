@@ -17,7 +17,7 @@
   },
   "barWidget": {
     "displayName": "Todoist Tasks",
-    "description": "Active Todoist count and a keyboard-driven task panel.",
+    "description": "Count of Todoist tasks due within three weeks (red when overdue, yellow when offline) and a keyboard-driven task panel.",
     "category": "Productivity",
     "aliases": [
       "todoist",

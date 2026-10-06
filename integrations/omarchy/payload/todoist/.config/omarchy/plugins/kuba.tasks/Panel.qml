@@ -16,6 +16,8 @@ Panel {
   readonly property var tasks: service || (bar && bar.shell ? bar.shell.serviceFor("kuba.tasks") : null)
   readonly property color foreground: bar ? bar.foreground : Color.foreground
   readonly property color urgent: bar ? bar.urgent : Color.urgent
+  // Themes expose no "warning" role, so the offline/sync-problem badge colour is fixed.
+  readonly property color warning: "#e5c07b"
   readonly property color dim: Qt.darker(foreground, 1.55)
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
 
@@ -46,7 +48,10 @@ Panel {
   readonly property string tabId: tabs[tabIndex].id
   readonly property var view: TaskView.buildView(tasks ? tasks.snapshot : null, tabId, query, nowMs)
   readonly property var selectedTask: tasks ? tasks.taskById(selectedTaskId) : null
-  readonly property int activeCount: tasks ? tasks.activeCount : -1
+  readonly property int dueCount: tasks ? tasks.dueCount : -1
+  readonly property int overdueCount: tasks ? tasks.overdueCount : 0
+  readonly property bool hasOverdue: overdueCount > 0
+  readonly property bool syncProblem: tasks ? tasks.syncProblem : false
   readonly property bool textEditorOpen: editorMode === "quickAdd"
     || editorMode === "search"
     || editorMode === "customDue"
@@ -275,6 +280,15 @@ Panel {
     closeEditor()
   }
 
+  function barTooltip() {
+    if (dueCount < 0) return "Todoist · trwa wczytywanie"
+    var parts = ["Todoist · " + dueCount + " do zrobienia w 3 tyg."]
+    if (hasOverdue) parts.push("zaległe: " + overdueCount)
+    if (tasks && tasks.offline) parts.push("brak połączenia")
+    else if (syncProblem) parts.push("błąd synchronizacji")
+    return parts.join(" · ")
+  }
+
   function formatDue(task) {
     if (!task || !task.due || !task.due.date) return ""
     var value = String(task.due.date).slice(0, 10)
@@ -359,10 +373,12 @@ Panel {
     id: barButton
     anchors.fill: parent
     bar: root.bar
-    text: "󰄬 " + (root.activeCount < 0 ? "…" : root.activeCount)
-    active: root.tasks && (root.tasks.stale || root.tasks.lastError)
+    text: "󰄬 " + (root.dueCount < 0 ? "…" : root.dueCount)
+    // Red wins over yellow: overdue work matters more than a sync problem.
+    active: root.hasOverdue || root.syncProblem
+    activeColor: root.hasOverdue ? root.urgent : root.warning
     dimmed: root.tasks && root.tasks.refreshing
-    tooltipText: root.activeCount < 0 ? "Todoist · trwa wczytywanie" : "Todoist · " + root.activeCount + " aktywnych"
+    tooltipText: root.barTooltip()
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.RightButton && root.tasks) root.tasks.refresh("bar")
       else root.toggle()
