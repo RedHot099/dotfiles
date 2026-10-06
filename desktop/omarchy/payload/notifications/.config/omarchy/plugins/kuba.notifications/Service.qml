@@ -391,7 +391,12 @@ Item {
     // libnotify action — they just expect clicking the notification to
     // focus their window. Fall back to focusing the sending app by class so
     // that click-to-jump actually works.
-    if (!invoked) focusApp(entry)
+    //
+    // Apps in focusClassByApp get focused even when their action fired: their
+    // click handler only navigates inside the window (T3 Code switches to the
+    // thread) and relies on the compositor to raise it, which Hyprland does
+    // not do for a request coming from an unfocused window.
+    if (!invoked || focusClassFor(entry)) focusApp(entry)
     dismissPopup(index)
   }
 
@@ -441,11 +446,26 @@ Item {
 
   // Try to focus an existing Hyprland window matching the notification's
   // sender. The helper handles case-insensitive class matching.
+  // Notification app names that differ from the sender's window class.
+  // Keys are regexes matched against the app name, values are the class
+  // pattern handed to omarchy-hyprland-focus-app.
+  readonly property var focusClassByApp: ({
+    "^T3 Code": "^com\\.t3tools\\.T3Code$"
+  })
+
+  function focusClassFor(entry) {
+    var app = entry ? String(entry.app || "") : ""
+    for (var pattern in focusClassByApp) {
+      if (new RegExp(pattern).test(app)) return focusClassByApp[pattern]
+    }
+    return ""
+  }
+
   function focusApp(entry) {
     if (!entry || !entry.app) return
     focusAppProc.command = [
       service.omarchyPath + "/bin/omarchy-hyprland-focus-app",
-      String(entry.app)
+      focusClassFor(entry) || String(entry.app)
     ]
     focusAppProc.running = true
   }
