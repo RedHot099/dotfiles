@@ -12,10 +12,8 @@ ALLOWED_DESKTOP_ACTIONS = frozenset(
     {
         ActionKind.USER_FILE,
         ActionKind.GENERATED_FILE,
-        ActionKind.MANAGED_FRAGMENT,
         ActionKind.PINNED_GIT_ASSET,
         ActionKind.OMARCHY_THEME,
-        ActionKind.NOCTALIA_THEME,
         ActionKind.USER_DAEMON_RELOAD,
         ActionKind.HYPRLAND_RELOAD,
     }

@@ -1,4 +1,0 @@
-schema = 2
-id = "themes"
-available = false
-unavailable_reason = "Akane, All Hallows Eve, and Void still require reviewed Noctalia palettes plus merged-state validation before they can replace Omarchy themes"

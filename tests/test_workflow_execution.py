@@ -8,7 +8,7 @@ from bootstrap.execution import apply_workflow_plan
 from bootstrap.planning.model import PackagesPlan, PlanHeader
 from bootstrap.platform import detect_platform
 from bootstrap.repository import compile_repository
-from tests.fixtures import cachy_probe
+from tests.fixtures import omarchy_probe
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,9 +16,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class WorkflowExecutionTests(unittest.TestCase):
     def test_empty_package_apply_is_idempotent_in_isolated_home(self):
-        repository = compile_repository(ROOT, PlatformId.CACHY)
+        repository = compile_repository(ROOT, PlatformId.OMARCHY)
         with tempfile.TemporaryDirectory() as directory:
-            facts = replace(detect_platform(cachy_probe()), target_home=directory)
+            facts = replace(detect_platform(omarchy_probe()), target_home=directory)
             plan = PackagesPlan.create(
                 PlanHeader(3, WorkflowId.PACKAGES, facts.fingerprint(), repository.source_digest, directory),
                 PackagesRequest(frozenset()),

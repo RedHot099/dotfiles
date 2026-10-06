@@ -52,7 +52,7 @@ class LocalHostProbe:
         )
 
     def capabilities(self) -> frozenset[str]:
-        commands = ("pacman", "mise", "hyprctl", "uwsm", "noctalia", "ufw", "systemctl")
+        commands = ("pacman", "mise", "hyprctl", "uwsm", "ufw", "systemctl")
         available = {command for command in commands if shutil.which(command)}
         return frozenset(available)
 

@@ -25,7 +25,7 @@ home = Path(plan["target_home"])
 rows = []
 for action in plan["actions"]:
     data = action["data"]
-    if action["kind"] in {"user-file", "generated-file", "managed-fragment"}:
+    if action["kind"] in {"user-file", "generated-file"}:
         path = home / data["target"]
         if path.is_symlink():
             value = "link:" + os.readlink(path)

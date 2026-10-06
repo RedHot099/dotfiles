@@ -26,9 +26,7 @@ COMMON_PLATFORM_REFERENCE_RE = re.compile(
     rb"/usr/share/omarchy"
     rb"|(?:^|[/\s\"'])\.config/omarchy(?:[/\s\"']|$)"
     rb"|(?<![\w.-])omarchy-[A-Za-z0-9_.-]+"
-    rb"|(?<![\w.])o\.[A-Za-z_]\w*"
-    rb"|(?:^|[/\s\"'])\.config/noctalia(?:[/\s\"']|$)"
-    rb"|\bnoctalia\s+msg\b",
+    rb"|(?<![\w.])o\.[A-Za-z_]\w*",
     re.IGNORECASE | re.MULTILINE,
 )
 
@@ -88,14 +86,6 @@ class RepositorySpec:
 
 
 @dataclass(frozen=True)
-class FragmentSpec:
-    target: str
-    begin_marker: str
-    end_marker: str
-    content: str
-
-
-@dataclass(frozen=True)
 class PackageBinding:
     requirement: str
     provider: str
@@ -124,7 +114,6 @@ class FeatureImplementation:
     monitor_profiles: bool
     default_agent_target: str | None
     monitor_target: str
-    fragments: tuple[FragmentSpec, ...]
     available: bool
     unavailable_reason: str | None
     listens: bool
@@ -362,7 +351,7 @@ def _load_implementations(
                 "schema", "id", "package_requirements", "tools", "commands", "files",
                 "repositories", "reload_user_daemon", "user_units", "system_units", "authentication",
                 "theme", "github_ssh_user", "firewall_rule", "monitor_profiles",
-                "default_agent_target", "monitor_target", "fragments", "available",
+                "default_agent_target", "monitor_target", "available",
                 "unavailable_reason", "listens", "listening_ports",
             },
             manifest.path,
@@ -374,10 +363,6 @@ def _load_implementations(
         authentication = tuple(
             AuthenticationSpec(*_authentication_table(item, manifest.path))
             for item in _tables(raw, "authentication", manifest.path)
-        )
-        fragments = tuple(
-            FragmentSpec(*_fragment_table(item, manifest.path))
-            for item in _tables(raw, "fragments", manifest.path)
         )
         available = _boolean(raw, "available", True, manifest.path)
         unavailable_reason = _optional_nullable_string(raw, "unavailable_reason", manifest.path)
@@ -405,7 +390,6 @@ def _load_implementations(
             monitor_target=_optional_string(
                 raw, "monitor_target", ".config/hypr/monitors.lua", manifest.path
             ),
-            fragments=fragments,
             available=available,
             unavailable_reason=unavailable_reason,
             listens=_boolean(raw, "listens", False, manifest.path),
@@ -534,7 +518,6 @@ def _validate_implementations(
                 or implementation.user_units
                 or implementation.system_units
                 or implementation.authentication
-                or implementation.fragments
                 or implementation.theme
                 or implementation.github_ssh_user
                 or implementation.firewall_rule
@@ -617,16 +600,6 @@ def _validate_implementations(
                 raise CatalogError(f"system unit is not allowlisted in {feature_id}: {unit}")
         if implementation.default_agent_target is not None:
             _claim_target(_target(implementation.default_agent_target), feature_id, target_owners)
-        for fragment in implementation.fragments:
-            target = _target(fragment.target)
-            if target.as_posix() not in {
-                ".config/hypr/hyprland.lua",
-                ".config/hypr/config/variables.lua",
-            }:
-                raise CatalogError(f"fragment target is not allowlisted in {feature_id}: {target}")
-            if fragment.begin_marker == fragment.end_marker or not fragment.content.strip():
-                raise CatalogError(f"invalid managed fragment in {feature_id}: {target}")
-            _claim_target(target, feature_id, target_owners)
         if implementation.firewall_rule not in {None, "ssh-limit"}:
             raise CatalogError(f"unknown firewall rule in {feature_id}: {implementation.firewall_rule}")
 
@@ -767,7 +740,6 @@ def _platform_name_in_path(value: str) -> bool:
     parts = PurePosixPath(value).parts
     return any(part.lower().startswith("omarchy-") for part in parts) or any(
         parts[index : index + 2] == (".config", "omarchy")
-        or parts[index : index + 2] == (".config", "noctalia")
         for index in range(len(parts) - 1)
     )
 
@@ -898,7 +870,7 @@ def _table_strings(
 def _file_table(item: Mapping[str, object], path: Path) -> tuple[str, str, str | None]:
     _table_fields(item, {"source", "target"}, {"bundle"}, "files", path)
     bundle = item.get("bundle")
-    if bundle is not None and bundle not in {"common", "omarchy", "cachy"}:
+    if bundle is not None and bundle not in {"common", "omarchy"}:
         raise CatalogError(f"invalid files bundle in {path}: {bundle!r}")
     return (
         _table_string(item, "source", path),
@@ -932,20 +904,6 @@ def _authentication_table(
     if contains is not None and (not isinstance(contains, str) or not contains):
         raise CatalogError(f"probe_contains must be a non-empty string in {path}")
     return _table_string(item, "label", path), command, probe, contains
-
-
-def _fragment_table(item: Mapping[str, object], path: Path) -> tuple[str, str, str, str]:
-    _table_fields(
-        item,
-        {"target", "begin_marker", "end_marker", "content"},
-        set(),
-        "fragments",
-        path,
-    )
-    return tuple(
-        _table_string(item, field, path)
-        for field in ("target", "begin_marker", "end_marker", "content")
-    )
 
 
 def _table_argv(item: Mapping[str, object], key: str, path: Path) -> tuple[str, ...]:

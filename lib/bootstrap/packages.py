@@ -12,7 +12,6 @@ from pathlib import Path, PurePosixPath
 from typing import Iterable, Mapping, Protocol
 
 from .catalog import CatalogError, PackageBinding
-from .domain import PlatformId
 
 
 PACKAGE_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9@._+:-]*")
@@ -68,8 +67,7 @@ class PlanningPackageProvider(Protocol):
 
 
 class LocalPackageProvider:
-    def __init__(self, platform: PlatformId, repositories: tuple[str, ...]):
-        self.platform = platform
+    def __init__(self, repositories: tuple[str, ...]):
         self.repositories = repository_names(repositories)
 
     def resolve_repository(
@@ -165,11 +163,10 @@ class LocalPackageProvider:
                 stale.append(repository)
         if not stale:
             return
-        update = "omarchy update" if self.platform is PlatformId.OMARCHY else "the CachyOS supported full update workflow"
         raise CatalogError(
             "package databases are stale or missing for "
             + ", ".join(stale)
-            + f"; run {update}, then generate a new plan"
+            + "; run omarchy update, then generate a new plan"
         )
 
 

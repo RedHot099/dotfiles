@@ -21,7 +21,7 @@ def plan_packages(
     unknown = request.applications - repository.applications.keys()
     if unknown:
         raise CatalogError(f"unknown applications: {', '.join(sorted(unknown))}")
-    provider = package_provider or LocalPackageProvider(facts.platform, facts.repositories)
+    provider = package_provider or LocalPackageProvider(facts.repositories)
     actions: list[PlannedAction] = []
     selected = tuple(repository.applications[item] for item in sorted(request.applications))
     requirements = {

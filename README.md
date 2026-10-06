@@ -1,6 +1,6 @@
 # Arch Hyprland bootstrap
 
-This repository configures a fresh Omarchy 4 or CachyOS Hyprland Noctalia installation. It performs initial setup only; use the distribution's normal updater afterward.
+This repository configures a fresh Omarchy 4 installation. It performs initial setup only; use `omarchy update` afterward.
 
 ## Run setup
 
@@ -15,7 +15,7 @@ The English terminal interface uses arrows or `j`/`k` to move, Space to toggle a
 Setup runs three independent workflows in order:
 
 1. Packages installs selected applications and exact runtime tools.
-2. Desktop configures the monitor, Hyprland, Omarchy Shell or Noctalia, workspaces, shortcuts, themes, startup, and Calendar.
+2. Desktop configures the monitor, Hyprland, Omarchy Shell, workspaces, shortcuts, themes, startup, and Calendar.
 3. Integrations configures AI agents, skills, cloud mounts, Todoist, GitHub SSH access, Tailscale, firewall rules, and Bitbucket readiness.
 
 Run a workflow separately when needed:
@@ -40,7 +40,7 @@ Repository packages are resolved into one reviewed transaction. AUR packages are
 
 The bootstrap never runs `pacman -Sy`, changes repository configuration, deletes the Pacman lock, uses `--noconfirm`, installs an AUR helper, rolls packages back, or performs a distribution update.
 
-Omarchy retains the Google Calendar Snooze and Todoist widgets. CachyOS uses native `hl.*` Lua, Noctalia, and one allowlisted managed fragment; it does not install Waybar, Mako, or another idle or lock daemon. Desktop apply reloads an active Hyprland session and fails when `hyprctl configerrors` reports an error.
+Desktop keeps the Google Calendar Snooze and Todoist widgets and does not install Waybar, Mako, or another idle or lock daemon. Desktop apply reloads an active Hyprland session and fails when `hyprctl configerrors` reports an error.
 
 ## Agents, skills, and credentials
 
@@ -53,12 +53,12 @@ Selections, digest-addressed plans, journals, and the global apply lock live und
 ## Repository layout
 
 ```text
-packages/{common,omarchy,cachy}/       Applications and package bindings
-desktop/{common,omarchy,cachy}/        Hyprland, shell, monitor, and Calendar
-integrations/{common,omarchy,cachy}/   Agents, skills, cloud, Todoist, and access
-lib/bootstrap/                         Compiler, planners, TUI, executor, and audit
-scripts/                               Maintenance and verification tools
-tests/                                 Unit and isolated integration checks
+packages/{common,omarchy}/       Applications and package bindings
+desktop/{common,omarchy}/        Hyprland, shell, monitor, and Calendar
+integrations/{common,omarchy}/   Agents, skills, cloud, Todoist, and access
+lib/bootstrap/                   Compiler, planners, TUI, executor, and audit
+scripts/                         Maintenance and verification tools
+tests/                           Unit and isolated integration checks
 ```
 
 Run `./scripts/verify-bootstrap.sh` before committing.

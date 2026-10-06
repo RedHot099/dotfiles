@@ -1,16 +1,18 @@
 # Arch Hyprland bootstrap guide
 
+The bootstrap supports Omarchy 4 only.
+
 The public interface is `./bootstrap setup` and `./bootstrap <packages|desktop|integrations> <plan|apply|audit>`.
 
 ## Ownership
 
 - Treat `/usr/share/omarchy`, `/etc/skel`, package configuration, mirrors, and keyrings as read-only.
-- Keep package intent and bindings under `packages/{common,omarchy,cachy}`.
-- Keep Hyprland, shell, monitor, and Calendar under `desktop/{common,omarchy,cachy}`.
-- Keep agents, skills, cloud, Todoist, and access under `integrations/{common,omarchy,cachy}`.
+- Keep package intent and bindings under `packages/{common,omarchy}`.
+- Keep Hyprland, shell, monitor, and Calendar under `desktop/{common,omarchy}`.
+- Keep agents, skills, cloud, Todoist, and access under `integrations/{common,omarchy}`.
 - Do not add profiles, Gum, schema-2 CLI adapters, or a distribution update command.
 
-Read `docs/workflow-rearchitecture-plan.md` before changing workflow boundaries, the executor, package policy, or managed fragments.
+Read `docs/workflow-rearchitecture-plan.md` before changing workflow boundaries, the executor, or package policy.
 
 ## Safe workflow
 
@@ -26,8 +28,7 @@ Planning writes only private selection and digest-addressed plan state. Audit is
 
 - Use target-home-relative paths and portable `$HOME`, `%h`, or relative references.
 - Keep secrets, auth stores, sessions, histories, caches, databases, and browser profiles outside the repository.
-- Use Lua for Hyprland. Cachy payloads use native `hl.*`; Omarchy APIs stay in `desktop/omarchy`.
-- Preserve CachyOS-owned root configuration with allowlisted fragments.
+- Use Lua for Hyprland. Keep Omarchy APIs out of `common` trees.
 - Do not add Waybar, Mako, or another idle or lock daemon.
 - Pin every AUR package to a full commit and every mise selector exactly.
 - Never add `pacman -Sy`, `--noconfirm`, integrity bypasses, repository edits, AUR helpers, rollback, or package removal.
@@ -41,4 +42,4 @@ Protect Codex `.system`, Cursor `skills-cursor`, and unrelated non-colliding use
 
 ## Verification
 
-`scripts/verify-bootstrap.sh` is required. It runs Python tests, compiles both platforms, checks Lua and shell syntax, validates Todoist/QML and rclone units, and runs T3 Code safety checks.
+`scripts/verify-bootstrap.sh` is required. It runs Python tests, compiles the repository, checks Lua and shell syntax, validates Todoist/QML and rclone units, and runs T3 Code safety checks.

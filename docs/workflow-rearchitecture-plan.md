@@ -9,7 +9,7 @@ This document is a design checkpoint. Commit `21bc56b` is the tested baseline. D
 The current repository builds one platform-wide catalog and one global plan. Broad features mix application installation, desktop configuration, agents, cloud services, and authentication. The new design exposes three independent workflows:
 
 1. `packages` installs applications, command-line tools, runtimes, and technical dependencies.
-2. `desktop` configures the monitor, Hyprland, the platform bar, workspaces, bindings, themes, Calendar, and selected application startup.
+2. `desktop` configures the monitor, Hyprland, the Omarchy Shell bar, workspaces, bindings, themes, Calendar, and selected application startup.
 3. `integrations` configures agents, skills, MCP servers, plugins, cloud services, Todoist, SSH access, Tailscale, and Bitbucket instructions.
 
 `setup` runs the same workflows in that order. A skipped workflow does not stop later workflows.
@@ -121,7 +121,6 @@ packages/
     catalog/groups.toml
     requirements/<id>.toml
   omarchy/packages.toml
-  cachy/packages.toml
 
 desktop/
   common/
@@ -130,9 +129,6 @@ desktop/
     payload/<feature>/...
     hardware/...
   omarchy/
-    implementations/<id>.toml
-    payload/<feature>/...
-  cachy/
     implementations/<id>.toml
     payload/<feature>/...
 
@@ -149,16 +145,13 @@ integrations/
   omarchy/
     implementations/<id>.toml
     payload/<integration>/...
-  cachy/
-    implementations/<id>.toml
-    payload/<integration>/...
 ```
 
-Each workflow owns its vocabulary and payload. Within each workflow, `common` means portable across the two supported systems. A platform implementation is a complete alternative, never a partial overlay.
+Each workflow owns its vocabulary and payload. Within each workflow, `common` holds content that does not depend on Omarchy APIs, and `omarchy` holds the Omarchy 4 implementations. An Omarchy implementation is a complete alternative, never a partial overlay.
 
 ## Compiled repository model
 
-One compiler reads all three physical trees and produces one immutable repository model for the selected platform. The verification gate compiles both platforms.
+One compiler reads all three physical trees and produces one immutable repository model for Omarchy 4. The verification gate compiles it.
 
 ```python
 class WorkflowId(StrEnum):
@@ -250,7 +243,7 @@ class IntegrationsPlan:
 
 Persisted selection records intent. `PackagesEvidence` and live probes prove that prerequisites exist. Apply rechecks both. A stale state file cannot satisfy a desktop or integration prerequisite.
 
-Only `PackagesPlan` can contain repository, AUR, or mise installation actions. `DesktopPlan` can contain user files, generated files, managed fragments, themes, and a Hyprland reload. `IntegrationsPlan` can contain allowlisted configuration files, skills, authentication, user units, reviewed system units, SSH access, and UFW rules.
+Only `PackagesPlan` can contain repository, AUR, or mise installation actions. `DesktopPlan` can contain user files, generated files, themes, and a Hyprland reload. `IntegrationsPlan` can contain allowlisted configuration files, skills, authentication, user units, reviewed system units, SSH access, and UFW rules.
 
 The serialized plan remains the reviewed boundary. Every plan includes its workflow, target home, UID, platform fingerprint, repository digest, workflow digest, selection digest, resolved package facts, resolved remote content, and plan digest.
 
@@ -269,7 +262,6 @@ Keep these existing guarantees:
 - pass only verified local artifacts through `sudo pacman -U`;
 - use fixed absolute argv arrays for privileged actions;
 - keep explicit system-unit and firewall allowlists;
-- preserve distro-owned Cachy configuration with managed fragments;
 - write target-home files atomically and reject path or symlink escape;
 - record an action only after its postcondition passes;
 - make a second apply change zero files;
@@ -330,16 +322,16 @@ Desktop owns:
 
 - monitor detection, mode, scale, and preview;
 - Hyprland appearance, workspaces, window rules, and keybindings;
-- Omarchy Shell on Omarchy and Noctalia on CachyOS;
+- Omarchy Shell;
 - launcher, clipboard, screenshots, panels, theme, and wallpaper;
 - application bindings, rules, and startup generated from the saved Packages selection;
 - Google Calendar.
 
-Omarchy keeps the current Calendar Snooze behavior. CachyOS configures the standard Noctalia calendar without Snooze.
+Omarchy keeps the current Calendar Snooze behavior.
 
 Desktop never installs a package. If prerequisites are missing, it offers to open Packages with the missing applications preselected. Declining marks Desktop `NEEDS PACKAGES` or `SKIPPED`.
 
-CachyOS continues to use native `hl.*` Lua, Noctalia, UWSM, and allowlisted managed fragments. It does not add Waybar, Mako, or a second idle or lock daemon.
+Desktop does not add Waybar, Mako, or a second idle or lock daemon.
 
 ## Integration ownership
 
@@ -350,14 +342,12 @@ Integrations owns:
 - harness-specific models, permissions, sandbox settings, and plugins;
 - Google Drive and OneDrive through rclone;
 - Todoist CLI, authentication, helper, and cache;
-- the Todoist widget on Omarchy;
+- the Todoist widget;
 - GitHub SSH access and public keys;
 - reviewed `sshd.service`, `tailscaled.service`, and UFW configuration;
 - Bitbucket readiness instructions.
 
 Packages installs all required binaries. Integrations starts cloud units only after their authentication probes pass.
-
-CachyOS reports the Todoist widget as unavailable. A later change can add a tested Noctalia widget without moving Todoist authentication out of Integrations.
 
 Bitbucket installs no separate client. It requires Git and OpenSSH, stores no Bitbucket token, key, host fingerprint, or `known_hosts` entry, and performs no connection test. If no SSH key exists, the TUI may offer an explicit `ssh-keygen` wizard. It never generates a key without approval.
 
@@ -398,31 +388,31 @@ Each phase ends with a testable repository state. Temporary adapters may exist o
 ### Phase 1: freeze behavior and add the compiler shell
 
 - Keep `21bc56b` as the comparison baseline.
-- Capture normalized plans and payload hashes for both platforms.
+- Capture normalized plans and payload hashes.
 - Add failing compiler tests and type shells for `RepositoryModel`, the three requests, and the three plans.
 - Compile read-only rearranged fixtures before moving production files.
 
-Exit check: both platform fixtures compile, unsafe fixtures fail with source paths, and the existing gate still passes.
+Exit check: the fixtures compile, unsafe fixtures fail with source paths, and the existing gate still passes.
 
 ### Phase 2: migrate Packages
 
 - Move application and tool intent into `packages/common`.
-- Move both provider maps into `packages/<platform>/packages.toml`.
+- Move the provider map into `packages/omarchy/packages.toml`.
 - Add Chromium and Neovim as first-class applications.
 - Remove profiles and the four unused agents.
 - Preserve repository transaction and AUR behavior exactly.
 
-Exit check: curated defaults match this document, both platforms resolve every requirement, transaction snapshots are stable, and no non-Packages plan can express package mutation.
+Exit check: curated defaults match this document, every requirement resolves, transaction snapshots are stable, and no non-Packages plan can express package mutation.
 
 ### Phase 3: migrate Desktop
 
 - Split desktop behavior out of `core-desktop`, `session-autostart`, Calendar, and broad platform payloads.
 - Move monitor generation and hardware hints into Desktop.
 - Generate application-specific bindings, rules, and startup from Packages selection.
-- Preserve Omarchy Shell and native Cachy Noctalia implementations.
+- Preserve the Omarchy Shell implementation.
 - Add the Hyprland reload and config-error postcondition.
 
-Exit check: each platform plans deterministically, isolated second apply changes zero files, Lua and TOML checks pass, missing packages produce `NEEDS PACKAGES`, and the distro-owned Cachy root retains one managed fragment.
+Exit check: Desktop plans deterministically, isolated second apply changes zero files, Lua and TOML checks pass, and missing packages produce `NEEDS PACKAGES`.
 
 ### Phase 4: migrate Integrations
 
@@ -445,19 +435,19 @@ Exit check: recorded key streams prove item and group Space toggles, search, fol
 
 ### Phase 6: remove the old model
 
-- Delete the old top-level `common`, `omarchy`, and `cachy` trees.
+- Delete the old top-level platform trees.
 - Delete profiles, broad `core-desktop` and `ai-development`, Gum, schema-2 compatibility parsing, and old CLI adapters.
 - Update `AGENTS.md`, README, docs, and the verification gate.
 - Add a migration decision log.
 
-Exit check: no old loader or path remains, both platforms compile, all three workflows plan and audit independently, and repository-wide ownership validation passes.
+Exit check: no old loader or path remains, the repository compiles, all three workflows plan and audit independently, and repository-wide ownership validation passes.
 
 ### Phase 7: acceptance
 
 - Run every Python, schema, shell, Lua, TOML, QML, Todoist, rclone, and T3 safety test.
-- For each workflow and platform, plan deterministically, apply to an isolated home twice, require zero changes on the second apply, and audit without writes.
+- For each workflow, plan deterministically, apply to an isolated home twice, require zero changes on the second apply, and audit without writes.
 - Interrupt and resume each workflow at a verified action boundary.
-- Run a real CachyOS desktop apply only with explicit approval. Require a successful Hyprland reload and no `hyprctl configerrors`.
+- Run a real Desktop apply only with explicit approval. Require a successful Hyprland reload and no `hyprctl configerrors`.
 - Run `git diff --check` and inspect every changed file.
 
 ## Synthesis decision

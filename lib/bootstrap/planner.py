@@ -79,7 +79,7 @@ def plan_install(
             raise CatalogError(f"reviewed GitHub SSH keys are required for {username}")
     actions: list[PlannedAction] = []
     unavailable: dict[str, str] = {}
-    provider = package_provider or LocalPackageProvider(facts.platform, facts.repositories)
+    provider = package_provider or LocalPackageProvider(facts.repositories)
     for feature_id in selected:
         implementation = workspace.implementations[feature_id]
         if not implementation.available:
@@ -182,11 +182,9 @@ def plan_install(
                 )
             )
         if implementation.theme:
-            kind = ActionKind.OMARCHY_THEME if workspace.platform.value == "omarchy" else ActionKind.NOCTALIA_THEME
-            data = {"name": implementation.theme}
-            if kind is ActionKind.NOCTALIA_THEME:
-                raise CatalogError("Noctalia themes require a reviewed checksum")
-            actions.append(action(kind, feature_id, data))
+            actions.append(
+                action(ActionKind.OMARCHY_THEME, feature_id, {"name": implementation.theme})
+            )
         for authentication in implementation.authentication:
             actions.append(
                 action(
@@ -257,36 +255,6 @@ def plan_install(
                     raise CatalogError(f"unknown hardware profile: {inputs.hardware}")
                 content = monitor.read_text()
             actions.append(generated_file(feature_id, implementation.monitor_target, content))
-        for fragment in implementation.fragments:
-            target = Path(facts.target_home) / fragment.target
-            if target.is_symlink() or not target.is_file():
-                raise CatalogError(
-                    f"managed fragment prerequisite is missing: {fragment.target}; "
-                    "seed the CachyOS account configuration first"
-                )
-            preimage = target.read_bytes()
-            result = render_fragment(
-                preimage.decode(),
-                fragment.begin_marker,
-                fragment.end_marker,
-                fragment.content,
-            ).encode()
-            actions.append(
-                action(
-                    ActionKind.MANAGED_FRAGMENT,
-                    feature_id,
-                    {
-                        "target": fragment.target,
-                        "begin_marker": fragment.begin_marker,
-                        "end_marker": fragment.end_marker,
-                        "preimage_sha256": hashlib.sha256(preimage).hexdigest(),
-                        "content_sha256": hashlib.sha256(fragment.content.encode()).hexdigest(),
-                        "result_sha256": hashlib.sha256(result).hexdigest(),
-                        "mode": target.stat().st_mode & 0o777,
-                        "content": fragment.content,
-                    },
-                )
-            )
         if implementation.default_agent_target:
             actions.append(
                 generated_file(
@@ -345,20 +313,6 @@ def repository_action(
     )
 
 
-def render_fragment(original: str, begin: str, end: str, content: str) -> str:
-    if original.count(begin) != original.count(end):
-        raise CatalogError("managed fragment markers are unbalanced")
-    if original.count(begin) > 1:
-        raise CatalogError("managed fragment markers are duplicated")
-    block = f"{begin}\n{content.rstrip()}\n{end}"
-    if begin not in original:
-        separator = "" if not original or original.endswith("\n") else "\n"
-        return f"{original}{separator}{block}\n"
-    start = original.index(begin)
-    finish = original.index(end, start) + len(end)
-    return original[:start] + block + original[finish:]
-
-
 def action(kind: ActionKind, feature: str, data: dict[str, object]) -> PlannedAction:
     return PlannedAction(kind=kind, feature=feature, data=_json_ready(data))
 
@@ -378,11 +332,9 @@ def action_order(item: PlannedAction) -> tuple[int, str, str, str]:
         ActionKind.PINNED_TOOL: 2,
         ActionKind.USER_FILE: 3,
         ActionKind.GENERATED_FILE: 3,
-        ActionKind.MANAGED_FRAGMENT: 3,
         ActionKind.USER_DAEMON_RELOAD: 4,
         ActionKind.PINNED_GIT_ASSET: 5,
         ActionKind.OMARCHY_THEME: 6,
-        ActionKind.NOCTALIA_THEME: 6,
         ActionKind.AUTHORIZED_SSH_KEYS: 7,
         ActionKind.REVOKED_SSH_KEY: 7,
         ActionKind.SYSTEM_UNIT: 8,

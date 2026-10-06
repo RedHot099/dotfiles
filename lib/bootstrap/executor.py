@@ -18,7 +18,6 @@ from .catalog import CatalogError, SYSTEM_UNIT_ALLOWLIST, Workspace
 from .domain import ActionKind, ExecutionPlan, PlannedAction, assert_plan_matches_host
 from .files import FileBoundaryError, HomeFiles
 from .platform import PlatformFacts
-from .planner import render_fragment
 from .packages import (
     LocalPackageProvider,
     bindings_from_action,
@@ -125,10 +124,6 @@ def _apply_locked(
             systemd_files_changed |= did_change and str(item.data["target"]).startswith(
                 ".config/systemd/user/"
             )
-        elif item.kind is ActionKind.MANAGED_FRAGMENT:
-            did_change = apply_fragment_action(home, plan, item)
-            changed += int(did_change)
-            unchanged += int(not did_change)
         elif not system_changes:
             simulated += 1
             continue
@@ -139,7 +134,7 @@ def _apply_locked(
                 run(("/usr/bin/systemctl", "--user", "daemon-reload"))
                 changed += 1
         elif item.kind is ActionKind.REPOSITORY_PACKAGES:
-            did_change = apply_repository_packages(item, workspace, facts)
+            did_change = apply_repository_packages(item, facts)
             changed += int(did_change)
             unchanged += int(not did_change)
         elif item.kind is ActionKind.AUR_BUILD:
@@ -288,12 +283,10 @@ def dependent_feature_closure(plan: ExecutionPlan, feature: str) -> set[str]:
     return result
 
 
-def apply_repository_packages(
-    item: PlannedAction, workspace: Workspace, facts: PlatformFacts
-) -> bool:
+def apply_repository_packages(item: PlannedAction, facts: PlatformFacts) -> bool:
     planned = transaction_from_action(dict(item.data))
     bindings = bindings_from_action(dict(item.data))
-    provider = LocalPackageProvider(workspace.platform, facts.repositories)
+    provider = LocalPackageProvider(facts.repositories)
     current = provider.resolve_repository(bindings)
     versions = installed_versions(package.name for package in planned)
     verify_transaction(planned, current, versions)
@@ -417,39 +410,6 @@ def apply_file_action(
         symlink=symlink,
         mode=mode,
         expected_sha256=expected,
-        backup_root=f"{STATE_ROOT}/backups/{plan.digest}",
-    )
-
-
-def apply_fragment_action(home: HomeFiles, plan: ExecutionPlan, item: PlannedAction) -> bool:
-    target = str(item.data["target"])
-    current = home.read_text(target)
-    if current is None:
-        raise CatalogError(f"managed fragment prerequisite disappeared: {target}")
-    actual = hashlib.sha256(current.encode()).hexdigest()
-    result_sha = str(item.data["result_sha256"])
-    mode = integer(item.data["mode"])
-    if actual == result_sha and home.matches(target, result_sha, mode, None):
-        return False
-    if actual != item.data["preimage_sha256"]:
-        raise CatalogError(f"managed fragment pre-image changed: {target}")
-    content = str(item.data["content"])
-    if hashlib.sha256(content.encode()).hexdigest() != item.data["content_sha256"]:
-        raise CatalogError(f"managed fragment content digest differs: {target}")
-    result = render_fragment(
-        current,
-        str(item.data["begin_marker"]),
-        str(item.data["end_marker"]),
-        content,
-    ).encode()
-    if hashlib.sha256(result).hexdigest() != result_sha:
-        raise CatalogError(f"managed fragment result digest differs: {target}")
-    return home.install(
-        target,
-        content=result,
-        symlink=None,
-        mode=mode,
-        expected_sha256=result_sha,
         backup_root=f"{STATE_ROOT}/backups/{plan.digest}",
     )
 

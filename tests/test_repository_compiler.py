@@ -9,19 +9,18 @@ from bootstrap.platform import detect_platform
 from bootstrap.packages import StaticPackageProvider
 from bootstrap.repository import compile_repository
 from bootstrap.workflows import plan_desktop, plan_integrations, plan_packages
-from tests.fixtures import cachy_probe
+from tests.fixtures import omarchy_probe
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class RepositoryCompilerTests(unittest.TestCase):
-    def test_compiler_exposes_all_workflows_for_each_platform(self):
-        for platform in PlatformId:
-            with self.subTest(platform=platform):
-                repository = compile_repository(ROOT, platform)
-                self.assertEqual(set(repository.workflows), set(WorkflowId))
-                self.assertTrue(repository.source_digest)
+    def test_compiler_exposes_all_workflows(self):
+        repository = compile_repository(ROOT, PlatformId.OMARCHY)
+
+        self.assertEqual(set(repository.workflows), set(WorkflowId))
+        self.assertTrue(repository.source_digest)
 
     def test_feature_ids_are_scoped_by_workflow(self):
         packages = FeatureId(WorkflowId.PACKAGES, "editor")
@@ -30,7 +29,7 @@ class RepositoryCompilerTests(unittest.TestCase):
         self.assertNotEqual(packages, desktop)
 
     def test_curated_application_defaults_match_the_approved_set(self):
-        repository = compile_repository(ROOT, PlatformId.CACHY)
+        repository = compile_repository(ROOT, PlatformId.OMARCHY)
         selected = {
             item.id
             for item in repository.applications.values()
@@ -49,7 +48,7 @@ class RepositoryCompilerTests(unittest.TestCase):
         )
 
     def test_hardware_tools_are_optional_and_have_hints(self):
-        repository = compile_repository(ROOT, PlatformId.CACHY)
+        repository = compile_repository(ROOT, PlatformId.OMARCHY)
 
         for identifier in ("solaar", "cooler-control"):
             with self.subTest(application=identifier):
@@ -57,20 +56,19 @@ class RepositoryCompilerTests(unittest.TestCase):
                 self.assertFalse(application.default)
                 self.assertIsNotNone(application.hardware_hint)
 
-    def test_every_curated_package_requirement_has_a_platform_binding(self):
-        for platform in PlatformId:
-            with self.subTest(platform=platform):
-                repository = compile_repository(ROOT, platform)
-                required = {
-                    requirement
-                    for application in repository.applications.values()
-                    for requirement in application.requirements
-                }
-                self.assertLessEqual(required, set(repository.package_bindings))
+    def test_every_curated_package_requirement_has_a_binding(self):
+        repository = compile_repository(ROOT, PlatformId.OMARCHY)
+        required = {
+            requirement
+            for application in repository.applications.values()
+            for requirement in application.requirements
+        }
+
+        self.assertLessEqual(required, set(repository.package_bindings))
 
     def test_packages_plan_contains_only_package_actions(self):
-        repository = compile_repository(ROOT, PlatformId.CACHY)
-        facts = detect_platform(cachy_probe())
+        repository = compile_repository(ROOT, PlatformId.OMARCHY)
+        facts = detect_platform(omarchy_probe())
         selected = frozenset(
             item.id for item in repository.applications.values() if item.default
         )
@@ -95,8 +93,8 @@ class RepositoryCompilerTests(unittest.TestCase):
             FeatureId(WorkflowId.PACKAGES, "../editor")
 
     def test_integrations_report_missing_package_workflow_prerequisites(self):
-        repository = compile_repository(ROOT, PlatformId.CACHY)
-        facts = detect_platform(cachy_probe())
+        repository = compile_repository(ROOT, PlatformId.OMARCHY)
+        facts = detect_platform(omarchy_probe())
 
         with self.assertRaisesRegex(Exception, "NEEDS PACKAGES: codex"):
             plan_integrations(
@@ -109,8 +107,8 @@ class RepositoryCompilerTests(unittest.TestCase):
             )
 
     def test_desktop_and_integrations_cannot_plan_package_mutations(self):
-        repository = compile_repository(ROOT, PlatformId.CACHY)
-        facts = detect_platform(cachy_probe())
+        repository = compile_repository(ROOT, PlatformId.OMARCHY)
+        facts = detect_platform(omarchy_probe())
         state = HostState(frozenset(), frozenset())
         evidence = PackagesEvidence.create(frozenset(), frozenset())
 

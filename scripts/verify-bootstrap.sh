@@ -36,9 +36,8 @@ from pathlib import Path
 from bootstrap.domain import PlatformId
 from bootstrap.repository import compile_repository
 
-for platform in PlatformId:
-    compile_repository(Path.cwd(), platform)
-print("Both workflow repositories compile.")
+compile_repository(Path.cwd(), PlatformId.OMARCHY)
+print("Workflow repository compiles.")
 PY
 
 ./scripts/verify-todoist-integration.sh

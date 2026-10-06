@@ -62,14 +62,6 @@ def audit_action(item: PlannedAction, home: HomeFiles, isolated: bool) -> AuditF
             symlink,
         )
         return finding(matches, kind, item, f"{item.data['target']}: {'matches' if matches else 'missing, changed, or wrong mode'}")
-    if item.kind is ActionKind.MANAGED_FRAGMENT:
-        matches = home.matches(
-            str(item.data["target"]),
-            str(item.data["result_sha256"]),
-            int(item.data["mode"]),
-            None,
-        )
-        return finding(matches, kind, item, "managed fragment matches" if matches else "managed fragment or surrounding file changed")
     if item.kind is ActionKind.REPOSITORY_PACKAGES:
         expected = {entry.name: entry.version for entry in transaction_from_action(dict(item.data))}
         direct = strings(item.data["packages"])

@@ -27,7 +27,6 @@ class PlanHostMismatch(RuntimeError):
 
 class PlatformId(StrEnum):
     OMARCHY = "omarchy"
-    CACHY = "cachy"
 
 
 class WorkflowId(StrEnum):
@@ -163,14 +162,12 @@ class ActionKind(StrEnum):
     PINNED_TOOL = "pinned-tool"
     USER_FILE = "user-file"
     GENERATED_FILE = "generated-file"
-    MANAGED_FRAGMENT = "managed-fragment"
     PINNED_GIT_ASSET = "pinned-git"
     USER_DAEMON_RELOAD = "user-daemon-reload"
     USER_UNIT = "user-unit"
     SYSTEM_UNIT = "system-unit"
     MANUAL_AUTHENTICATION = "manual-authentication"
     OMARCHY_THEME = "omarchy-theme"
-    NOCTALIA_THEME = "noctalia-theme"
     AUTHORIZED_SSH_KEYS = "authorized-ssh-keys"
     REVOKED_SSH_KEY = "revoked-ssh-key"
     FIREWALL_RULE = "firewall-rule"
@@ -201,10 +198,6 @@ _ACTION_DATA_FIELDS: dict[ActionKind, tuple[frozenset[str], frozenset[str]]] = {
         frozenset({"target", "sha256", "mode", "content"}),
         frozenset(),
     ),
-    ActionKind.MANAGED_FRAGMENT: (
-        frozenset({"target", "begin_marker", "end_marker", "preimage_sha256", "content_sha256", "result_sha256", "mode", "content"}),
-        frozenset(),
-    ),
     ActionKind.PINNED_GIT_ASSET: (
         frozenset({"url", "revision", "target"}),
         frozenset({"sha256"}),
@@ -223,7 +216,6 @@ _ACTION_DATA_FIELDS: dict[ActionKind, tuple[frozenset[str], frozenset[str]]] = {
         frozenset(),
     ),
     ActionKind.OMARCHY_THEME: (frozenset({"name"}), frozenset({"revision"})),
-    ActionKind.NOCTALIA_THEME: (frozenset({"name", "sha256"}), frozenset()),
     ActionKind.AUTHORIZED_SSH_KEYS: (
         frozenset({"username", "keys", "fingerprints"}),
         frozenset(),

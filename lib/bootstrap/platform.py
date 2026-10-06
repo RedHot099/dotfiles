@@ -89,11 +89,6 @@ def detect_platform(probe: HostProbe) -> PlatformFacts:
     omarchy_output = probe.command_output(("omarchy", "version"))
     omarchy_major = _omarchy_major(omarchy_output)
 
-    if os_id == "cachyos":
-        if omarchy_marker or omarchy_output is not None:
-            raise PlatformDetectionError("contradictory CachyOS and Omarchy evidence")
-        return _detect_cachy(probe, os_id)
-
     if omarchy_marker or omarchy_output is not None:
         if os_id not in {"arch", "omarchy"}:
             raise PlatformDetectionError(f"Omarchy markers found on unsupported OS ID {os_id!r}")
@@ -101,14 +96,21 @@ def detect_platform(probe: HostProbe) -> PlatformFacts:
             raise PlatformDetectionError("Omarchy marker and version command do not agree")
         if omarchy_major != 4:
             raise PlatformDetectionError(f"unsupported Omarchy major version: {omarchy_major}")
-        return _facts(
-            probe,
+        return PlatformFacts(
             platform=PlatformId.OMARCHY,
             contract_major=4,
             os_id=os_id,
+            architecture=probe.architecture(),
+            uid=probe.uid(),
+            target_home=probe.target_home(),
             omarchy_major=omarchy_major,
+            hyprland_version=_version(probe.command_output(("Hyprland", "--version"))),
+            uwsm_version=_version(probe.command_output(("uwsm", "--version"))),
             shell_name="omarchy-shell",
             shell_version=_version(probe.command_output(("omarchy-shell", "--version"))),
+            pacman_config_digest=probe.pacman_config_digest(),
+            repositories=probe.repositories(),
+            capabilities=probe.capabilities(),
         )
 
     raise PlatformDetectionError(f"unsupported platform for OS ID {os_id!r}")
@@ -144,67 +146,6 @@ def parse_os_release(content: str) -> dict[str, str]:
     return result
 
 
-def _detect_cachy(probe: HostProbe, os_id: str) -> PlatformFacts:
-    hyprland = _version(probe.command_output(("Hyprland", "--version")))
-    uwsm = _version(probe.command_output(("uwsm", "--version")))
-    noctalia = _version(probe.command_output(("noctalia", "--version")))
-    missing = [
-        name
-        for name, version in (("Hyprland", hyprland), ("UWSM", uwsm), ("Noctalia", noctalia))
-        if version is None
-    ]
-    if missing:
-        raise PlatformDetectionError("CachyOS desktop contract is incomplete: " + ", ".join(missing))
-    assert hyprland is not None and uwsm is not None and noctalia is not None
-    if not ((0, 55, 0) <= _numeric_version(hyprland) < (0, 57, 0)):
-        raise PlatformDetectionError(f"unsupported Hyprland version for CachyOS: {hyprland}")
-    if not ((0, 24, 0) <= _numeric_version(uwsm) < (1, 0, 0)):
-        raise PlatformDetectionError(f"unsupported UWSM version for CachyOS: {uwsm}")
-    if _numeric_version(noctalia)[0] != 5:
-        raise PlatformDetectionError(f"unsupported Noctalia version for CachyOS: {noctalia}")
-    return _facts(
-        probe,
-        platform=PlatformId.CACHY,
-        contract_major=1,
-        os_id=os_id,
-        omarchy_major=None,
-        shell_name="noctalia",
-        shell_version=noctalia,
-        hyprland_version=hyprland,
-        uwsm_version=uwsm,
-    )
-
-
-def _facts(
-    probe: HostProbe,
-    *,
-    platform: PlatformId,
-    contract_major: int,
-    os_id: str,
-    omarchy_major: int | None,
-    shell_name: str,
-    shell_version: str | None,
-    hyprland_version: str | None = None,
-    uwsm_version: str | None = None,
-) -> PlatformFacts:
-    return PlatformFacts(
-        platform=platform,
-        contract_major=contract_major,
-        os_id=os_id,
-        architecture=probe.architecture(),
-        uid=probe.uid(),
-        target_home=probe.target_home(),
-        omarchy_major=omarchy_major,
-        hyprland_version=hyprland_version or _version(probe.command_output(("Hyprland", "--version"))),
-        uwsm_version=uwsm_version or _version(probe.command_output(("uwsm", "--version"))),
-        shell_name=shell_name,
-        shell_version=shell_version,
-        pacman_config_digest=probe.pacman_config_digest(),
-        repositories=probe.repositories(),
-        capabilities=probe.capabilities(),
-    )
-
-
 def _omarchy_major(output: str | None) -> int | None:
     if output is None:
         return None
@@ -217,9 +158,3 @@ def _version(output: str | None) -> str | None:
         return None
     match = VERSION_RE.search(output)
     return match.group(0) if match else None
-
-
-def _numeric_version(value: str) -> tuple[int, int, int]:
-    numeric = value.split("-", 1)[0].split("+", 1)[0]
-    parts = [int(item) for item in numeric.split(".")]
-    return tuple((parts + [0, 0, 0])[:3])
