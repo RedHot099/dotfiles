@@ -251,7 +251,7 @@ requirement = "t3code-nightly-bin"
 provider = "aur"
 package = "t3code-nightly-bin"
 url = "https://aur.archlinux.org/t3code-nightly-bin.git"
-revision = "9645efce884fee954eb4691c0b9130516772b878"
+revision = "c3568bb8d0b2f720fcaecc6aef94c66292f6e075"
 
 [[bindings]]
 requirement = "vesktop"

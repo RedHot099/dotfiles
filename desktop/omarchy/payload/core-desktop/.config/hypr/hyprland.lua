@@ -8,7 +8,7 @@ require("hypr.autostart")
 require("default.hypr.toggles")
 
 o.window("^google-chrome$", { workspace = "1 silent" })
-o.window("^(T3 Code \\(Alpha\\)|T3 Code|t3code|t3-code-desktop)$", { workspace = "2 silent" })
+o.window("^com\\.t3tools\\.T3Code$", { workspace = "2 silent" })
 o.window("^(Code|code)$", { workspace = "2 silent" })
 o.window("^chrome-(www\\.)?youtube\\.com__.*$", { workspace = "3 silent" })
 o.window("^(caprine|Caprine)$", { workspace = "4 silent" })
