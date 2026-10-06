@@ -16,7 +16,10 @@ o.window("^chrome-web\\.whatsapp\\.com__.*$", { workspace = "4 silent" })
 o.window("^(vesktop|Vesktop)$", { workspace = "4 silent" })
 o.window("^steam$", { workspace = "5 silent" })
 o.window("^chromium$", { workspace = "6 silent" })
-o.window({ class = "steam", title = "Steam" }, { size = { 2200, 1100 }, center = true })
+-- Omarchy floats every Steam window; tile the main one, keep dialogs floating.
+o.window({ class = "steam", title = "Steam" }, { float = false })
+-- Big Picture opens as an oversized float (e.g. 2560x1600 on a 1080p panel).
+o.window({ class = "^steam$", title = "^Steam Big Picture Mode$" }, { fullscreen = true })
 o.window("^org.omarchy.btop$", { size = { 2200, 1100 }, center = true })
 
 hl.env("NVD_BACKEND", "direct")
