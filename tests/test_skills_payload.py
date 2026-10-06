@@ -14,8 +14,8 @@ class SkillPayloadTests(unittest.TestCase):
         lines = (STORE / "skills-index.toml").read_text().splitlines()
         skill_ids = [line.split('"')[1] for line in lines if line.startswith("id = ")]
 
-        self.assertEqual(len(skill_ids), 83)
-        self.assertEqual(len(set(skill_ids)), 83)
+        self.assertEqual(len(skill_ids), 91)
+        self.assertEqual(len(set(skill_ids)), 91)
         self.assertNotIn("omarchy", skill_ids)
         self.assertNotIn("diagnose-crash", skill_ids)
         payload = ROOT / "integrations/common/payload/user-skills"

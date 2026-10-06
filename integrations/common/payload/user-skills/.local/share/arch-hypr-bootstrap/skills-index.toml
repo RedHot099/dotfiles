@@ -1,5 +1,5 @@
 schema = 1
-count = 83
+count = 91
 
 [[skills]]
 id = "architect"
@@ -14,12 +14,17 @@ sha256 = "f8eff76d280f9e63c186a9221228722f69b307fd31a25eb6abce823d2d4bd07e"
 [[skills]]
 id = "ask-matt"
 origin = ".agents"
-sha256 = "29c507d41b3463c7217b7bc15192e989b1962961e6d5a9ed84dc375659c025b0"
+sha256 = "18874dff54b8ba0edc126aad38790a9f98e9129fa401f975df136ef56e157281"
 
 [[skills]]
 id = "automate-me"
 origin = ".codex"
 sha256 = "455e6a19f23316a991e312985c2ffbd3e17e3c6b012a6ebec93399bcfe6e9c38"
+
+[[skills]]
+id = "benchmark-checklist"
+origin = ".codex"
+sha256 = "41cd213447f35193b9fb05ef4b991d6c2d91fc065bc160a2a1eef2c09a0b1e43"
 
 [[skills]]
 id = "blast-radius"
@@ -49,7 +54,12 @@ sha256 = "3504d65d1b1228db3bf60d6e79aa17bda588271e2edc9df88ee20b66c4fbbbb9"
 [[skills]]
 id = "codebase-design"
 origin = ".agents"
-sha256 = "c95ce5894edc9f6679607c740be9c1bb28278bb7ffd4ea3144fe3f7ac18d8650"
+sha256 = "7bc431472774ad4b59b17c97cef3419bddc8f735caf4a98a9adcc3eb566db144"
+
+[[skills]]
+id = "correct"
+origin = ".codex"
+sha256 = "c290cfd062e27751d1a9ee5388bb6bc4b30646453907d154302d5c840baea64d"
 
 [[skills]]
 id = "create-verification-skill"
@@ -59,12 +69,12 @@ sha256 = "cf08764345ea8423d3d29f678c98854aac121c51e4204470f864d5db21549603"
 [[skills]]
 id = "diagnosing-bugs"
 origin = ".agents"
-sha256 = "398582519f18fa20a9f7298b1ea0ece9a7c96fe3849e70cf7d1913b9286fdf78"
+sha256 = "2e26386fb0dfa4a4d87292fbf51780f47040fca1dbbb02085f3c059e9b2da621"
 
 [[skills]]
 id = "domain-modeling"
 origin = ".agents"
-sha256 = "1155a3ea5c2571fe652e553d77cc398e7996a9ad93fd5d15ef77cce86f599b1e"
+sha256 = "f4e56a715e3a19c3c132115dbe9b48978be467d90e0bafb72b25e9e92b57ba8b"
 
 [[skills]]
 id = "edit-article"
@@ -104,7 +114,7 @@ sha256 = "e343da32cd390c3fcecc6c1ec9756a859ed4912088d7296708bdc9adcbf5dac8"
 [[skills]]
 id = "grilling"
 origin = ".agents"
-sha256 = "d63f00789c85e10224fd5dd3328b9a4ace44c1d16be92526ba9b890588058443"
+sha256 = "0eec9a4bdcd7f2ca5902b1b0c1c5a267b13f62111fb016bbd04a67108afa23e0"
 
 [[skills]]
 id = "handoff"
@@ -122,9 +132,14 @@ origin = ".agents"
 sha256 = "6e9668144630403f2f38e496c2a48b572c1898fbd636a4c2e1cf92e5f4f2e658"
 
 [[skills]]
+id = "implement-spec"
+origin = ".agents"
+sha256 = "2b514816051913fd7f32c14a10fb7056b3a56d226ff8fd8fdf883b03d86aa307"
+
+[[skills]]
 id = "improve-codebase-architecture"
 origin = ".agents"
-sha256 = "256101419f78ce7e4f4c50d2e2e76e10ea7332ae5efbaaaf5fdbf6c424af3779"
+sha256 = "b5de3130771e0836739a6ec0174c350e8f6579789999fc6596b5bcdda670eaca"
 
 [[skills]]
 id = "interrogate"
@@ -172,6 +187,16 @@ origin = ".codex"
 sha256 = "b29ce367ed5f5d614da44897835af7a04b9eb9db3495e713c548ceb6a02a41b1"
 
 [[skills]]
+id = "pr"
+origin = ".agents"
+sha256 = "55be86ff0ba21383db09fd29b8b714c69724d680d1c0ad402ece330d32c444ac"
+
+[[skills]]
+id = "principle-attack-the-premise"
+origin = ".codex"
+sha256 = "cca398f946db95708fe1df61ff78b90ffd047734a2f3c4c105e5c4a077bd7075"
+
+[[skills]]
 id = "principle-boundary-discipline"
 origin = ".codex"
 sha256 = "41155248813797b83a3ba1aeeec80ec6023b6c254c326de95ffea760062fe16c"
@@ -195,6 +220,11 @@ sha256 = "f8cc177a91ea8e44be4f4e7e2d172a0b48dcd18faf324c322943dccb05ca3543"
 id = "principle-experience-first"
 origin = ".codex"
 sha256 = "1e42329939ec52a40fef371a67b3f6ebe742e010eb1979bd68693f11328ba88d"
+
+[[skills]]
+id = "principle-explain-the-number"
+origin = ".codex"
+sha256 = "26956cdcb09128111c600fc9aebb33cc8bb70a221ef6a91bec8de6f8ffe714e2"
 
 [[skills]]
 id = "principle-fix-root-causes"
@@ -272,6 +302,11 @@ origin = ".codex"
 sha256 = "8d262deac8083863e81106b2733dad0383d079cef44a68695ef1b2df82521763"
 
 [[skills]]
+id = "principle-test-behavior-not-implementation"
+origin = ".codex"
+sha256 = "2393dbb4ce7f8cdf38236a39ec193abc898dded6b24e47c5d7e1d01470661648"
+
+[[skills]]
 id = "principle-type-system-discipline"
 origin = ".codex"
 sha256 = "d03751e76b2e51e8a916cec974f64f887addf32d342a79c774d962cee21e78e9"
@@ -312,6 +347,11 @@ origin = ".agents"
 sha256 = "041e1bf8ce8283742df4e0a906b62b8d385d047d677697c65f401560ab5c4c22"
 
 [[skills]]
+id = "retro"
+origin = ".agents"
+sha256 = "b53bccafb419856ca23cf25a61cba65d01d9f419ca5e07883d45c465c2f12eb0"
+
+[[skills]]
 id = "scaffold-exercises"
 origin = ".agents"
 sha256 = "3580f23ff5a4876e6580a23b0f126fe8d02dd946a363fd053f5b4c9b182adfa1"
@@ -319,7 +359,7 @@ sha256 = "3580f23ff5a4876e6580a23b0f126fe8d02dd946a363fd053f5b4c9b182adfa1"
 [[skills]]
 id = "setup-matt-pocock-skills"
 origin = ".agents"
-sha256 = "113430bd4acb28af393ba9d3db1dd24b824e4e27220f6bc4bf7e5a6a802d8511"
+sha256 = "0cb8f0c71637f02e91483f375fbe65389deceb4718cd6d22c81b067309f90539"
 
 [[skills]]
 id = "setup-pstack"
@@ -369,7 +409,7 @@ sha256 = "df33a318115c8abbd447ca558d792910d18c4b88fb814302738c416f84c5caa7"
 [[skills]]
 id = "triage"
 origin = ".agents"
-sha256 = "95152ee086f384c04d4138bd2b59493ca8c2f4b32e3b53f9bb626ffb9b0002fc"
+sha256 = "91d82bcbc83322ca203a1018fa9be0d93de4dd6331bee669e9c92206fe6581a1"
 
 [[skills]]
 id = "unslop"
@@ -379,7 +419,7 @@ sha256 = "c4532837d0da3ace9ac0737c567781a8e122f0d664c372ef3240a1cb959cd853"
 [[skills]]
 id = "wait-what"
 origin = ".agents"
-sha256 = "bf73e9899ea99ba1d7944aec5193757ad17c5f6ea5e22a6e76ea9a636af85b78"
+sha256 = "a0135a91411e32395ec968e77df057a3cbc9c81e136244c162f23932a43fb8da"
 
 [[skills]]
 id = "wayfinder"
