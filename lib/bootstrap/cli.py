@@ -35,6 +35,16 @@ from .workflows import plan_desktop, plan_integrations, plan_packages
 
 
 ROOT = Path(__file__).resolve().parents[2]
+WORKFLOW_ERRORS = (
+    CatalogError,
+    PlanHostMismatch,
+    PlanSchemaError,
+    PlatformDetectionError,
+    OSError,
+    RuntimeError,
+    subprocess.CalledProcessError,
+    json.JSONDecodeError,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -43,16 +53,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "setup":
             return setup_command()
         return workflow_command(WorkflowId(args.command), args.operation)
-    except (
-        CatalogError,
-        PlanHostMismatch,
-        PlanSchemaError,
-        PlatformDetectionError,
-        OSError,
-        RuntimeError,
-        subprocess.CalledProcessError,
-        json.JSONDecodeError,
-    ) as error:
+    except WORKFLOW_ERRORS as error:
         print(f"FAIL: {error}", file=sys.stderr)
         return 2
     except KeyboardInterrupt:
@@ -116,14 +117,45 @@ def setup_command() -> int:
         if not confirm(f"Configure {workflow.value} now?"):
             statuses.append((workflow.value, "SKIPPED"))
             continue
-        code = workflow_command(workflow, "plan")
-        if code == 0:
-            code = workflow_command(workflow, "apply")
+        # A failed workflow must not stop the later ones.
+        try:
+            code = workflow_command(workflow, "plan")
+            if code == 0:
+                code = workflow_command(workflow, "apply")
+        except WORKFLOW_ERRORS as error:
+            print(f"FAIL: {error}", file=sys.stderr)
+            code = 2
         statuses.append((workflow.value, "READY" if code == 0 else "FAIL"))
     print("\nSummary")
     for name, status in statuses:
         print(f"{name.title():14} {status}")
     return int(any(status == "FAIL" for _, status in statuses))
+
+
+def _usb_vendor_present(vendor: str, root: Path = Path("/sys/bus/usb/devices")) -> bool:
+    for path in root.glob("*/idVendor"):
+        try:
+            if path.read_text().strip() == vendor:
+                return True
+        except OSError:
+            continue
+    return False
+
+
+def _fan_control_present(root: Path = Path("/sys/class/hwmon")) -> bool:
+    return any(root.glob("hwmon*/pwm[0-9]"))
+
+
+# A catalog hardware hint is shown only when its hardware is present.
+HARDWARE_PROBES = {
+    "solaar": lambda: _usb_vendor_present("046d"),
+    "cooler-control": _fan_control_present,
+}
+
+
+def hardware_hint(application_id: str, hint: str | None) -> str | None:
+    probe = HARDWARE_PROBES.get(application_id)
+    return hint if hint and probe is not None and probe() else None
 
 
 def interactive_workflow_plan(workflow, repository, facts) -> WorkflowPlan:
@@ -139,7 +171,7 @@ def interactive_workflow_plan(workflow, repository, facts) -> WorkflowPlan:
                 item.label,
                 item.id in previous.selected if previous else item.default,
                 bool(item.commands) and all(shutil.which(command) for command in item.commands),
-                item.hardware_hint,
+                hardware_hint(item.id, item.hardware_hint),
             )
             for item in repository.applications.values()
             if item.visible

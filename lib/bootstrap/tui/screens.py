@@ -51,7 +51,8 @@ def _render(title: str, state: SelectorState) -> None:
             line = f"{cursor}   [{'x' if item.selected else ' '}] {item.label}{suffix}"
         output.append(line[:width])
     output.extend(("", "↑/↓ or j/k move  Space toggle  ←/→ fold  a all  n none  / search  Enter continue  Esc back"))
-    sys.stdout.write("\n".join(output))
+    # Raw mode turns off newline translation, so each line needs its own \r.
+    sys.stdout.write("\r\n".join(output))
     sys.stdout.flush()
 
 

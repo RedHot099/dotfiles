@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import select
 import signal
 import sys
 import termios
@@ -42,6 +43,9 @@ def raw_terminal(stream: TextIO = sys.stdin) -> Iterator[None]:
 def read_key(stream: TextIO = sys.stdin) -> str:
     first = os.read(stream.fileno(), 1)
     if first == b"\x1b":
+        # A lone Esc sends no more bytes; arrow keys follow at once.
+        if not select.select([stream.fileno()], [], [], 0.05)[0]:
+            return "escape"
         tail = os.read(stream.fileno(), 2)
         return {b"[A": "up", b"[B": "down", b"[C": "right", b"[D": "left"}.get(tail, "escape")
     if first in {b"\r", b"\n"}:
