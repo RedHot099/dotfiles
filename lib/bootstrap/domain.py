@@ -192,7 +192,7 @@ _ACTION_DATA_FIELDS: dict[ActionKind, tuple[frozenset[str], frozenset[str]]] = {
     ),
     ActionKind.USER_FILE: (
         frozenset({"target", "sha256", "mode"}),
-        frozenset({"symlink"}),
+        frozenset({"symlink", "seed"}),
     ),
     ActionKind.GENERATED_FILE: (
         frozenset({"target", "sha256", "mode", "content"}),
@@ -612,7 +612,7 @@ def _validate_action_data(kind: ActionKind, data: Mapping[str, JsonValue]) -> No
         "contains",
     }
     sequence_fields = {"packages", "dependencies", "tools", "commands", "keys", "fingerprints"}
-    boolean_fields = {"enabled", "start"}
+    boolean_fields = {"enabled", "start", "seed"}
     integer_fields = {"mode", "port", "expected_exit", "order"}
     nullable_string_fields = {"symlink", "probe_contains"}
     for field, value in data.items():

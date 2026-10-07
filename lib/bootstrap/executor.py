@@ -406,6 +406,8 @@ def apply_file_action(
     sources: dict[tuple[str, str, str], object],
 ) -> bool:
     target = str(item.data["target"])
+    if item.data.get("seed") is True and home.read_text(target) is not None:
+        return False
     expected = str(item.data["sha256"])
     mode = integer(item.data["mode"])
     symlink = optional_string(item.data.get("symlink"))

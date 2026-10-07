@@ -53,6 +53,9 @@ def audit_install(
 
 def audit_action(item: PlannedAction, home: HomeFiles, isolated: bool) -> AuditFinding:
     kind = item.kind.value
+    if item.kind is ActionKind.USER_FILE and item.data.get("seed") is True:
+        present = home.read_text(str(item.data["target"])) is not None
+        return finding(present, kind, item, f"{item.data['target']}: {'present (user-owned)' if present else 'missing'}")
     if item.kind in {ActionKind.USER_FILE, ActionKind.GENERATED_FILE}:
         symlink = optional_string(item.data.get("symlink"))
         matches = home.matches(
@@ -94,7 +97,13 @@ def audit_action(item: PlannedAction, home: HomeFiles, isolated: bool) -> AuditF
         )
     if item.kind in {ActionKind.USER_DAEMON_RELOAD, ActionKind.HYPRLAND_RELOAD}:
         return AuditFinding("PASS", kind, item.feature, "daemon reload is an apply transition")
-    satisfied = action_satisfied(item, home, command_environment(str(home.path)))
+    environment = command_environment(str(home.path))
+    if item.kind is ActionKind.USER_UNIT and not all(
+        run_probe(tuple(strings(probe["command"])), optional_string(probe.get("contains")), environment)
+        for probe in item.data.get("auth_probes", ())
+    ):
+        return AuditFinding("WARN", kind, item.feature, "waiting for login before the unit can start")
+    satisfied = action_satisfied(item, home, environment)
     status = "WARN" if isolated and not satisfied else "PASS" if satisfied else "FAIL"
     return AuditFinding(status, kind, item.feature, "matches" if satisfied else "not converged")
 

@@ -155,6 +155,9 @@ def plan_install(
                     {"tools": implementation.tools, "commands": implementation.commands},
                 )
             )
+        unknown_seeds = set(implementation.seed_targets) - {entry.target for entry in workspace.payload[feature_id]}
+        if unknown_seeds:
+            raise CatalogError(f"{feature_id} seeds files outside its payload: {', '.join(sorted(unknown_seeds))}")
         for entry in workspace.payload[feature_id]:
             actions.append(
                 action(
@@ -165,6 +168,7 @@ def plan_install(
                         "sha256": entry.sha256,
                         "mode": entry.mode,
                         "symlink": entry.symlink,
+                        **({"seed": True} if entry.target in implementation.seed_targets else {}),
                     },
                 )
             )

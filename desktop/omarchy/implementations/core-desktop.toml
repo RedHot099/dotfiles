@@ -1,6 +1,8 @@
 schema = 2
 id = "core-desktop"
 monitor_profiles = true
+# The shell, its bar gestures, and the bar-orientation plugin rewrite it.
+seed_targets = [".config/omarchy/shell.json"]
 
 [[files]]
 source = "payload/core-desktop"

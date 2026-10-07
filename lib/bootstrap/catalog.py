@@ -120,6 +120,9 @@ class FeatureImplementation:
     unavailable_reason: str | None
     listens: bool
     listening_ports: tuple[int, ...]
+    # Payload targets the user owns after the first install: created only
+    # when missing, never replaced, and audited for presence only.
+    seed_targets: tuple[str, ...] = ()
 
     @property
     def opens_listening_port(self) -> bool:
@@ -354,7 +357,7 @@ def _load_implementations(
                 "repositories", "reload_user_daemon", "user_units", "system_units", "authentication",
                 "theme", "github_ssh_user", "firewall_rule", "monitor_profiles",
                 "default_agent_target", "monitor_target", "available",
-                "unavailable_reason", "listens", "listening_ports",
+                "unavailable_reason", "listens", "listening_ports", "seed_targets",
             },
             manifest.path,
         )
@@ -396,6 +399,7 @@ def _load_implementations(
             unavailable_reason=unavailable_reason,
             listens=_boolean(raw, "listens", False, manifest.path),
             listening_ports=_ports(raw, manifest.path),
+            seed_targets=_strings(raw, "seed_targets", manifest.path),
         )
         if feature_id in implementations:
             raise CatalogError(f"duplicate implementation in {bundle}: {feature_id}")

@@ -2,9 +2,11 @@ import tempfile
 import unittest
 from dataclasses import replace
 from pathlib import Path
+from unittest import mock
 
 from bootstrap.domain import DesktopRequest, IntegrationsRequest, PackagesRequest, PlatformId, WorkflowId
-from bootstrap.execution import apply_workflow_plan, execution_plan
+from bootstrap.audit import audit_install
+from bootstrap.execution import apply_workflow_plan, execution_plan, execution_workspace
 from bootstrap.packages import StaticPackageProvider
 from bootstrap.planner import HostState
 from bootstrap.planning.model import PackagesEvidence
@@ -70,6 +72,22 @@ class DefaultPlanApplyTests(unittest.TestCase):
         self.assertGreater(self.apply(plan).changed, 0)
         self.assertEqual(self.apply(plan).changed, 0)
 
+        # shell.json is seeded once; later edits by the shell or the user stay.
+        shell = Path(self.home.name) / ".config/omarchy/shell.json"
+        shell.write_text('{"version": 1, "edited": true}\n')
+        self.assertEqual(self.apply(plan).changed, 0)
+        self.assertIn('"edited": true', shell.read_text())
+        finding = next(
+            item for item in self.audit(plan, WorkflowId.DESKTOP)
+            if item.message.startswith(".config/omarchy/shell.json")
+        )
+        self.assertEqual(finding.status, "PASS")
+
+    def audit(self, plan, workflow):
+        return audit_install(
+            execution_workspace(self.repository, workflow), execution_plan(self.repository, plan), self.facts
+        )
+
     def test_default_integrations_plan_applies_idempotently(self):
         selected = self.defaults(WorkflowId.INTEGRATIONS)
         agents = frozenset(item for item in selected if item.startswith("agent."))
@@ -83,6 +101,12 @@ class DefaultPlanApplyTests(unittest.TestCase):
         )
         self.assertGreater(self.apply(plan).changed, 0)
         self.assertEqual(self.apply(plan).changed, 0)
+
+        with mock.patch("bootstrap.audit.run_probe", return_value=False):
+            findings = self.audit(plan, WorkflowId.INTEGRATIONS)
+        units = [item for item in findings if item.feature == "cloud.onedrive" and item.kind == "user-unit"]
+        self.assertTrue(units)
+        self.assertTrue(all(item.status == "WARN" and "waiting for login" in item.message for item in units))
 
 
 if __name__ == "__main__":
