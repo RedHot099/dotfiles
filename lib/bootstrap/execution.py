@@ -32,12 +32,25 @@ def apply_workflow_plan(
 
 
 def execution_plan(repository: RepositoryModel, plan: WorkflowPlan) -> ExecutionPlan:
+    # Actions name the feature that owns them: a package transaction, an AUR
+    # requirement, or a feature pulled in through `requires`, not only the
+    # requested IDs. Every one must be selected and have a dependency entry.
+    selected = tuple(sorted(set(_selected(plan)) | {item.feature for item in plan.actions}))
+    catalog = execution_workspace(repository, plan.header.workflow).public_catalog
+    dependencies = {
+        feature: tuple(
+            required
+            for required in (catalog[feature].requires if feature in catalog else ())
+            if required in selected
+        )
+        for feature in selected
+    }
     return ExecutionPlan.create(
         platform=plan.header.platform,
         workspace_digest=repository.source_digest,
         target_home=plan.header.target_home,
-        selected=_selected(plan),
-        dependencies={},
+        selected=selected,
+        dependencies=dependencies,
         unavailable={item: "unavailable on this platform" for item in getattr(plan, "unavailable", ())},
         actions=plan.actions,
     )

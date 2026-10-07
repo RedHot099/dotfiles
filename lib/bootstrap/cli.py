@@ -44,6 +44,7 @@ WORKFLOW_ERRORS = (
     RuntimeError,
     subprocess.CalledProcessError,
     json.JSONDecodeError,
+    ValueError,
 )
 
 
