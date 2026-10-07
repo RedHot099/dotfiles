@@ -40,6 +40,17 @@ def raw_terminal(stream: TextIO = sys.stdin) -> Iterator[None]:
         sys.stdout.flush()
 
 
+def ask_yes_no(prompt: str, stream: TextIO = sys.stdin) -> bool:
+    """Ask before a change, ignoring keys pressed while the plan was built.
+
+    An Enter typed during a slow step would otherwise answer the next
+    question as "no" before the user has read it.
+    """
+    if stream.isatty():
+        termios.tcflush(stream.fileno(), termios.TCIFLUSH)
+    return input(f"{prompt} [y/N] ").strip().lower() in {"y", "yes"}
+
+
 def read_key(stream: TextIO = sys.stdin) -> str:
     first = os.read(stream.fileno(), 1)
     if first == b"\x1b":

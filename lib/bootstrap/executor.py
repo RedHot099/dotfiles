@@ -13,10 +13,12 @@ import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Iterable
 
 from .catalog import CatalogError, SYSTEM_UNIT_ALLOWLIST, Workspace
 from .domain import ActionKind, ExecutionPlan, PlannedAction, assert_plan_matches_host
 from .files import FileBoundaryError, HomeFiles
+from .tui.terminal import ask_yes_no
 from .platform import PlatformFacts
 from .packages import (
     LocalPackageProvider,
@@ -234,8 +236,7 @@ def review_aur_actions(plan: ExecutionPlan, skipped: set[str]) -> None:
                 print(content.decode("utf-8"), end="" if content.endswith(b"\n") else "\n")
             except UnicodeDecodeError:
                 print(f"[binary file, {len(content)} bytes]")
-        answer = input(f"Build and install reviewed AUR package {recipe.package_base}? [y/N] ")
-        if answer.strip().lower() not in {"y", "yes"}:
+        if not ask_yes_no(f"Build and install reviewed AUR package {recipe.package_base}?"):
             skipped.update(dependent_feature_closure(plan, item.feature))
 
 
@@ -264,8 +265,7 @@ def review_skill_collisions(plan: ExecutionPlan, home: HomeFiles) -> None:
     print("\nSkill paths that will be replaced without backup:")
     for target in sorted(collisions):
         print(f"  {target}")
-    answer = input("Replace exactly these selected skill paths? [y/N] ")
-    if answer.strip().lower() not in {"y", "yes"}:
+    if not ask_yes_no("Replace exactly these selected skill paths?"):
         raise CatalogError("skill collision replacement was declined")
     for target in collisions:
         home.remove_exact(target)
@@ -333,14 +333,13 @@ def apply_aur_package(item: PlannedAction) -> bool:
             environment=environment,
             cwd=checkout,
         )
-        package_paths = tuple(
-            Path(line)
-            for line in capture(
+        package_paths = planned_package_paths(
+            capture(
                 ("/usr/bin/makepkg", "--packagelist"),
                 environment=environment,
                 cwd=checkout,
-            ).splitlines()
-            if line
+            ).splitlines(),
+            tuple(strings(item.data["packages"])),
         )
         resolved_checkout = checkout.resolve()
         if not package_paths or any(
@@ -363,6 +362,24 @@ def apply_aur_package(item: PlannedAction) -> bool:
     if not aur_installed_exact(item):
         raise CatalogError(f"AUR package postcondition failed: {recipe.package_base}")
     return True
+
+
+def planned_package_paths(lines: Iterable[str], packages: tuple[str, ...]) -> tuple[Path, ...]:
+    """Pick the reviewed packages from `makepkg --packagelist`.
+
+    With `debug` in makepkg.conf OPTIONS the list also names a `-debug`
+    package, which makepkg skips for packages without binaries. Only the
+    planned packages are installed; each must appear exactly once.
+    """
+    paths: dict[str, list[Path]] = {}
+    for line in lines:
+        if line:
+            path = Path(line)
+            # <pkgname>-<[epoch:]pkgver>-<pkgrel>-<arch><PKGEXT>
+            paths.setdefault(path.name.rsplit("-", 3)[0], []).append(path)
+    if any(len(paths.get(package, ())) != 1 for package in packages):
+        return ()
+    return tuple(paths[package][0] for package in packages)
 
 
 def aur_installed_exact(item: PlannedAction) -> bool:
@@ -599,7 +616,7 @@ def command_environment(target_home: str) -> dict[str, str]:
 
 def authenticate(item: PlannedAction, environment: dict[str, str]) -> bool:
     label = str(item.data["label"])
-    if input(f"Authenticate {label} now? [y/N] ").strip().lower() not in {"y", "yes"}:
+    if not ask_yes_no(f"Authenticate {label} now?"):
         return False
     # A failed or cancelled login leaves it in the login queue; it must not
     # stop the remaining logins and services.

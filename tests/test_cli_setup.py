@@ -7,7 +7,9 @@ from unittest import mock
 from bootstrap import cli
 from bootstrap.catalog import CatalogError
 from bootstrap.domain import WorkflowId
+from bootstrap.executor import planned_package_paths
 from bootstrap.tui import screens
+from bootstrap.tui import terminal as terminal_module
 from bootstrap.tui.model import ChoiceRow, SelectorState
 
 
@@ -58,6 +60,35 @@ class RenderTests(unittest.TestCase):
         text = output.getvalue()
         self.assertNotIn("\n", text.replace("\r\n", ""))
         self.assertIn("\r\n", text)
+
+
+class TypeaheadTests(unittest.TestCase):
+    def test_question_discards_keys_pressed_before_it(self):
+        terminal = mock.Mock()
+        terminal.isatty.return_value = True
+        terminal.fileno.return_value = 7
+        with mock.patch("termios.tcflush") as flush, mock.patch("builtins.input", return_value="y"):
+            self.assertTrue(terminal_module.ask_yes_no("Apply?", terminal))
+        flush.assert_called_once_with(7, terminal_module.termios.TCIFLUSH)
+
+
+class AurPackageListTests(unittest.TestCase):
+    def test_debug_package_listed_but_not_built_is_ignored(self):
+        lines = [
+            "/build/caprine/caprine-2.61.0-1-any.pkg.tar.zst",
+            "/build/caprine/caprine-debug-2.61.0-1-any.pkg.tar.zst",
+        ]
+        self.assertEqual(
+            planned_package_paths(lines, ("caprine",)),
+            (Path("/build/caprine/caprine-2.61.0-1-any.pkg.tar.zst"),),
+        )
+
+    def test_epoch_versions_and_split_packages_are_matched(self):
+        lines = ["/b/aws-cli-bin-1:2.36.32-1-x86_64.pkg.tar.zst", "/b/a-lib-1.0-1-x86_64.pkg.tar.zst", "/b/a-1.0-1-x86_64.pkg.tar.zst"]
+        self.assertEqual(len(planned_package_paths(lines, ("aws-cli-bin", "a", "a-lib"))), 3)
+
+    def test_missing_planned_package_yields_nothing(self):
+        self.assertEqual(planned_package_paths(["/b/caprine-debug-1-1-any.pkg.tar.zst"], ("caprine",)), ())
 
 
 if __name__ == "__main__":

@@ -31,6 +31,7 @@ from .state import SelectionRecord, StateStore
 from .ssh import fetch_github_keys, ssh_fingerprint
 from .tui.model import ChoiceRow, SelectorState
 from .tui.screens import select
+from .tui.terminal import ask_yes_no
 from .workflows import plan_desktop, plan_integrations, plan_packages
 
 
@@ -382,7 +383,7 @@ def query_foreign_packages() -> frozenset[str]:
 def confirm(prompt: str) -> bool:
     if not sys.stdin.isatty():
         raise CatalogError("interactive mode requires a terminal")
-    return input(f"{prompt} [y/N] ").strip().lower() in {"y", "yes"}
+    return ask_yes_no(prompt)
 
 
 if __name__ == "__main__":
