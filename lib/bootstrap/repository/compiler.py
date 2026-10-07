@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import tomllib
 from pathlib import Path
+from types import MappingProxyType
 
 from ..catalog import (
     CatalogError,
@@ -11,6 +12,9 @@ from ..catalog import (
 )
 from ..domain import PlatformId, WorkflowId
 from .model import Application, RepositoryModel, WorkflowModel
+
+
+GPU_VENDORS = frozenset({"amd", "intel", "nvidia"})
 
 
 def compile_repository(root: Path, platform: PlatformId | str) -> RepositoryModel:
@@ -53,7 +57,10 @@ def _validate_repository(repository: RepositoryModel) -> None:
     required = {
         requirement
         for application in repository.applications.values()
-        for requirement in application.requirements
+        for requirement in (
+            *application.requirements,
+            *(item for items in application.gpu_requirements.values() for item in items),
+        )
     }
     missing = required - set(repository.package_bindings)
     if missing:
@@ -95,7 +102,7 @@ def _load_applications(directory: Path) -> dict[str, Application]:
             "schema", "id", "label", "group", "default", "requirements",
             "tools", "commands",
         }
-        allowed = required | {"hardware_hint", "visible"}
+        allowed = required | {"hardware_hint", "visible", "gpu_requirements"}
         fields = set(data)
         if not required <= fields or not fields <= allowed or data["schema"] != 1:
             raise CatalogError(f"invalid application schema: {path}")
@@ -108,6 +115,12 @@ def _load_applications(directory: Path) -> dict[str, Application]:
         hint = data.get("hardware_hint")
         if hint is not None and not isinstance(hint, str):
             raise CatalogError(f"invalid application hardware_hint: {path}")
+        gpu = data.get("gpu_requirements", {})
+        if not isinstance(gpu, dict) or not set(gpu) <= GPU_VENDORS or not all(
+            isinstance(items, list) and items and all(isinstance(item, str) for item in items)
+            for items in gpu.values()
+        ):
+            raise CatalogError(f"invalid application gpu_requirements: {path}")
         applications[identifier] = Application(
             identifier,
             str(data["label"]),
@@ -118,6 +131,7 @@ def _load_applications(directory: Path) -> dict[str, Application]:
             tuple(data["tools"]),
             tuple(data["commands"]),
             hint,
+            MappingProxyType({vendor: tuple(items) for vendor, items in sorted(gpu.items())}),
         )
     if not applications:
         raise CatalogError("no package applications found")

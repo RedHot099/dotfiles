@@ -27,7 +27,14 @@ def plan_packages(
     requirements = {
         requirement
         for application in selected
-        for requirement in application.requirements
+        for requirement in (
+            *application.requirements,
+            *(
+                item
+                for vendor in sorted(state.gpu_vendors)
+                for item in application.gpu_requirements.get(vendor, ())
+            ),
+        )
     }
     bindings = tuple(repository.package_bindings[item] for item in sorted(requirements))
     repository_bindings = tuple(

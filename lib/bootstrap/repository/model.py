@@ -19,6 +19,8 @@ class Application:
     tools: tuple[str, ...]
     commands: tuple[str, ...]
     hardware_hint: str | None
+    # Extra requirements per detected GPU vendor ("amd", "intel", "nvidia").
+    gpu_requirements: Mapping[str, tuple[str, ...]] = MappingProxyType({})
 
 
 @dataclass(frozen=True)

@@ -25,6 +25,7 @@ class HostState:
     commands: frozenset[str]
     package_versions: Mapping[str, str] = field(default_factory=dict)
     foreign_packages: frozenset[str] = frozenset()
+    gpu_vendors: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)

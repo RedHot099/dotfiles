@@ -6,3 +6,10 @@ default = true
 requirements = ["steam", "lib32-mangohud"]
 tools = []
 commands = ["steam"]
+
+# Steam needs a 32-bit Vulkan driver. Without one in the transaction pacman
+# picks the first provider, lib32-nvidia-utils, even on AMD and Intel GPUs.
+# Omarchy installs lib32-nvidia-utils itself on NVIDIA machines.
+[gpu_requirements]
+amd = ["lib32-vulkan-radeon"]
+intel = ["lib32-vulkan-intel"]

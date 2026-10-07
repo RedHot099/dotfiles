@@ -350,7 +350,25 @@ def detect_host_state(workspace: Workspace) -> HostState:
         frozenset(command for command in wanted if shutil.which(command)),
         versions,
         foreign,
+        detect_gpu_vendors(),
     )
+
+
+PCI_GPU_VENDORS = {"0x1002": "amd", "0x8086": "intel", "0x10de": "nvidia"}
+
+
+def detect_gpu_vendors(root: Path = Path("/sys/bus/pci/devices")) -> frozenset[str]:
+    vendors: set[str] = set()
+    for device in root.glob("*"):
+        try:
+            if not (device / "class").read_text().startswith("0x03"):
+                continue
+            vendor = PCI_GPU_VENDORS.get((device / "vendor").read_text().strip())
+        except OSError:
+            continue
+        if vendor:
+            vendors.add(vendor)
+    return frozenset(vendors)
 
 
 def query_foreign_packages() -> frozenset[str]:

@@ -67,6 +67,18 @@ package = "steam"
 repositories = ["multilib"]
 
 [[bindings]]
+requirement = "lib32-vulkan-radeon"
+provider = "repository"
+package = "lib32-vulkan-radeon"
+repositories = ["multilib"]
+
+[[bindings]]
+requirement = "lib32-vulkan-intel"
+provider = "repository"
+package = "lib32-vulkan-intel"
+repositories = ["multilib"]
+
+[[bindings]]
 requirement = "lib32-mangohud"
 provider = "repository"
 package = "lib32-mangohud"
