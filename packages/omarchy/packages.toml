@@ -27,8 +27,8 @@ repositories = ["extra"]
 [[bindings]]
 requirement = "mise"
 provider = "repository"
-package = "mise"
-repositories = ["extra"]
+package = "mise-bin"
+repositories = ["omarchy"]
 
 [[bindings]]
 requirement = "cursor-cli"
@@ -246,10 +246,9 @@ revision = "11a20f2153727ec531dab9c9d61e6bd03ca03b70"
 
 [[bindings]]
 requirement = "google-chrome"
-provider = "aur"
+provider = "repository"
 package = "google-chrome"
-url = "https://aur.archlinux.org/google-chrome.git"
-revision = "1cf56b57305f59919b74a559906d60002edd95a3"
+repositories = ["omarchy"]
 
 [[bindings]]
 requirement = "losslesscut-bin"
@@ -260,10 +259,9 @@ revision = "154f094239728d8a3f65d21e506313bfae0b9267"
 
 [[bindings]]
 requirement = "t3code-nightly-bin"
-provider = "aur"
+provider = "repository"
 package = "t3code-nightly-bin"
-url = "https://aur.archlinux.org/t3code-nightly-bin.git"
-revision = "c3568bb8d0b2f720fcaecc6aef94c66292f6e075"
+repositories = ["omarchy"]
 
 [[bindings]]
 requirement = "vesktop"

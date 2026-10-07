@@ -386,7 +386,8 @@ def aur_installed_exact(item: PlannedAction) -> bool:
     version = str(item.data["version"])
     for package in strings(item.data["packages"]):
         probe = subprocess.run(
-            ("/usr/bin/pacman", "-Qm", "--", package),
+            # -Q, not -Qm: a package also in a sync repository is not foreign.
+            ("/usr/bin/pacman", "-Q", "--", package),
             check=False,
             text=True,
             stdout=subprocess.PIPE,

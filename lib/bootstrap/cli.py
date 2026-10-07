@@ -36,6 +36,11 @@ from .workflows import plan_desktop, plan_integrations, plan_packages
 
 
 ROOT = Path(__file__).resolve().parents[2]
+EXIT_READY = 0
+EXIT_DECLINED = 1
+EXIT_INCOMPLETE = 3
+# INCOMPLETE means deferred logins or skipped AUR builds, not a failed change.
+SETUP_STATUSES = {EXIT_READY: "READY", EXIT_DECLINED: "SKIPPED", EXIT_INCOMPLETE: "INCOMPLETE"}
 WORKFLOW_ERRORS = (
     CatalogError,
     PlanHostMismatch,
@@ -95,7 +100,7 @@ def workflow_command(workflow: WorkflowId, operation: str) -> int:
         return int(any(finding.status == "FAIL" for finding in findings))
     if not confirm(f"Apply reviewed {workflow.value} plan {plan.digest[:12]}?"):
         print("Aborted.")
-        return 1
+        return EXIT_DECLINED
     if workflow is WorkflowId.PACKAGES and plan.actions:
         subprocess.run(("/usr/bin/sudo", "-v"), check=True)
     result = apply_workflow_plan(
@@ -109,7 +114,7 @@ def workflow_command(workflow: WorkflowId, operation: str) -> int:
     status = "READY" if not result.skipped_features and not result.simulated else "INCOMPLETE"
     print(f"{workflow.value.title()}: {status}")
     print(f"Changed: {result.changed}; unchanged: {result.unchanged}; deferred: {result.simulated}")
-    return int(status != "READY")
+    return EXIT_READY if status == "READY" else EXIT_INCOMPLETE
 
 
 def setup_command() -> int:
@@ -127,11 +132,11 @@ def setup_command() -> int:
         except WORKFLOW_ERRORS as error:
             print(f"FAIL: {error}", file=sys.stderr)
             code = 2
-        statuses.append((workflow.value, "READY" if code == 0 else "FAIL"))
+        statuses.append((workflow.value, SETUP_STATUSES.get(code, "FAIL")))
     print("\nSummary")
     for name, status in statuses:
         print(f"{name.title():14} {status}")
-    return int(any(status == "FAIL" for _, status in statuses))
+    return int(any(status in {"FAIL", "INCOMPLETE"} for _, status in statuses))
 
 
 def _usb_vendor_present(vendor: str, root: Path = Path("/sys/bus/usb/devices")) -> bool:

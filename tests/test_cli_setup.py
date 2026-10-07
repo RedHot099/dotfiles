@@ -21,6 +21,10 @@ class SetupTests(unittest.TestCase):
             calls.append((workflow, operation))
             if workflow is WorkflowId.PACKAGES:
                 raise CatalogError("package databases are stale")
+            if workflow is WorkflowId.DESKTOP and operation == "apply":
+                return cli.EXIT_DECLINED
+            if workflow is WorkflowId.INTEGRATIONS and operation == "apply":
+                return cli.EXIT_INCOMPLETE
             return 0
 
         with mock.patch.object(cli, "confirm", return_value=True), mock.patch.object(
@@ -31,7 +35,8 @@ class SetupTests(unittest.TestCase):
         self.assertIn((WorkflowId.INTEGRATIONS, "apply"), calls)
         summary = output.getvalue()
         self.assertIn("Packages       FAIL", summary)
-        self.assertIn("Integrations   READY", summary)
+        self.assertIn("Desktop        SKIPPED", summary)
+        self.assertIn("Integrations   INCOMPLETE", summary)
 
 
 class HardwareHintTests(unittest.TestCase):

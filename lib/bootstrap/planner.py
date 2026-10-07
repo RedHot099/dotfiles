@@ -103,11 +103,7 @@ def plan_install(
             )
         for binding in (item for item in bindings if item.provider == "aur"):
             recipe = provider.inspect_aur(binding)
-            if all(
-                package in state.foreign_packages
-                and state.package_versions.get(package) == recipe.version
-                for package in recipe.package_names
-            ):
+            if all(state.package_versions.get(package) == recipe.version for package in recipe.package_names):
                 continue
             missing_dependencies = tuple(
                 sorted(
