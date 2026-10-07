@@ -6,10 +6,12 @@ import os
 import re
 import subprocess
 import tempfile
-import time
+import urllib.error
+import urllib.request
+from email.utils import parsedate_to_datetime
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Iterable, Mapping, Protocol
+from typing import Callable, Iterable, Mapping, Protocol
 
 from .catalog import CatalogError, PackageBinding
 
@@ -18,7 +20,8 @@ PACKAGE_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9@._+:-]*")
 VERSION_RE = re.compile(r"[^\t\r\n]+")
 DEPENDENCY_RE = re.compile(r"([A-Za-z0-9][A-Za-z0-9@._+:-]*)(?:[<>=].*)?")
 MAX_AUR_FILE_SIZE = 2 * 1024 * 1024
-MAX_SYNC_DATABASE_AGE = 7 * 24 * 60 * 60
+SYNC_DATABASE_DIRECTORY = Path("/var/lib/pacman/sync")
+MIRROR_TIMEOUT_SECONDS = 15
 
 
 @dataclass(frozen=True, order=True)
@@ -88,7 +91,7 @@ class LocalPackageProvider:
             )
         )
         transaction = parse_transaction(output, bindings, self.repositories)
-        self._check_database_age({item.repository for item in transaction})
+        check_databases_current({item.repository for item in transaction})
         return transaction
 
     def inspect_aur(self, binding: PackageBinding) -> AurRecipe:
@@ -154,20 +157,55 @@ class LocalPackageProvider:
                 "pacman database is locked; finish or diagnose the active transaction first"
             )
 
-    def _check_database_age(self, used_repositories: set[str]) -> None:
-        now = time.time()
-        stale: list[str] = []
-        for repository in sorted(used_repositories):
-            database = Path("/var/lib/pacman/sync") / f"{repository}.db"
-            if not database.is_file() or now - database.stat().st_mtime > MAX_SYNC_DATABASE_AGE:
-                stale.append(repository)
-        if not stale:
-            return
+
+
+def check_databases_current(
+    repositories: set[str],
+    database_directory: Path = SYNC_DATABASE_DIRECTORY,
+    remote_time: Callable[[str], float | None] | None = None,
+) -> None:
+    """Fail unless every local sync database matches its first mirror.
+
+    pacman stamps a downloaded database with the mirror's Last-Modified time,
+    so equal times mean the local copy is current. Omarchy's stable mirror is
+    a dated snapshot, which makes the file's age meaningless.
+    """
+    remote_time = remote_time or mirror_database_time
+    stale: list[str] = []
+    for repository in sorted(repositories):
+        database = database_directory / f"{repository}.db"
+        if not database.is_file():
+            stale.append(repository)
+            continue
+        remote = remote_time(repository)
+        if remote is None or remote > database.stat().st_mtime:
+            stale.append(repository)
+    if stale:
         raise CatalogError(
             "package databases are stale or missing for "
             + ", ".join(stale)
             + "; run omarchy update, then generate a new plan"
         )
+
+
+def mirror_database_time(repository: str) -> float | None:
+    servers = run_capture(("/usr/bin/pacman-conf", "--repo", repository, "Server")).split()
+    if not servers:
+        return None
+    request = urllib.request.Request(
+        f"{servers[0]}/{repository}.db",
+        method="HEAD",
+        # The Omarchy mirror rejects urllib's default agent with 403.
+        headers={"User-Agent": "arch-hypr-bootstrap"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=MIRROR_TIMEOUT_SECONDS) as response:
+            modified = response.headers.get("Last-Modified")
+    except (OSError, urllib.error.URLError) as error:
+        raise CatalogError(f"could not check the {repository} mirror: {error}") from error
+    if not modified:
+        return None
+    return parsedate_to_datetime(modified).timestamp()
 
 
 class StaticPackageProvider:
