@@ -22,7 +22,7 @@ t3_backend_listening() {
 }
 
 t3_process_running() {
-  pgrep -u "$USER" -f '[t]3code-nightly-bin/(t3code|AppRun)' >/dev/null 2>&1
+  pgrep -u "$USER" -f '[t]3code-nightly(-bin)?/(t3code|AppRun)' >/dev/null 2>&1
 }
 
 if [[ "${T3CODE_FORCE_NEW:-0}" != "1" ]]; then

@@ -45,14 +45,14 @@ copy_if_exists() {
 }
 
 stop_t3code() {
-  pkill -u "$USER" -f '[t]3code-nightly-bin/(t3code|AppRun)' 2>/dev/null || true
+  pkill -u "$USER" -f '[t]3code-nightly(-bin)?/(t3code|AppRun)' 2>/dev/null || true
   for _ in {1..20}; do
-    if ! pgrep -u "$USER" -f '[t]3code-nightly-bin/(t3code|AppRun)' >/dev/null 2>&1; then
+    if ! pgrep -u "$USER" -f '[t]3code-nightly(-bin)?/(t3code|AppRun)' >/dev/null 2>&1; then
       return 0
     fi
     sleep 0.25
   done
-  pkill -KILL -u "$USER" -f '[t]3code-nightly-bin/(t3code|AppRun)' 2>/dev/null || true
+  pkill -KILL -u "$USER" -f '[t]3code-nightly(-bin)?/(t3code|AppRun)' 2>/dev/null || true
 }
 
 mkdir -p "$backup_dir"

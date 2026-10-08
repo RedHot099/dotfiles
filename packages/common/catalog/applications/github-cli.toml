@@ -1,8 +1,10 @@
 schema = 1
+# Omarchy installs this as a mise wrapper in ~/.local/bin that runs the latest
+# release, so the bootstrap pins nothing and only checks the command.
 id = "github-cli"
 label = "GitHub CLI"
 group = "Development tools"
 default = true
 requirements = ["mise"]
-tools = ["gh@2.98.0"]
+tools = []
 commands = ["gh"]

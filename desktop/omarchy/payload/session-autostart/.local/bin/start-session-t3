@@ -14,7 +14,7 @@ if "$HOME/.local/bin/hypr-find-client" "$class_regex" "$workspace" >/dev/null 2>
   exit 0
 fi
 
-if pgrep -u "$USER" -f '[t]3code-nightly-bin/(t3code|AppRun)' >/dev/null 2>&1; then
+if pgrep -u "$USER" -f '[t]3code-nightly(-bin)?/(t3code|AppRun)' >/dev/null 2>&1; then
   "$HOME/.local/bin/hypr-wait-client" "$class_regex" "$workspace" "$timeout" >/dev/null 2>&1 || true
   exit 0
 fi

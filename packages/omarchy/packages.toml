@@ -31,12 +31,6 @@ package = "mise-bin"
 repositories = ["omarchy"]
 
 [[bindings]]
-requirement = "cursor-cli"
-provider = "repository"
-package = "cursor-cli"
-repositories = ["omarchy"]
-
-[[bindings]]
 requirement = "cursor-bin"
 provider = "repository"
 package = "cursor-bin"
