@@ -81,11 +81,8 @@ def _selected_skill_action(item, request: IntegrationsRequest):
 
 
 def _missing_applications(repository, selected: set[str], evidence: PackagesEvidence) -> set[str]:
+    # Agent CLIs need no entry: Omarchy installs them as mise wrappers.
     prerequisites = {
-        "agent.claude": "claude-code",
-        "agent.codex": "codex",
-        "agent.opencode": "opencode",
-        "agent.cursor": "cursor-agent",
         "tool.github": "github-cli",
         "aws": "aws-cli",
         "tool.rclone": "cloud-support",

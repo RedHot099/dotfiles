@@ -44,7 +44,7 @@ Desktop keeps the Google Calendar Snooze and Todoist widgets and does not instal
 
 ## Agents, skills, and credentials
 
-The curated agents are Claude Code, Codex, OpenCode, and Cursor Agent. Skills are selected once and linked from one managed canonical tree into `.agents`, Claude, Codex, OpenCode, and Cursor harness roots. Codex `.system`, Cursor `skills-cursor`, and unrelated non-colliding skills remain untouched.
+The curated agents are Claude Code, Codex, OpenCode, and Cursor Agent. Omarchy installs their CLIs; the bootstrap only configures them and queues their logins. Skills are selected once and linked from one managed canonical tree into `.agents`, Claude, Codex, OpenCode, and Cursor harness roots. Codex `.system`, Cursor `skills-cursor`, and unrelated non-colliding skills remain untouched.
 
 The repository stores no tokens, sessions, browser profiles, rclone configuration, private SSH keys, host fingerprints, or `known_hosts` entries.
 

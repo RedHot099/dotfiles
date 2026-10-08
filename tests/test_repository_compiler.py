@@ -39,10 +39,9 @@ class RepositoryCompilerTests(unittest.TestCase):
         self.assertEqual(
             selected,
             {
-                "aws-cli", "caprine", "chromium", "claude-code", "codex",
-                "cursor", "cursor-agent", "github-cli",
+                "aws-cli", "caprine", "chromium", "cursor", "github-cli",
                 "google-chrome", "mise", "neovim", "obsidian", "rust",
-                "signal", "spotify", "steam", "t3-code", "tailscale", "opencode",
+                "signal", "spotify", "steam", "t3-code", "tailscale",
                 "typora", "vesktop", "visual-studio-code",
             },
         )
@@ -96,15 +95,26 @@ class RepositoryCompilerTests(unittest.TestCase):
         repository = compile_repository(ROOT, PlatformId.OMARCHY)
         facts = detect_platform(omarchy_probe())
 
-        with self.assertRaisesRegex(Exception, "NEEDS PACKAGES: codex"):
+        with self.assertRaisesRegex(Exception, "NEEDS PACKAGES: tailscale"):
             plan_integrations(
                 ROOT,
                 repository,
                 facts,
                 HostState(frozenset(), frozenset()),
-                IntegrationsRequest(frozenset(), frozenset({"agent.codex"}), frozenset(), frozenset()),
+                IntegrationsRequest(frozenset({"tailscale"}), frozenset(), frozenset(), frozenset()),
                 PackagesEvidence.create(frozenset(), frozenset()),
             )
+
+    def test_agents_need_no_package_because_omarchy_provides_them(self):
+        plan = plan_integrations(
+            ROOT,
+            compile_repository(ROOT, PlatformId.OMARCHY),
+            detect_platform(omarchy_probe()),
+            HostState(frozenset(), frozenset()),
+            IntegrationsRequest(frozenset(), frozenset({"agent.codex"}), frozenset(), frozenset()),
+            PackagesEvidence.create(frozenset(), frozenset()),
+        )
+        self.assertIn("agent.codex", {item.feature for item in plan.actions})
 
     def test_desktop_and_integrations_cannot_plan_package_mutations(self):
         repository = compile_repository(ROOT, PlatformId.OMARCHY)

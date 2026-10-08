@@ -314,7 +314,7 @@ Available but off by default:
 
 Hardware detection may add a compatibility hint for Solaar or CoolerControl. It never selects them automatically.
 
-Remove Gemini CLI, GitHub Copilot CLI, Grok CLI, and Crush from the curated catalog. Cursor Agent remains distinct from the Cursor editor.
+Packages installs no agent CLI. Omarchy provides Claude Code, Codex, OpenCode, Cursor Agent, and GitHub CLI as mise wrappers in `~/.local/bin` that run the latest release; Integrations only configures and logs in the selected agents.
 
 ## Desktop ownership
 
