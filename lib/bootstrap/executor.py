@@ -31,6 +31,7 @@ from .packages import (
     transaction_from_action,
     verify_aur_snapshot,
     verify_transaction,
+    version_at_least,
 )
 
 
@@ -383,6 +384,7 @@ def planned_package_paths(lines: Iterable[str], packages: tuple[str, ...]) -> tu
 
 
 def aur_installed_exact(item: PlannedAction) -> bool:
+    """The reviewed version, or a newer one from the distribution updater."""
     version = str(item.data["version"])
     for package in strings(item.data["packages"]):
         probe = subprocess.run(
@@ -393,7 +395,8 @@ def aur_installed_exact(item: PlannedAction) -> bool:
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
         )
-        if probe.returncode or probe.stdout.strip() != f"{package} {version}":
+        name, _, installed = probe.stdout.strip().partition(" ")
+        if probe.returncode or name != package or not version_at_least(installed, version):
             return False
     return True
 

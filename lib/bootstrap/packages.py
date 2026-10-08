@@ -159,6 +159,29 @@ class LocalPackageProvider:
 
 
 
+def version_at_least(installed: str | None, required: str) -> bool:
+    """True when pacman orders `installed` at or after `required`.
+
+    The distribution updater also upgrades AUR packages, so a newer install
+    satisfies a pinned recipe; rebuilding the pin would be a downgrade.
+    """
+    if installed is None:
+        return False
+    if installed == required:
+        return True
+    result = subprocess.run(
+        ("/usr/bin/vercmp", installed, required),
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        return result.returncode == 0 and int(result.stdout.strip()) >= 0
+    except ValueError:
+        return False
+
+
 def check_databases_current(
     repositories: set[str],
     database_directory: Path = SYNC_DATABASE_DIRECTORY,

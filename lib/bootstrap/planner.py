@@ -16,6 +16,7 @@ from .packages import (
     PlanningPackageProvider,
     RepositoryPackage,
     repository_names,
+    version_at_least,
 )
 
 
@@ -103,7 +104,7 @@ def plan_install(
             )
         for binding in (item for item in bindings if item.provider == "aur"):
             recipe = provider.inspect_aur(binding)
-            if all(state.package_versions.get(package) == recipe.version for package in recipe.package_names):
+            if all(version_at_least(state.package_versions.get(package), recipe.version) for package in recipe.package_names):
                 continue
             missing_dependencies = tuple(
                 sorted(

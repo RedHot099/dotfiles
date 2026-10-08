@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ..catalog import CatalogError, PackageBinding
 from ..domain import ActionKind, PackagesRequest, PlannedAction, WorkflowId
-from ..packages import LocalPackageProvider, PlanningPackageProvider, repository_names
+from ..packages import LocalPackageProvider, PlanningPackageProvider, repository_names, version_at_least
 from ..planner import HostState, action, action_order, repository_action
 from ..planning.model import PackagesPlan, PlanHeader
 from ..platform import PlatformFacts
@@ -52,7 +52,7 @@ def plan_packages(
         )
     for binding in (item for item in bindings if item.provider == "aur"):
         recipe = provider.inspect_aur(binding)
-        if all(state.package_versions.get(package) == recipe.version for package in recipe.package_names):
+        if all(version_at_least(state.package_versions.get(package), recipe.version) for package in recipe.package_names):
             continue
         missing = tuple(
             sorted(
