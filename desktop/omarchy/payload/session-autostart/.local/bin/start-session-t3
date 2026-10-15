@@ -4,7 +4,7 @@ set -euo pipefail
 
 class_regex='^com\.t3tools\.T3Code$'
 workspace='2'
-timeout="${T3CODE_WINDOW_TIMEOUT:-45}"
+timeout="${T3CODE_WINDOW_TIMEOUT:-150}"
 lock_file="${XDG_RUNTIME_DIR:-/tmp}/start-session-t3.lock"
 
 exec 9>"$lock_file"
@@ -14,7 +14,22 @@ if "$HOME/.local/bin/hypr-find-client" "$class_regex" "$workspace" >/dev/null 2>
   exit 0
 fi
 
-if pgrep -u "$USER" -f '[t]3code-nightly(-bin)?/(t3code|AppRun)' >/dev/null 2>&1; then
+t3_process_running() {
+  pgrep -u "$USER" -f '[t]3code-nightly(-bin)?/(t3code|AppRun)' >/dev/null 2>&1
+}
+
+# A closed T3 Code keeps its process alive for a few seconds while it shuts
+# down. Launching then hands the request to the dying instance, so wait for it
+# to either show a window (still starting) or exit (closing).
+for _ in $(seq 1 30); do
+  t3_process_running || break
+  if "$HOME/.local/bin/hypr-find-client" "$class_regex" "$workspace" >/dev/null 2>&1; then
+    exit 0
+  fi
+  sleep 0.5
+done
+
+if t3_process_running; then
   "$HOME/.local/bin/hypr-wait-client" "$class_regex" "$workspace" "$timeout" >/dev/null 2>&1 || true
   exit 0
 fi

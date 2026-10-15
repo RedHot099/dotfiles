@@ -5,7 +5,7 @@ self="$(readlink -f "${BASH_SOURCE[0]}")"
 default_model="${T3CODE_DEFAULT_MODEL:-gpt-5.5}"
 state_db="${T3CODE_STATE_DB:-$HOME/.t3/userdata/state.sqlite}"
 pinned_appdir="${T3CODE_APPDIR:-/opt/t3code-nightly-bin}"
-t3code_profile="${T3CODE_PROFILE_DIR:-$HOME/.config/T3 Code (Alpha)}"
+t3code_profile="${T3CODE_PROFILE_DIR:-$HOME/.config/t3code-v2}"
 startup_log="${T3CODE_STARTUP_LOG:-$HOME/.local/state/t3code-startup.log}"
 runtime_dir="${XDG_RUNTIME_DIR:-$HOME/.local/state/arch-hypr-bootstrap/runtime}"
 mkdir -p "$runtime_dir"
@@ -82,6 +82,46 @@ ensure_polish_spellcheck() {
 }
 
 ensure_polish_spellcheck
+
+# T3 Code picks its network-accessible host once at startup and falls back to
+# local-only when no LAN address exists yet, which also disables Tailscale Serve.
+lan_address_ready() {
+  ip -4 -o addr show up scope global 2>/dev/null |
+    awk '$2 !~ /^(lo|tailscale|docker|br-|veth|virbr)/ { found = 1 } END { exit !found }'
+}
+
+tailscale_ready() {
+  if ! command -v tailscale >/dev/null 2>&1 || ! systemctl is-active --quiet tailscaled.service 2>/dev/null; then
+    return 0
+  fi
+  tailscale ip -4 >/dev/null 2>&1
+}
+
+wait_for_network() {
+  local timeout="${T3CODE_NETWORK_WAIT:-90}"
+  local interval=3
+  local waited=0
+  local attempt=1
+
+  [[ "$timeout" =~ ^[0-9]+$ ]] || timeout=90
+  ((timeout > 0)) || return 0
+
+  while ! { lan_address_ready && tailscale_ready; }; do
+    if ((waited >= timeout)); then
+      log_startup "network not ready after ${waited}s ($attempt attempts); launching local-only"
+      return 0
+    fi
+    sleep "$interval"
+    waited=$((waited + interval))
+    attempt=$((attempt + 1))
+  done
+
+  if ((waited > 0)); then
+    log_startup "network ready after ${waited}s ($attempt attempts)"
+  fi
+}
+
+wait_for_network
 
 if [[ -x "$pinned_appdir/t3code" ]]; then
   log_startup "launching pinned t3code from $pinned_appdir"

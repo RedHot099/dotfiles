@@ -22,5 +22,6 @@ fi
 test -f "$temporary/outside/must-survive"
 
 rg -q 't3code-\$UID\.lock' "$launcher"
+rg -q "^wait_for_network$" "$launcher"
 
 echo "T3 Code safety checks passed."
