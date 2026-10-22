@@ -1,0 +1,8 @@
+schema = 1
+id = "chatgpt-desktop"
+label = "ChatGPT Desktop"
+group = "Development tools"
+default = true
+requirements = ["openai-codex-desktop"]
+tools = []
+commands = ["chatgpt"]

@@ -39,7 +39,8 @@ class RepositoryCompilerTests(unittest.TestCase):
         self.assertEqual(
             selected,
             {
-                "aws-cli", "caprine", "chromium", "cursor", "github-cli",
+                "aws-cli", "caprine", "chatgpt-desktop", "chromium",
+                "claude-desktop", "cursor", "github-cli",
                 "google-chrome", "mise", "neovim", "obsidian", "rust",
                 "signal", "spotify", "steam", "t3-code", "tailscale",
                 "typora", "vesktop", "visual-studio-code",

@@ -211,6 +211,18 @@ package = "rust"
 repositories = ["extra"]
 
 [[bindings]]
+requirement = "claude-desktop"
+provider = "repository"
+package = "claude-desktop"
+repositories = ["omarchy"]
+
+[[bindings]]
+requirement = "openai-codex-desktop"
+provider = "repository"
+package = "openai-codex-desktop"
+repositories = ["omarchy"]
+
+[[bindings]]
 requirement = "aws-cli-bin"
 provider = "aur"
 package = "aws-cli-bin"

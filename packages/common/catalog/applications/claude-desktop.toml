@@ -1,0 +1,8 @@
+schema = 1
+id = "claude-desktop"
+label = "Claude Desktop"
+group = "Development tools"
+default = true
+requirements = ["claude-desktop"]
+tools = []
+commands = ["claude-desktop"]
