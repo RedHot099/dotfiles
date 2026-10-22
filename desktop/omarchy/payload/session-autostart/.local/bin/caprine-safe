@@ -7,4 +7,19 @@ set -euo pipefail
 unset ELECTRON_RUN_AS_NODE
 
 asar_path='/usr/lib/caprine/app.asar'
+profile="$HOME/.config/Caprine"
+
+"$HOME/.local/bin/electron-spellcheck-pl" "$profile" || true
+
+# Caprine's spellchecker menu reads its own copy of the language list.
+config="$profile/config.json"
+if [[ -s "$config" ]] && command -v jq >/dev/null 2>&1; then
+  tmp_config="$(mktemp "$profile/.config.json.XXXXXX")"
+  if jq '.spellCheckerLanguages = ((.spellCheckerLanguages // []) + ["en-US", "pl"] | unique)' "$config" >"$tmp_config"; then
+    mv "$tmp_config" "$config"
+  else
+    rm -f "$tmp_config"
+  fi
+fi
+
 exec electron39 "$asar_path" "$@"
