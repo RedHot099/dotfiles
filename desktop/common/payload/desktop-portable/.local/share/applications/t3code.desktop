@@ -5,6 +5,6 @@ Exec=t3code %U
 Terminal=false
 Type=Application
 Icon=t3code
-StartupWMClass=t3code
+StartupWMClass=com.t3tools.T3Code
 Categories=Development;
 MimeType=x-scheme-handler/t3code;

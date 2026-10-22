@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Enable English and Polish spellchecking in an Electron profile, then
+# optionally exec the app. A relative profile is resolved against $HOME.
+# Run before the app starts: Electron rewrites Preferences when it exits.
+set -euo pipefail
+
+profile="${1:?usage: electron-spellcheck-pl <electron-profile-dir> [command...]}"
+shift
+[[ "$profile" == /* ]] || profile="$HOME/$profile"
+
+configure() {
+  for candidate in \
+    "$HOME/.config/chromium/Dictionaries/pl-PL-3-0.bdic" \
+    "$HOME/.config/google-chrome/Dictionaries/pl-PL-3-0.bdic"; do
+    if [[ -f "$candidate" ]]; then
+      mkdir -p "$profile/Dictionaries"
+      cp -f "$candidate" "$profile/Dictionaries/pl-PL-3-0.bdic"
+      break
+    fi
+  done
+
+  # Without a local copy Electron downloads the dictionary on first use.
+  command -v jq >/dev/null 2>&1 || return 0
+
+  mkdir -p "$profile"
+  preferences="$profile/Preferences"
+  [[ -s "$preferences" ]] || printf '{}\n' >"$preferences"
+
+  tmp_preferences="$(mktemp "$profile/.Preferences.XXXXXX")"
+  if jq '.spellcheck.dictionaries = ((.spellcheck.dictionaries // []) - ["pl-PL"] + ["en-US", "pl"] | unique) | .spellcheck.dictionary = ""' \
+    "$preferences" >"$tmp_preferences"; then
+    mv "$tmp_preferences" "$preferences"
+  else
+    rm -f "$tmp_preferences"
+  fi
+}
+
+configure || true
+(($# == 0)) || exec "$@"
