@@ -21,6 +21,9 @@ class MonitorDetectionTests(unittest.TestCase):
 
         self.assertIn('output = "DP-1"', content)
         self.assertIn('3440x1440@174.96', content)
+        # Omarchy's scaling command persists a new scale through this local.
+        self.assertIn("local omarchy_monitor_scale = 1\n", content)
+        self.assertIn("scale = omarchy_monitor_scale", content)
 
     @patch("bootstrap.cli.shutil.which", return_value="/usr/bin/hyprctl")
     @patch("bootstrap.cli.subprocess.run")

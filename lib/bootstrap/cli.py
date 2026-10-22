@@ -290,7 +290,7 @@ def detect_monitor_content() -> str | None:
     monitors = json.loads(result.stdout)
     if not isinstance(monitors, list) or not monitors:
         return None
-    lines = ['hl.env("GDK_SCALE", "2")']
+    entries: list[tuple[str, str, str, float]] = []
     for monitor in monitors:
         if not isinstance(monitor, dict) or monitor.get("disabled"):
             continue
@@ -303,11 +303,20 @@ def detect_monitor_content() -> str | None:
             raise CatalogError(f"Hyprland returned invalid geometry for {name}")
         if width <= 0 or height <= 0 or refresh <= 0 or scale <= 0:
             raise CatalogError(f"Hyprland returned invalid monitor values for {name}")
-        lines.append(
-            f'hl.monitor({{ output = "{name}", mode = "{int(width)}x{int(height)}@{float(refresh):.2f}", '
-            f'position = "{int(x)}x{int(y)}", scale = {float(scale):g} }})'
-        )
-    return "\n".join(lines) + "\n" if len(lines) > 1 else None
+        entries.append((name, f"{int(width)}x{int(height)}@{float(refresh):.2f}", f"{int(x)}x{int(y)}", float(scale)))
+    if not entries:
+        return None
+    # `omarchy hyprland monitor scaling` persists a new scale only by rewriting
+    # these locals, so a single monitor reads its scale from them.
+    single = len(entries) == 1
+    lines = ["local omarchy_gdk_scale = 2"]
+    if single:
+        lines.append(f"local omarchy_monitor_scale = {entries[0][3]:g}")
+    lines += ["", 'hl.env("GDK_SCALE", tostring(omarchy_gdk_scale))']
+    for name, mode, position, scale in entries:
+        value = "omarchy_monitor_scale" if single else f"{scale:g}"
+        lines.append(f'hl.monitor({{ output = "{name}", mode = "{mode}", position = "{position}", scale = {value} }})')
+    return "\n".join(lines) + "\n"
 
 
 def save_workflow_plan(plan: WorkflowPlan) -> Path:
