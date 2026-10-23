@@ -1,6 +1,5 @@
 schema = 2
 id = "themes"
-theme = "akane"
 
 [[repositories]]
 url = "https://github.com/Grenish/omarchy-akane-theme"

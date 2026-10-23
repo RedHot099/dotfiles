@@ -1,7 +1,7 @@
 schema = 2
 id = "themes"
 label = "Custom themes"
-description = "Pinned Akane, All Hallows Eve, and Void themes"
+description = "Install the pinned Akane, All Hallows Eve, and Void themes without switching to them"
 group = "Desktop"
 default = true
 visible = true
