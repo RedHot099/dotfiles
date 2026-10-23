@@ -7,3 +7,8 @@ vim.opt.relativenumber = false
 vim.g.lazyvim_python_lsp = "pyright"
 -- Set to "ruff_lsp" to use the old LSP implementation version.
 vim.g.lazyvim_python_ruff = "ruff"
+
+-- Match the VS Code settings: wrap long lines and leave formatting to an
+-- explicit <leader>p instead of formatting on save.
+vim.opt.wrap = true
+vim.g.autoformat = false

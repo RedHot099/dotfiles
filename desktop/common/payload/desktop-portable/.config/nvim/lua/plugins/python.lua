@@ -48,30 +48,4 @@ return {
       },
     },
   },
-
-  -- Supermaven AI-powered code completion plugin
-  {
-    "supermaven-inc/supermaven-nvim",
-    config = function()
-      require("supermaven-nvim").setup({
-        keymaps = {
-          accept_suggestion = "<Tab>",
-          clear_suggestion = "<C-]>",
-          accept_word = "<C-j>",
-        },
-        disable_inline_completion = false,
-        disable_keymaps = false,
-        use_virtual_text = true,
-      })
-    end,
-  },
-
-  -- Add supermaven as a source to nvim-cmp (LazyVim uses 'cmp' plugin)
-  {
-    "hrsh7th/nvim-cmp",
-    opts = function(_, opts)
-      -- add supermaven source at the end of sources list
-      table.insert(opts.sources, { name = "supermaven" })
-    end,
-  },
 }
