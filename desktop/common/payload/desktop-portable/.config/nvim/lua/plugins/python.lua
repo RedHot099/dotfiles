@@ -13,7 +13,14 @@ return {
             },
           },
         },
-        ruff = {},
+        -- Match ruff.lineLength in VS Code.
+        ruff = {
+          init_options = {
+            settings = {
+              lineLength = 120,
+            },
+          },
+        },
       },
     },
   },
@@ -31,6 +38,21 @@ return {
         "markdown_inline",
         "vim",
         "yaml",
+      },
+    },
+  },
+
+  -- <leader>p in Python: apply Ruff's lint fixes, sort imports, then format
+  -- through the Ruff server, which knows the line length above.
+  {
+    "stevearc/conform.nvim",
+    opts = {
+      formatters_by_ft = {
+        python = { "ruff_fix", "ruff_organize_imports", lsp_format = "last" },
+      },
+      formatters = {
+        ruff_fix = { append_args = { "--line-length", "120" } },
+        ruff_organize_imports = { append_args = { "--line-length", "120" } },
       },
     },
   },

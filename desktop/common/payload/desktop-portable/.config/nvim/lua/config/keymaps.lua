@@ -35,8 +35,18 @@ if vim.g.vscode then
   -- Code Action / Quick Fix
   map("n", "<leader>ca", "<Cmd>call VSCodeNotify('editor.action.quickFix')<CR>", opts)
 
-  -- Format Document
-  map("n", "<leader>p", "<Cmd>call VSCodeNotify('editor.action.formatDocument')<CR>", opts)
+  -- Format Document. In Python, first apply Ruff's lint fixes and sort imports,
+  -- as Neovim's <leader>p does.
+  map("n", "<leader>p", function()
+    local vscode = require("vscode")
+    if vim.bo.filetype == "python" then
+      for _, command in ipairs({ "ruff.executeAutofix", "ruff.executeOrganizeImports", "ruff.executeFormat" }) do
+        vscode.call(command)
+      end
+    else
+      vscode.call("editor.action.formatDocument")
+    end
+  end, opts)
 
   -- Hover
   map("n", "gh", "<Cmd>call VSCodeNotify('editor.action.showDefinitionPreviewHover')<CR>", opts)
