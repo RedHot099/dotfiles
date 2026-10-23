@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+if [[ -x "$HOME/.local/bin/vscode-sync-extensions" ]]; then
+  "$HOME/.local/bin/vscode-sync-extensions" >/dev/null 2>&1 &
+fi
+
 if "$HOME/.local/bin/hypr-find-client" '^(Code|code)$' '2' >/dev/null 2>&1; then
   exit 0
 fi

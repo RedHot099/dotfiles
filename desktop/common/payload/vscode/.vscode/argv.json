@@ -1,0 +1,7 @@
+// Permanent command line arguments for VS Code. Changes need a restart.
+{
+	// Store credentials in the GNOME keyring that Omarchy runs.
+	"password-store": "gnome-libsecret",
+
+	"enable-crash-reporter": false
+}

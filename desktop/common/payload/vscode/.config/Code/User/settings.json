@@ -1,0 +1,74 @@
+{
+    "workbench.sideBar.location": "right",
+    "workbench.activityBar.location": "hidden",
+    "extensions.experimental.affinity": {
+        "asvetliakov.vscode-neovim": 1
+    },
+    "editor.minimap.renderCharacters": false,
+    "editor.minimap.enabled": false,
+    "ruff.lineLength": 120,
+    "files.autoSave": "onFocusChange",
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "notebook.defaultFormatter": "charliermarsh.ruff",
+    "workbench.view.showQuietly": {
+        "workbench.panel.output": true
+    },
+    "git.confirmSync": false,
+    "git.autofetch": true,
+    "files.exclude": {
+        "": true,
+        "**/.git": false
+    },
+    "explorer.confirmDelete": false,
+    // Language extensions run on the remote side, so install them on every SSH host.
+    "remote.SSH.defaultExtensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff"
+    ],
+    "latex-workshop.latex.tools": [
+        {
+            "name": "latexmk",
+            "command": "latexmk",
+            "args": [
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "-pdf",
+                "%DOC%"
+            ]
+        },
+        {
+            "name": "latexmk-clean",
+            "command": "latexmk",
+            "args": [
+                "-c",
+                "%DOC%"
+            ]
+        },
+        {
+            "name": "latexmk-clean-extras",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "rm -f \"%DOC%.bbl\" \"%DOC%.synctex.gz\""
+            ]
+        }
+    ],
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "latexmk (clean)",
+            "tools": [
+                "latexmk",
+                "latexmk-clean",
+                "latexmk-clean-extras"
+            ]
+        }
+    ],
+    "latex-workshop.latex.recipe.default": "latexmk (clean)",
+    "editor.wordWrap": "on",
+    "coderabbit.agentType": "Codex CLI",
+    "coderabbit.autoReviewMode": "disabled",
+    "vsicons.dontShowNewVersionMessage": true,
+    "workbench.editor.editorActionsLocation": "default",
+}

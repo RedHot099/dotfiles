@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# Install every extension from extensions.txt that VS Code does not have yet.
+set -euo pipefail
+
+list="$HOME/.config/Code/User/extensions.txt"
+installed="$(code --list-extensions | tr '[:upper:]' '[:lower:]')"
+
+while IFS= read -r extension; do
+  [[ -z "$extension" || "$extension" == \#* ]] && continue
+  if ! grep -qxF "${extension,,}" <<<"$installed"; then
+    code --install-extension "$extension"
+  fi
+done <"$list"

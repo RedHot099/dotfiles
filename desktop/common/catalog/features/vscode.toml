@@ -1,0 +1,8 @@
+schema = 2
+id = "vscode"
+label = "VS Code settings"
+description = "Portable VS Code settings, keybindings, and keyring integration"
+group = "Desktop"
+default = true
+visible = true
+requires = []

@@ -1,0 +1,11 @@
+# Extensions that settings.json and keybindings.json rely on.
+asvetliakov.vscode-neovim
+charliermarsh.ruff
+coderabbit.coderabbit-vscode
+eamodio.gitlens
+james-yu.latex-workshop
+ms-vscode-remote.remote-ssh
+openai.chatgpt
+phplasma.csv-to-table
+ryuta46.multi-command
+vscode-icons-team.vscode-icons

@@ -1,0 +1,10 @@
+schema = 2
+id = "vscode"
+commands = ["code"]
+# omarchy-theme-set-vscode writes workbench.colorTheme into it.
+seed_targets = [".config/Code/User/settings.json"]
+
+[[files]]
+source = "payload/vscode"
+target = "."
+bundle = "common"
