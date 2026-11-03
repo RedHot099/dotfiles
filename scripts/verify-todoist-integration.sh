@@ -23,7 +23,7 @@ import sys
 
 config = json.load(open(sys.argv[1], encoding="utf-8"))
 right = [entry["id"] for entry in config["bar"]["layout"]["right"]]
-agents = right.index("omarchy.agents")
+agents = right.index("kuba.agents")
 assert right[agents + 1] == "kuba.tasks", right
 assert right.count("kuba.tasks") == 1, right
 PY
@@ -59,7 +59,7 @@ import sys
 
 config = json.load(open(sys.argv[1], encoding="utf-8"))
 right = [entry["id"] for entry in config["bar"]["layout"]["right"]]
-assert right[right.index("omarchy.agents") + 1] == "kuba.tasks", right
+assert right[right.index("kuba.agents") + 1] == "kuba.tasks", right
 PY
 fi
 

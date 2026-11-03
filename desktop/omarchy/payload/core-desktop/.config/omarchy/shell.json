@@ -24,7 +24,7 @@
       "right": [
         { "id": "bar-orientation-tray" },
         { "id": "omarchy.tailscale" },
-        { "id": "omarchy.agents" },
+        { "id": "kuba.agents" },
         { "id": "kuba.tasks", "refreshIntervalSec": 60 },
         { "id": "omarchy.bluetooth" },
         { "id": "omarchy.network" },
@@ -43,7 +43,7 @@
           "left": [
             { "id": "omarchy.menu" },
             { "id": "omarchy.tailscale" },
-            { "id": "omarchy.agents" },
+            { "id": "kuba.agents" },
             { "id": "kuba.tasks", "refreshIntervalSec": 60 },
             { "id": "omarchy.bluetooth" },
             { "id": "omarchy.network" },

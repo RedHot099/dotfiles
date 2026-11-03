@@ -1,0 +1,85 @@
+#!/usr/bin/python3
+"""Reuse Omarchy collectors with an unbuffered Codex RPC reader.
+
+The packaged reader mixes select() with TextIOWrapper.readline(), which can
+hide an already received response behind a notification in Python's buffer.
+Keep collection and rendering upstream-owned; replace only the RPC reader.
+"""
+
+import argparse
+import contextlib
+import io
+import json
+import os
+from pathlib import Path
+import runpy
+import select
+import subprocess
+import sys
+import tempfile
+import time
+
+
+def rpc_request(proc, request_id, method, params=None, timeout=8):
+    proc.stdin.write(json.dumps({"id": request_id, "method": method, "params": params or {}}) + "\n")
+    proc.stdin.flush()
+    deadline = time.monotonic() + timeout
+    pending = b""
+    while (remaining := deadline - time.monotonic()) > 0:
+        ready, _, _ = select.select([proc.stdout], [], [], remaining)
+        if not ready:
+            break
+        chunk = os.read(proc.stdout.fileno(), 65536)
+        if not chunk:
+            raise EOFError(f"Codex app-server closed stdout during {method}")
+        pending += chunk
+        while b"\n" in pending:
+            line, pending = pending.split(b"\n", 1)
+            try:
+                message = json.loads(line)
+            except (ValueError, UnicodeError):
+                continue
+            if isinstance(message, dict) and message.get("id") == request_id:
+                return message
+    raise TimeoutError(f"Codex app-server timed out during {method}")
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--force", action="store_true")
+    parser.add_argument("--limits-only", action="store_true")
+    parser.add_argument("--except", dest="excluded", action="append", default=[])
+    parser.add_argument("agents", nargs="*")
+    args = parser.parse_args()
+    omarchy = Path(os.environ.get("OMARCHY_PATH", "/usr/share/omarchy"))
+    status = subprocess.run([
+        str(omarchy / "bin/omarchy-agent-usage-update"),
+        *sys.argv[1:], "--except", "codex",
+    ]).returncode
+    if "codex" in args.excluded or (args.agents and "codex" not in args.agents):
+        return status
+
+    collector = runpy.run_path(str(omarchy / "bin/omarchy-agent-usage-codex"))
+    collector["fetch_codex_rpc"].__globals__["rpc_request"] = rpc_request
+    flags = [flag for flag in ("--force", "--limits-only") if getattr(args, flag[2:].replace("-", "_"))]
+    sys.argv = [str(omarchy / "bin/omarchy-agent-usage-codex"), *flags]
+    output = io.StringIO()
+    with contextlib.redirect_stdout(output):
+        collector["main"]()
+    record = json.loads(output.getvalue())
+    usage = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local/state") / "omarchy/agents/usage"
+    usage.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(mode="w", dir=usage, prefix=".codex.", delete=False) as handle:
+        temporary = Path(handle.name)
+        try:
+            json.dump(record, handle)
+            handle.write("\n")
+            handle.close()
+            temporary.replace(usage / "codex.json")
+        finally:
+            temporary.unlink(missing_ok=True)
+    return status
+
+
+if __name__ == "__main__":
+    sys.exit(main())
