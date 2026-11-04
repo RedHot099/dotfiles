@@ -455,6 +455,8 @@ class RestoreResult:
     removed: tuple[str, ...]
     # Already equal to their backup: put back by an earlier, interrupted restore.
     settled: tuple[str, ...] = ()
+    # Left as they are because before_changes asked to keep them.
+    kept: tuple[str, ...] = ()
 
 
 def restore_files(
@@ -464,7 +466,7 @@ def restore_files(
     workflow: str,
     *,
     discard_local: bool,
-    before_changes: Callable[[RestoreResult], None] | None = None,
+    before_changes: Callable[[RestoreResult], set[str]] | None = None,
 ) -> RestoreResult:
     """Undo the file changes one applied plan made; packages stay as they are.
 
@@ -513,15 +515,18 @@ def restore_files(
                 operations.append((target, backup))
             if conflicts and not discard_local:
                 raise LocalEditConflict(tuple(conflicts))
+            kept: set[str] = set()
             if before_changes is not None:
                 # Under the same lock, before any file changes (the CLI
-                # disables units whose files are about to go).
-                before_changes(
+                # disables units whose files are about to go). A target it
+                # returns stays, so a later restore tries it again.
+                kept = before_changes(
                     RestoreResult(
                         tuple(target for target, backup in operations if backup is not None),
                         tuple(target for target, backup in operations if backup is None),
                     )
                 )
+                operations = [(target, backup) for target, backup in operations if target not in kept]
             undo = f"{STATE_ROOT}/backups/restore-{state_digest}"
             restored: list[str] = []
             removed: list[str] = []
@@ -555,7 +560,7 @@ def restore_files(
                 if target not in planned and target not in managed and home.hash(target) == previous:
                     managed[target] = previous
             write_managed(home, workflow, managed)
-            return RestoreResult(tuple(restored), tuple(removed), tuple(settled))
+            return RestoreResult(tuple(restored), tuple(removed), tuple(settled), tuple(sorted(kept)))
         finally:
             os.close(lock_descriptor)
 

@@ -460,6 +460,35 @@ class CliJsonTests(CliCase):
         self.assertEqual((code, restored["status"]), (3, "INCOMPLETE"))
         self.assertEqual(restored["deferred"][0]["reason"], "restart-failed")
 
+    def test_a_failed_disable_keeps_the_unit_for_the_next_restore(self):
+        with mock.patch.object(cli, "fetch_github_keys", return_value=()):
+            _, plan = self.run_cli("integrations", "plan", "--json")
+        digest = plan["plan_digest"]
+        with mock.patch("bootstrap.executor.terminal_action_satisfied", return_value=True), mock.patch(
+            "bootstrap.executor.action_satisfied", return_value=True
+        ), mock.patch("bootstrap.executor.run"):
+            self.run_cli("integrations", "apply", "--plan", digest, "--json")
+        unit = self.home / ".config/systemd/user/rclone-onedrive.service"
+
+        def failing_disable(argv):
+            if "disable" in argv:
+                raise subprocess.CalledProcessError(1, argv)
+
+        cli.run.side_effect = failing_disable
+        code, first = self.run_cli("integrations", "restore", "--plan", digest, "--json")
+        cli.run.side_effect = None
+        self.assertEqual((code, first["status"]), (3, "INCOMPLETE"))
+        self.assertIn(".config/systemd/user/rclone-onedrive.service", first["kept"])
+        self.assertTrue(unit.exists())
+        cli.run.reset_mock()
+        code, second = self.run_cli("integrations", "restore", "--plan", digest, "--json")
+        self.assertEqual((code, second["status"]), (0, "RESTORED"))
+        self.assertFalse(unit.exists())
+        self.assertIn(
+            ("/usr/bin/systemctl", "--user", "disable", "--now", "rclone-onedrive.service"),
+            [call.args[0] for call in cli.run.call_args_list],
+        )
+
     def test_handoff_without_the_lock_does_not_open_a_terminal(self):
         with mock.patch.object(cli, "fetch_github_keys", return_value=()):
             _, plan = self.run_cli("integrations", "plan", "--json")
@@ -684,6 +713,21 @@ class FirewallTests(unittest.TestCase):
             home.ensure_directory(".local/state/arch-hypr-bootstrap", 0o700)
             home.write_private_atomic(executor.FIREWALL_MARKER, b"limit 22/tcp\n")
             self.assertTrue(executor.firewall_rule_satisfied(home))
+
+    def test_audit_warns_when_only_the_marker_vouches_for_the_rule(self):
+        from bootstrap import audit, executor
+        from bootstrap.domain import ActionKind
+        from bootstrap.planner import action
+
+        item = action(ActionKind.FIREWALL_RULE, "ssh-firewall", {"backend": "ufw", "rule": "limit", "port": 22, "protocol": "tcp"})
+        with tempfile.TemporaryDirectory() as directory, cli.HomeFiles(Path(directory)) as home, mock.patch.object(
+            executor, "ufw_rule_present", return_value=None
+        ), mock.patch.object(audit, "ufw_rule_present", return_value=None):
+            home.ensure_directory(".local/state/arch-hypr-bootstrap", 0o700)
+            home.write_private_atomic(executor.FIREWALL_MARKER, b"limit 22/tcp\n")
+            finding = audit.audit_action(item, home, False)
+        self.assertEqual(finding.status, "WARN")
+        self.assertIn("verified by the last terminal apply", finding.message)
 
     def test_readable_rules_decide(self):
         from bootstrap import executor

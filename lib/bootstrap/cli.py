@@ -906,9 +906,11 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
 
     deferred: list[dict[str, str]] = []
 
-    def disable_removed_units(preview) -> None:
+    def disable_removed_units(preview) -> set[str]:
         # A unit the plan created and enabled is disabled while its file
-        # still exists, so no enable link is left pointing at nothing.
+        # still exists, so no enable link is left pointing at nothing. When
+        # that fails its file stays, and the next restore tries again.
+        keep: set[str] = set()
         for target in preview.removed:
             unit = user_unit_name(target)
             if unit in units and target == f".config/systemd/user/{unit}":
@@ -916,6 +918,8 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
                     run(("/usr/bin/systemctl", "--user", "disable", "--now", unit))
                 except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
                     deferred.append({"kind": "user-unit", "feature": unit, "reason": "disable-failed", "detail": str(error)})
+                    keep.add(target)
+        return keep
 
     try:
         result = restore_files(
@@ -944,12 +948,14 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
         deferred.append({"kind": "hyprland-reload", "feature": "core-desktop", "reason": "needs-session", "detail": ""})
     status, code = ("INCOMPLETE", agent.EXIT_ACTION_NEEDED) if deferred else ("RESTORED", agent.EXIT_READY)
     next_actions = [
-        {"who": "user", "why": f"unit {item['feature']}: {item['reason']}; check it", "command": f"systemctl --user status {shlex.quote(item['feature'])}"}
+        {"who": "user", "why": f"unit {item['feature']}: {item['reason']}; check it, then the agent runs the same restore again", "command": f"systemctl --user status {shlex.quote(item['feature'])}"}
         for item in deferred
         if item["kind"] == "user-unit"
     ]
     if any(item["reason"] == "needs-session" for item in deferred):
-        next_actions.append({"who": "user", "why": "log in to the Hyprland session, then the agent runs the same restore again", "command": bootstrap_command(workflow.value, "restore", "--plan", digest, "--json")})
+        next_actions.append({"who": "user", "why": "log in to the Hyprland session", "command": ""})
+    if deferred:
+        next_actions.append({"who": "agent", "why": "run the same restore again once that is done", "command": bootstrap_command(workflow.value, "restore", "--plan", digest, "--json")})
     record = agent.result_record(
         workflow.value,
         digest,
@@ -958,6 +964,7 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
         operation="restore",
         restored=list(result.restored),
         removed=list(result.removed),
+        kept=list(result.kept),
         deferred=deferred,
         next_actions=next_actions,
     )
