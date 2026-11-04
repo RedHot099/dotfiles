@@ -166,6 +166,21 @@ class LocalEditTests(AgentPathCase):
         backup = self.home / ".local/state/arch-hypr-bootstrap/backups" / plan.digest / BINDINGS
         self.assertEqual(backup.read_text(), "-- edited by hand\n")
 
+    def test_reapplying_after_a_local_edit_keeps_both_backups(self):
+        plan = self.desktop_plan()
+        target = self.home / BINDINGS
+        target.parent.mkdir(parents=True)
+        target.write_text("-- before\n")
+        self.apply(plan, reviewed=True, discard_local=True)
+        target.write_text("-- edited after the apply\n")
+        self.apply(plan, reviewed=True, discard_local=True)
+        backups = self.home / ".local/state/arch-hypr-bootstrap/backups" / plan.digest
+        self.assertEqual((backups / BINDINGS).read_text(), "-- before\n")
+        superseded = [path.read_text() for path in (backups / ".superseded").rglob("bindings.lua")]
+        self.assertEqual(superseded, ["-- edited after the apply\n"])
+        restore_files(self.home, plan.actions, plan.digest, "desktop", discard_local=False)
+        self.assertEqual(target.read_text(), "-- before\n")
+
     def test_unmanaged_file_needs_discard_local_but_legacy_apply_replaces_it(self):
         plan = self.desktop_plan()
         target = self.home / BINDINGS

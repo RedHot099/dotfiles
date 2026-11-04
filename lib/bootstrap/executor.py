@@ -747,14 +747,8 @@ def write_journal(
             "skipped_features": sorted(skipped),
         }
     )
-    home.install(
-        target,
-        content=content,
-        symlink=None,
-        mode=0o600,
-        expected_sha256=hashlib.sha256(content).hexdigest(),
-        backup_root=f"{STATE_ROOT}/backups/journals",
-    )
+    # The journal changes after every action; it needs no backups.
+    home.write_private_atomic(target, content)
 
 
 def install_ssh(home: HomeFiles, keys: tuple[str, ...]) -> None:
