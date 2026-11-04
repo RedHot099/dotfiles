@@ -680,14 +680,30 @@ def approved_apply(
                     terminal_required=list(pending),
                     next_actions=[{"who": "user", "why": "run this in a terminal", "command": shlex.join(terminal)}],
                 )
-            agent.launch_terminal(terminal, session)
-            return finish(
+            # Saved before the launch: the terminal run overwrites it with
+            # RUNNING as soon as it starts.
+            handed_off = finish(
                 "HANDED_OFF",
                 agent.EXIT_ACTION_NEEDED,
                 "a terminal opened on the session; the user types the sudo password there",
                 terminal_required=list(pending),
+                handed_off_epoch=time.time(),
                 next_actions=[{"who": "agent", "why": "wait for the terminal apply", "command": bootstrap_command(workflow.value, "status", "--plan", digest, "--wait", "900", "--json")}],
             )
+            try:
+                agent.launch_terminal(terminal, session)
+            except (OSError, CatalogError) as error:
+                return finish(
+                    "NEEDS_TERMINAL",
+                    agent.EXIT_ACTION_NEEDED,
+                    f"could not open a terminal: {error}",
+                    terminal_required=list(pending),
+                    next_actions=[{"who": "user", "why": "run this in a terminal", "command": shlex.join(terminal)}],
+                )
+            return handed_off
+        # Saved before any prompt, so a terminal closed at the password prompt
+        # reads as INTERRUPTED instead of a handoff that never ends.
+        store.write_result(workflow, agent.result_record(workflow.value, digest, "RUNNING", agent.EXIT_ACTION_NEEDED, checkout=checkout, pid=os.getpid()))
         if prompts and pending:
             print(f"\n{workflow.value.title()} plan {digest[:12]} needs your authority for:")
             for item in pending:
@@ -700,7 +716,6 @@ def approved_apply(
                 subprocess.run(("/usr/bin/sudo", "-v"), check=True)
             elif not confirm("Trust these SSH keys for incoming access?"):
                 return finish("DECLINED", agent.EXIT_DRIFT, "SSH key trust was declined")
-        store.write_result(workflow, agent.result_record(workflow.value, digest, "RUNNING", agent.EXIT_ACTION_NEEDED, checkout=checkout, pid=os.getpid()))
         result = apply_workflow_plan(
             ROOT,
             repository,
@@ -752,6 +767,8 @@ def status_command(workflow: WorkflowId, digest: str | None, wait: int) -> tuple
             record = None
         if record is not None and record.get("status") == "RUNNING" and not _process_alive(record.get("pid")):
             record = {**record, "status": "INTERRUPTED", "exit_code": agent.EXIT_ACTION_NEEDED, "message": "the apply stopped before it finished; apply the same plan again to resume"}
+        if record is not None and record.get("status") == "HANDED_OFF" and _handoff_lost(record):
+            record = {**record, "status": "HANDOFF_LOST", "exit_code": agent.EXIT_ACTION_NEEDED, "message": "the terminal never started the apply; ask the user to run the command in a terminal"}
         waiting = record is None or record.get("status") in ACTIVE_STATUSES
         if not waiting or time.monotonic() >= deadline:
             break
@@ -762,6 +779,15 @@ def status_command(workflow: WorkflowId, digest: str | None, wait: int) -> tuple
     if record.get("status") in ACTIVE_STATUSES or not isinstance(code, int):
         code = agent.EXIT_ACTION_NEEDED
     return {**record, "command": "status"}, code
+
+
+HANDOFF_START_SECONDS = 120
+
+
+def _handoff_lost(record: dict[str, object]) -> bool:
+    """The terminal run saves RUNNING at its start, before any prompt."""
+    started = record.get("handed_off_epoch")
+    return isinstance(started, (int, float)) and time.time() - started > HANDOFF_START_SECONDS
 
 
 def _process_alive(pid: object) -> bool:

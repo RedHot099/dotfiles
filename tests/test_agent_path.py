@@ -108,6 +108,45 @@ class NonInteractiveApplyTests(AgentPathCase):
         self.assertEqual([item.reason for item in result.deferred], ["needs-session"])
 
 
+class UserUnitTests(AgentPathCase):
+    def test_changed_unit_file_restarts_a_running_unit(self):
+        plan = self.integrations_plan()
+        units = [item for item in plan.actions if item.kind.value == "user-unit"]
+        self.assertTrue(units)
+        with mock.patch("bootstrap.executor.terminal_action_satisfied", return_value=True), mock.patch(
+            "bootstrap.executor.action_satisfied", return_value=True
+        ), mock.patch("bootstrap.executor.run_probe", return_value=True), mock.patch("bootstrap.executor.run") as run:
+            apply_workflow_plan(ROOT, self.repository, plan, self.facts, system_changes=True, interactive=False, reviewed=True)
+            calls = [call.args[0] for call in run.call_args_list]
+            for unit in units:
+                self.assertIn(("/usr/bin/systemctl", "--user", "restart", unit.data["name"]), calls)
+            run.reset_mock()
+            apply_workflow_plan(ROOT, self.repository, plan, self.facts, system_changes=True, interactive=False, reviewed=True)
+            self.assertFalse([call for call in run.call_args_list if "restart" in call.args[0]])
+
+
+class InterruptionTests(AgentPathCase):
+    def test_interrupted_apply_remembers_created_files_for_restore(self):
+        plan = self.desktop_plan()
+        from bootstrap import executor
+
+        real = executor.apply_file_action
+        calls = []
+
+        def flaky(*args):
+            calls.append(args)
+            if len(calls) == 5:
+                raise KeyboardInterrupt
+            return real(*args)
+
+        with mock.patch("bootstrap.executor.apply_file_action", side_effect=flaky):
+            with self.assertRaises(KeyboardInterrupt):
+                self.apply(plan, reviewed=True)
+        result = restore_files(self.home, plan.actions, plan.digest, "desktop", discard_local=False)
+        self.assertEqual(len(result.removed), 4)
+        self.assertEqual(result.restored, ())
+
+
 class LocalEditTests(AgentPathCase):
     def test_reviewed_apply_refuses_edited_and_unmanaged_files(self):
         plan = self.desktop_plan()
@@ -167,6 +206,26 @@ class RestoreTests(AgentPathCase):
         # A second restore finds nothing left to do.
         again = restore_files(self.home, plan.actions, plan.digest, "desktop", discard_local=False)
         self.assertEqual((again.restored, again.removed), ((), ()))
+
+    def test_restore_keeps_a_previously_managed_file_managed(self):
+        monitors = ".config/hypr/monitors.lua"
+
+        def plan_with(content):
+            return plan_desktop(
+                ROOT, self.repository, self.facts, self.state,
+                DesktopRequest(self.defaults(WorkflowId.DESKTOP), "detected"), self.evidence,
+                monitor_content=content,
+            )
+
+        first, second = plan_with("-- first\n"), plan_with("-- second\n")
+        self.apply(first, reviewed=True)
+        self.apply(second, reviewed=True)
+        self.assertEqual((self.home / monitors).read_text(), "-- second\n")
+        restore_files(self.home, second.actions, second.digest, "desktop", discard_local=False)
+        self.assertEqual((self.home / monitors).read_text(), "-- first\n")
+        # The restored content is the bootstrap's own, so the next update is no conflict.
+        self.apply(plan_with("-- third\n"), reviewed=True)
+        self.assertEqual((self.home / monitors).read_text(), "-- third\n")
 
     def test_restore_refuses_files_edited_after_the_apply(self):
         plan = self.desktop_plan()
@@ -285,6 +344,16 @@ class CliJsonTests(AgentPathCase):
 
         code, status = self.run_cli("integrations", "status", "--plan", digest, "--json")
         self.assertEqual((code, status["status"]), (3, "HANDED_OFF"))
+        with mock.patch.object(cli.time, "time", return_value=status["handed_off_epoch"] + 600):
+            _, status = self.run_cli("integrations", "status", "--plan", digest, "--json")
+        self.assertEqual(status["status"], "HANDOFF_LOST")
+
+        with mock.patch("bootstrap.executor.terminal_action_satisfied", return_value=False), mock.patch.object(
+            cli, "session_environment", return_value={"PATH": ""}
+        ), mock.patch.object(cli.agent, "launch_terminal", side_effect=OSError("no terminal")):
+            _, report = self.run_cli("integrations", "apply", "--plan", digest, "--json", "--in-terminal")
+        self.assertEqual(report["status"], "NEEDS_TERMINAL")
+        self.assertIn("no terminal", report["message"])
 
     def test_stale_and_unknown_plans(self):
         code, report = self.run_cli("desktop", "apply", "--plan", "a" * 64, "--json")

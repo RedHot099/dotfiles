@@ -160,6 +160,10 @@ def _apply_locked(
     journal = read_json(home.read_text(journal_target), {"completed": [], "skipped_features": []})
     completed = set(strings(journal.get("completed")))
     created = set(strings(journal.get("created", [])))
+    restart = set(strings(journal.get("restart_units", [])))
+    managed_before = journal.get("managed_before")
+    if not isinstance(managed_before, dict):
+        managed_before = read_managed(home, options.workflow) if options.workflow else {}
     skipped.update(strings(journal.get("skipped_features")))
     # Both checks run under the apply lock and before the first change.
     if system_changes and not interactive:
@@ -171,10 +175,28 @@ def _apply_locked(
         conflicts = local_conflicts(home, plan.actions, managed, skipped)
         if conflicts:
             raise LocalEditConflict(conflicts)
-    if system_changes:
-        if interactive and not options.reviewed:
-            review_aur_actions(plan, skipped)
-        write_journal(home, journal_target, completed, skipped, plan.digest, created)
+    if system_changes and interactive and not options.reviewed:
+        review_aur_actions(plan, skipped)
+    # Record intent before the first change: an interrupted apply still knows
+    # which files it creates (for restore) and which units to restart.
+    units = {str(item.data["name"]) for item in plan.actions if item.kind is ActionKind.USER_UNIT}
+    for item in plan.actions:
+        if item.kind not in FILE_ACTIONS or item.feature in skipped:
+            continue
+        target = str(item.data["target"])
+        if home.hash(target) is None:
+            created.add(target)
+        unit = user_unit_name(target)
+        if unit in units and not home.matches(
+            target, str(item.data["sha256"]), int(item.data["mode"]), optional_string(item.data.get("symlink"))
+        ):
+            restart.add(unit)
+    journal_extra = {"managed_before": managed_before}
+
+    def save_journal() -> None:
+        write_journal(home, journal_target, completed, skipped, plan.digest, created, {**journal_extra, "restart_units": sorted(restart)})
+
+    save_journal()
     sources = {
         (feature, entry.target, entry.sha256): entry
         for feature, entries in workspace.payload.items()
@@ -188,10 +210,7 @@ def _apply_locked(
             continue
         action_id = action_digest(item)
         if item.kind in FILE_ACTIONS:
-            existed = home.hash(str(item.data["target"])) is not None
             did_change = apply_file_action(root, home, item, sources, f"{STATE_ROOT}/backups/{state_digest}")
-            if did_change and not existed:
-                created.add(str(item.data["target"]))
             changed += int(did_change)
             unchanged += int(not did_change)
             systemd_files_changed |= did_change and str(item.data["target"]).startswith(
@@ -215,12 +234,13 @@ def _apply_locked(
             did_change = apply_aur_package(item)
             changed += int(did_change)
             unchanged += int(not did_change)
-        elif action_satisfied(item, home, environment):
-            unchanged += 1
-        elif item.kind is ActionKind.PINNED_TOOL:
-            run(("mise", "use", "-g", *strings(item.data["tools"])))
-            changed += 1
         elif item.kind is ActionKind.USER_UNIT:
+            name = str(item.data["name"])
+            if name not in restart and action_satisfied(item, home, environment):
+                unchanged += 1
+                completed.add(action_id)
+                save_journal()
+                continue
             probes = item.data.get("auth_probes", ())
             if not all(
                 run_probe(
@@ -231,9 +251,18 @@ def _apply_locked(
                 for probe in probes
             ):
                 simulated += 1
-                deferred.append(Deferred(item.kind.value, item.feature, "waiting-for-login", str(item.data["name"])))
+                deferred.append(Deferred(item.kind.value, item.feature, "waiting-for-login", name))
                 continue
-            run(("/usr/bin/systemctl", "--user", "enable", "--now", str(item.data["name"])))
+            run(("/usr/bin/systemctl", "--user", "enable", "--now", name))
+            if name in restart:
+                # A running unit keeps its old definition until it restarts.
+                run(("/usr/bin/systemctl", "--user", "restart", name))
+                restart.discard(name)
+            changed += 1
+        elif action_satisfied(item, home, environment):
+            unchanged += 1
+        elif item.kind is ActionKind.PINNED_TOOL:
+            run(("mise", "use", "-g", *strings(item.data["tools"])))
             changed += 1
         elif item.kind is ActionKind.SYSTEM_UNIT:
             name = str(item.data["name"])
@@ -286,7 +315,7 @@ def _apply_locked(
         else:
             raise CatalogError(f"executor does not implement action: {item.kind.value}")
         completed.add(action_id)
-        write_journal(home, journal_target, completed, skipped, plan.digest, created)
+        save_journal()
     if options.workflow:
         record_managed_files(home, options.workflow, plan.actions, skipped)
     return ApplyResult(changed, unchanged, simulated, tuple(sorted(skipped)), tuple(deferred))
@@ -302,6 +331,15 @@ def reload_hyprland() -> bool:
     if errors:
         raise RuntimeError(f"Hyprland configuration errors after reload:\n{errors}")
     return True
+
+
+def user_unit_name(target: str) -> str | None:
+    """The user unit a file under ~/.config/systemd/user defines or drops into."""
+    prefix = ".config/systemd/user/"
+    if not target.startswith(prefix):
+        return None
+    first = target.removeprefix(prefix).split("/")[0]
+    return first.removesuffix(".d") if first.endswith(".d") else first
 
 
 def terminal_pending(plan: ExecutionPlan, home: HomeFiles, skipped: set[str] = frozenset()) -> tuple[str, ...]:
@@ -403,7 +441,11 @@ def restore_files(
             journal = home.read_text(f"{STATE_ROOT}/journals/{state_digest}.json")
             if journal is None:
                 raise CatalogError(f"plan {state_digest[:12]} was never applied here; nothing to restore")
-            created = set(strings(read_json(journal, {}).get("created", [])))
+            record = read_json(journal, {})
+            created = set(strings(record.get("created", [])))
+            managed_before = record.get("managed_before")
+            if not isinstance(managed_before, dict):
+                managed_before = {}
             backups = f"{STATE_ROOT}/backups/{state_digest}"
             operations: list[tuple[str, tuple[bytes | None, str | None, int] | None]] = []
             conflicts: list[str] = []
@@ -443,9 +485,15 @@ def restore_files(
                     backup_root=undo,
                 )
                 restored.append(target)
+            # A restored file stays managed when the bootstrap had installed
+            # that content before; anything else is the user's again.
             managed = read_managed(home, workflow)
             for target in (*restored, *removed):
-                managed.pop(target, None)
+                previous = managed_before.get(target)
+                if target in restored and previous == home.hash(target):
+                    managed[target] = previous
+                else:
+                    managed.pop(target, None)
             write_managed(home, workflow, managed)
             return RestoreResult(tuple(restored), tuple(removed))
         finally:
@@ -674,9 +722,11 @@ def write_journal(
     skipped: set[str],
     digest: str,
     created: set[str] = frozenset(),
+    extra: dict[str, object] | None = None,
 ) -> None:
     content = json_bytes(
         {
+            **(extra or {}),
             "plan_digest": digest,
             "completed": sorted(completed),
             "created": sorted(created),
@@ -723,11 +773,14 @@ def action_satisfied(
     if item.kind is ActionKind.PINNED_TOOL:
         return all(tool_installed(name) for name in strings(item.data["tools"]))
     if item.kind is ActionKind.USER_UNIT:
-        return not subprocess.run(
-            ("/usr/bin/systemctl", "--user", "is-enabled", str(item.data["name"])),
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        ).returncode
+        return all(
+            not subprocess.run(
+                ("/usr/bin/systemctl", "--user", verb, str(item.data["name"])),
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            ).returncode
+            for verb in ("is-enabled", "is-active")
+        )
     if item.kind is ActionKind.SYSTEM_UNIT:
         return service_active(str(item.data["name"]))
     if item.kind is ActionKind.PINNED_GIT_ASSET:
