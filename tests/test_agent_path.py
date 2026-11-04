@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -312,7 +313,7 @@ class RestoreTests(AgentPathCase):
             restore_files(self.home, plan.actions, plan.digest, "desktop", discard_local=False)
 
 
-class CliJsonTests(AgentPathCase):
+class CliCase(AgentPathCase):
     def setUp(self):
         super().setUp()
         self.reports = []
@@ -343,6 +344,8 @@ class CliJsonTests(AgentPathCase):
         code = cli.main(list(argv))
         return code, self.reports[-1]
 
+
+class CliJsonTests(CliCase):
     def test_desktop_plan_needs_the_session(self):
         with mock.patch.object(cli, "session_environment", return_value=None):
             code, report = self.run_cli("desktop", "plan", "--json")
@@ -496,6 +499,87 @@ class CliJsonTests(AgentPathCase):
         )
         code, report = self.run_cli("desktop", "status", "--json")
         self.assertEqual((code, report["status"]), (3, "INTERRUPTED"))
+
+
+class UpdateCycleTests(CliCase):
+    """The runbook end to end through the CLI: install, a repository update,
+    a local edit, its conflict, and a restore. Only system calls are stubbed."""
+
+    def setUp(self):
+        super().setUp()
+        checkout = tempfile.TemporaryDirectory()
+        self.addCleanup(checkout.cleanup)
+        self.root = Path(checkout.name) / "dotfiles"
+        shutil.copytree(ROOT, self.root, symlinks=True, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+        patches = [
+            mock.patch.object(cli, "ROOT", self.root),
+            mock.patch.object(cli, "compile_repository", side_effect=compile_repository),
+            mock.patch.object(cli, "session_environment", return_value={}),
+            mock.patch("bootstrap.executor.run"),
+            mock.patch("bootstrap.executor.apply_repository"),
+            mock.patch("bootstrap.executor.action_satisfied", return_value=False),
+            mock.patch("bootstrap.executor.reload_hyprland", return_value=True),
+            mock.patch.object(cli, "reload_hyprland", return_value=True),
+            mock.patch("bootstrap.audit.action_satisfied", return_value=True),
+            mock.patch("bootstrap.audit.session_environment", return_value=None),
+        ]
+        for patch in patches:
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def plan(self):
+        code, report = self.run_cli("desktop", "plan", "--json")
+        self.assertEqual((code, report["status"]), (0, "PLANNED"))
+        return report
+
+    def apply(self, digest, *extra):
+        return self.run_cli("desktop", "apply", "--plan", digest, "--json", *extra)
+
+    def test_install_update_conflict_and_restore(self):
+        bindings = self.home / BINDINGS
+        installed = self.plan()
+        self.assertEqual(installed["changes"]["files"]["update"], [])
+        code, report = self.apply(installed["plan_digest"])
+        self.assertEqual((code, report["status"]), (0, "READY"))
+        first = bindings.read_text()
+
+        # Nothing left to do: the fresh plan is empty and the audit is clean.
+        again = self.plan()
+        self.assertEqual(again["plan_digest"], installed["plan_digest"])
+        self.assertEqual((again["changes"]["files"]["create"], again["changes"]["files"]["update"]), ([], []))
+        code, audit = self.run_cli("desktop", "audit", "--plan", again["plan_digest"], "--json")
+        self.assertEqual((code, audit["status"]), (0, "CLEAN"))
+
+        # A pulled commit changes one payload file: the old plan is stale and
+        # the new plan updates exactly that file without asking anyone.
+        payload = self.root / "desktop/omarchy/payload/core-desktop" / BINDINGS
+        payload.write_text(payload.read_text() + "-- pulled change\n")
+        code, stale = self.apply(installed["plan_digest"])
+        self.assertEqual((code, stale["status"]), (3, "STALE"))
+        updated = self.plan()
+        self.assertEqual(updated["changes"]["files"]["update"], [BINDINGS])
+        self.assertEqual(updated["changes"]["files"]["local-edit"], [])
+        code, report = self.apply(updated["plan_digest"])
+        self.assertEqual((code, report["status"]), (0, "READY"))
+        self.assertTrue(bindings.read_text().endswith("-- pulled change\n"))
+
+        # A hand edit blocks the next update until the user approves it.
+        payload.write_text(payload.read_text() + "-- second change\n")
+        bindings.write_text(bindings.read_text() + "-- my tweak\n")
+        edited = self.plan()
+        self.assertEqual(edited["changes"]["files"]["local-edit"], [BINDINGS])
+        code, report = self.apply(edited["plan_digest"])
+        self.assertEqual((code, report["status"], report["conflicts"]), (3, "CONFLICT", [BINDINGS]))
+        self.assertIn("-- my tweak", bindings.read_text())
+        code, report = self.apply(edited["plan_digest"], "--discard-local")
+        self.assertEqual((code, report["status"]), (0, "READY"))
+        self.assertTrue(bindings.read_text().endswith("-- second change\n"))
+
+        # Restore undoes that apply: the hand edit comes back from its backup.
+        code, report = self.run_cli("desktop", "restore", "--plan", edited["plan_digest"], "--json")
+        self.assertEqual((code, report["status"], report["restored"]), (0, "RESTORED", [BINDINGS]))
+        self.assertTrue(bindings.read_text().endswith("-- my tweak\n"))
+        self.assertNotEqual(bindings.read_text(), first)
 
 
 class SelectionStateTests(unittest.TestCase):
