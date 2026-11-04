@@ -294,6 +294,13 @@ class CliJsonTests(AgentPathCase):
         with self.assertRaises(SystemExit):
             cli.main(["desktop", "plan", "--plan", "a" * 64])
 
+    def test_stale_package_databases_ask_for_a_system_update(self):
+        error = cli.CatalogError("package databases are stale or missing for omarchy; run omarchy update, then generate a new plan")
+        with mock.patch.object(cli, "plan_packages", side_effect=error):
+            code, report = self.run_cli("packages", "plan", "--json")
+        self.assertEqual((code, report["status"]), (3, "NEEDS_SYSTEM_UPDATE"))
+        self.assertEqual(report["next_actions"][0]["who"], "user")
+
     def test_interrupted_apply_is_reported(self):
         child = subprocess.Popen(("true",))
         child.wait()

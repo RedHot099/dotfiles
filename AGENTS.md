@@ -30,7 +30,7 @@ Use this runbook when the user asks you to install, update, or check the configu
 
 1. Checkout: `git status --short` is empty and the branch is `main`; then `git pull --ff-only`. A dirty checkout or another branch is the user's to resolve: stop and report it, leaving stash, reset, and branch switches to them.
 2. For `packages`, then `desktop`, then `integrations` (the later two read what Packages installed):
-   1. `./bootstrap <workflow> plan --json`. It uses the saved selection, or the catalog defaults on a new host. Change it with `--add ID` or `--remove ID` only on the user's word. `NEEDS_PACKAGES` gives the Packages plan to run first; `NEEDS_SESSION` means the user must log in to Hyprland.
+   1. `./bootstrap <workflow> plan --json`. It uses the saved selection, or the catalog defaults on a new host. Change it with `--add ID` or `--remove ID` only on the user's word. `NEEDS_PACKAGES` gives the Packages plan to run first; `NEEDS_SESSION` means the user must log in to Hyprland; `NEEDS_SYSTEM_UPDATE` means the user runs `omarchy update` first.
    2. Show the user the report before applying when it lists `selection.new_items`, `changes.files.local-edit` or `unmanaged`, `changes.new_ssh_keys`, or `changes.aur_builds`. Otherwise go on.
    3. `./bootstrap <workflow> apply --plan <digest> --json`. Naming the digest approves exactly that plan.
       - `READY`: done.

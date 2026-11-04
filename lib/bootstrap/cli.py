@@ -522,6 +522,9 @@ def classify_error(error: Exception) -> tuple[str, int, list[dict[str, str]]]:
         missing = message.removeprefix("NEEDS PACKAGES: ").replace(",", " ").split()
         command = bootstrap_command("packages", "plan", "--json", *(f"--add {item}" for item in missing))
         return "NEEDS_PACKAGES", agent.EXIT_ACTION_NEEDED, [{"who": "agent", "why": "install the prerequisites first", "command": command}]
+    if message.startswith("package databases are stale or missing"):
+        # The bootstrap never refreshes or updates the distribution itself.
+        return "NEEDS_SYSTEM_UPDATE", agent.EXIT_ACTION_NEEDED, [{"who": "user", "why": "run omarchy update, then plan again", "command": "omarchy update"}]
     if message.startswith("NEEDS SESSION: "):
         return "NEEDS_SESSION", agent.EXIT_ACTION_NEEDED, [{"who": "user", "why": "log in to the Hyprland session, then plan again", "command": ""}]
     return "FAIL", agent.EXIT_FAIL, []
