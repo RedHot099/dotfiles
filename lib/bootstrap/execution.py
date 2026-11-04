@@ -20,7 +20,6 @@ def apply_workflow_plan(
     interactive: bool,
     reviewed: bool = False,
     discard_local: bool = False,
-    on_locked=None,
 ) -> ApplyResult:
     """Apply one workflow plan.
 
@@ -41,9 +40,7 @@ def apply_workflow_plan(
             state_digest=plan.digest,
             workflow=plan.header.workflow.value,
             reviewed=reviewed,
-            guard_local_edits=reviewed,
             discard_local=discard_local,
-            on_locked=on_locked,
         ),
     )
 

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import fcntl
 import json
-import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -69,27 +67,7 @@ class StateStore:
         return data
 
     def write_result(self, workflow: WorkflowId, result: dict[str, object]) -> None:
-        """Write a result; the caller holds the apply lock."""
         self._write(f"{STATE_ROOT}/results/{workflow.value}.json", result, "results")
-
-    def write_result_locked(self, workflow: WorkflowId, result: dict[str, object]) -> bool:
-        """Write a result under the apply lock; False when another apply holds it.
-
-        A running apply saves its own status; an outcome from outside the
-        lock must not overwrite it.
-        """
-        with HomeFiles(self.target_home) as home:
-            home.ensure_directory(STATE_ROOT, 0o700)
-            descriptor = home.open_lock(f"{STATE_ROOT}/apply.lock")
-            try:
-                try:
-                    fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                except BlockingIOError:
-                    return False
-                self.write_result(workflow, result)
-                return True
-            finally:
-                os.close(descriptor)
 
     def read_managed(self, workflow: WorkflowId) -> dict[str, str]:
         with HomeFiles(self.target_home) as home:

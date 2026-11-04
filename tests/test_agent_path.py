@@ -181,21 +181,6 @@ class LocalEditTests(AgentPathCase):
         backup = self.home / ".local/state/arch-hypr-bootstrap/backups" / plan.digest / BINDINGS
         self.assertEqual(backup.read_text(), "-- edited by hand\n")
 
-    def test_reapplying_after_a_local_edit_keeps_both_backups(self):
-        plan = self.desktop_plan()
-        target = self.home / BINDINGS
-        target.parent.mkdir(parents=True)
-        target.write_text("-- before\n")
-        self.apply(plan, reviewed=True, discard_local=True)
-        target.write_text("-- edited after the apply\n")
-        self.apply(plan, reviewed=True, discard_local=True)
-        backups = self.home / ".local/state/arch-hypr-bootstrap/backups" / plan.digest
-        self.assertEqual((backups / BINDINGS).read_text(), "-- before\n")
-        superseded = [path.read_text() for path in (backups / ".superseded").rglob("bindings.lua")]
-        self.assertEqual(superseded, ["-- edited after the apply\n"])
-        restore_files(self.home, plan.actions, plan.digest, "desktop", discard_local=False)
-        self.assertEqual(target.read_text(), "-- before\n")
-
     def test_unmanaged_file_needs_discard_local_but_legacy_apply_replaces_it(self):
         plan = self.desktop_plan()
         target = self.home / BINDINGS
@@ -232,7 +217,8 @@ class RestoreTests(AgentPathCase):
         self.assertIn(".config/hypr/looknfeel.lua", result.removed)
         self.assertEqual(target.read_text(), "-- before\n")
         self.assertFalse(created.exists())
-        self.assertNotIn(BINDINGS, StateStore(self.home).read_managed(WorkflowId.DESKTOP))
+        # Restored files count as managed, so the next update replaces them freely.
+        self.assertIn(BINDINGS, StateStore(self.home).read_managed(WorkflowId.DESKTOP))
         # A second restore finds nothing left to do.
         again = restore_files(self.home, plan.actions, plan.digest, "desktop", discard_local=False)
         self.assertEqual((again.restored, again.removed), ((), ()))
@@ -402,37 +388,9 @@ class CliJsonTests(CliCase):
             _, plan = self.run_cli("desktop", "plan", "--json")
         self.assertEqual([item["id"] for item in plan["selection"]["new_items"]], ["vscode"])
         self.assertNotIn("vscode", plan["selection"]["selected"])
-        # Still reported by the next plan; an apply marks the catalog as seen.
         with mock.patch.object(cli, "session_environment", return_value={}):
             _, again = self.run_cli("desktop", "plan", "--json")
-        self.assertEqual([item["id"] for item in again["selection"]["new_items"]], ["vscode"])
-        cli.mark_catalog_seen(StateStore(self.home), self.repository, WorkflowId.DESKTOP)
-        with mock.patch.object(cli, "session_environment", return_value={}):
-            _, seen = self.run_cli("desktop", "plan", "--json")
-        self.assertEqual(seen["selection"]["new_items"], [])
-
-    def test_restore_disables_units_it_removes(self):
-        with mock.patch.object(cli, "fetch_github_keys", return_value=()):
-            _, plan = self.run_cli("integrations", "plan", "--json")
-        digest = plan["plan_digest"]
-        with mock.patch("bootstrap.executor.terminal_action_satisfied", return_value=True), mock.patch(
-            "bootstrap.executor.action_satisfied", return_value=True
-        ), mock.patch("bootstrap.executor.run"):
-            code, applied = self.run_cli("integrations", "apply", "--plan", digest, "--json")
-        self.assertEqual(code, 3, applied)
-        unit = self.home / ".config/systemd/user/rclone-onedrive.service"
-        self.assertTrue(unit.exists())
-        cli.run.reset_mock()
-        code, restored = self.run_cli("integrations", "restore", "--plan", digest, "--json")
-        self.assertEqual((code, restored["status"]), (0, "RESTORED"))
-        self.assertFalse(unit.exists())
-        calls = [call.args[0] for call in cli.run.call_args_list]
-        self.assertIn(("/usr/bin/systemctl", "--user", "disable", "--now", "rclone-onedrive.service"), calls)
-        self.assertLess(
-            calls.index(("/usr/bin/systemctl", "--user", "disable", "--now", "rclone-onedrive.service")),
-            calls.index(("/usr/bin/systemctl", "--user", "daemon-reload")),
-        )
-        self.assertFalse([call for call in calls if "try-restart" in call])
+        self.assertEqual(again["selection"]["new_items"], [])
 
     def test_restore_restarts_only_units_it_put_back(self):
         unit = self.home / ".config/systemd/user/rclone-onedrive.service"
@@ -446,65 +404,12 @@ class CliJsonTests(CliCase):
         ), mock.patch("bootstrap.executor.run"):
             self.run_cli("integrations", "apply", "--plan", digest, "--json", "--discard-local")
 
-        def failing_restart(argv):
-            if "try-restart" in argv:
-                raise subprocess.CalledProcessError(1, argv)
-
         cli.run.reset_mock()
-        cli.run.side_effect = failing_restart
         code, restored = self.run_cli("integrations", "restore", "--plan", digest, "--json")
-        cli.run.side_effect = None
+        self.assertEqual((code, restored["status"]), (0, "RESTORED"))
         self.assertEqual(unit.read_text(), "[Service]\nExecStart=/bin/true\n")
         restarts = [call.args[0][-1] for call in cli.run.call_args_list if "try-restart" in call.args[0]]
         self.assertEqual(restarts, ["rclone-onedrive.service"])
-        self.assertEqual((code, restored["status"]), (3, "INCOMPLETE"))
-        self.assertEqual(restored["deferred"][0]["reason"], "restart-failed")
-
-    def test_a_failed_disable_keeps_the_unit_for_the_next_restore(self):
-        with mock.patch.object(cli, "fetch_github_keys", return_value=()):
-            _, plan = self.run_cli("integrations", "plan", "--json")
-        digest = plan["plan_digest"]
-        with mock.patch("bootstrap.executor.terminal_action_satisfied", return_value=True), mock.patch(
-            "bootstrap.executor.action_satisfied", return_value=True
-        ), mock.patch("bootstrap.executor.run"):
-            self.run_cli("integrations", "apply", "--plan", digest, "--json")
-        unit = self.home / ".config/systemd/user/rclone-onedrive.service"
-
-        def failing_disable(argv):
-            if "disable" in argv:
-                raise subprocess.CalledProcessError(1, argv)
-
-        cli.run.side_effect = failing_disable
-        code, first = self.run_cli("integrations", "restore", "--plan", digest, "--json")
-        cli.run.side_effect = None
-        self.assertEqual((code, first["status"]), (3, "INCOMPLETE"))
-        self.assertIn(".config/systemd/user/rclone-onedrive.service", first["kept"])
-        self.assertTrue(unit.exists())
-        cli.run.reset_mock()
-        code, second = self.run_cli("integrations", "restore", "--plan", digest, "--json")
-        self.assertEqual((code, second["status"]), (0, "RESTORED"))
-        self.assertFalse(unit.exists())
-        self.assertIn(
-            ("/usr/bin/systemctl", "--user", "disable", "--now", "rclone-onedrive.service"),
-            [call.args[0] for call in cli.run.call_args_list],
-        )
-
-    def test_handoff_without_the_lock_does_not_open_a_terminal(self):
-        with mock.patch.object(cli, "fetch_github_keys", return_value=()):
-            _, plan = self.run_cli("integrations", "plan", "--json")
-        import fcntl
-
-        state = self.home / ".local/state/arch-hypr-bootstrap"
-        state.mkdir(parents=True, exist_ok=True)
-        with open(state / "apply.lock", "a+") as lock, mock.patch.object(
-            cli, "session_environment", return_value={"PATH": ""}
-        ), mock.patch.object(cli.agent, "launch_terminal") as launch, mock.patch(
-            "bootstrap.executor.terminal_action_satisfied", return_value=False
-        ):
-            fcntl.flock(lock, fcntl.LOCK_EX)
-            _, report = self.run_cli("integrations", "apply", "--plan", plan["plan_digest"], "--json", "--in-terminal", "--discard-local")
-        self.assertEqual(report["status"], "BUSY")
-        launch.assert_not_called()
 
     def test_privileged_plan_is_handed_to_a_terminal(self):
         with mock.patch.object(cli, "fetch_github_keys", return_value=()):
@@ -530,61 +435,34 @@ class CliJsonTests(CliCase):
 
         code, status = self.run_cli("integrations", "status", "--plan", digest, "--json")
         self.assertEqual((code, status["status"]), (3, "HANDED_OFF"))
-        with mock.patch.object(cli.time, "time", return_value=status["handed_off_epoch"] + 600):
-            _, status = self.run_cli("integrations", "status", "--plan", digest, "--json")
-        self.assertEqual(status["status"], "HANDOFF_LOST")
 
-        with mock.patch("bootstrap.executor.terminal_action_satisfied", return_value=False), mock.patch.object(
-            cli, "session_environment", return_value={"PATH": ""}
-        ), mock.patch.object(cli.agent, "launch_terminal", side_effect=OSError("no terminal")):
-            _, report = self.run_cli("integrations", "apply", "--plan", digest, "--json", "--in-terminal")
-        self.assertEqual(report["status"], "NEEDS_TERMINAL")
-        self.assertIn("no terminal", report["message"])
-
-    def test_a_second_apply_leaves_the_running_status_alone(self):
+    def test_a_second_apply_reports_busy(self):
         with mock.patch.object(cli, "session_environment", return_value={}):
             _, plan = self.run_cli("desktop", "plan", "--json")
-        digest = plan["plan_digest"]
-        store = StateStore(self.home)
-        running = agent.result_record("desktop", digest, "RUNNING", 3, pid=os.getpid())
-        store.write_result(WorkflowId.DESKTOP, running)
-        code, report = self.run_cli("desktop", "apply", "--plan", digest, "--json")
-        self.assertEqual((code, report["status"]), (3, "BUSY"))
-        self.assertEqual(store.read_result(WorkflowId.DESKTOP), running)
-
-        store.write_result(WorkflowId.DESKTOP, {**running, "status": "READY", "pid": None})
         state = self.home / ".local/state/arch-hypr-bootstrap"
         import fcntl
 
         with open(state / "apply.lock", "a+") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
-            code, report = self.run_cli("desktop", "apply", "--plan", digest, "--json")
-            self.assertEqual(report["status"], "BUSY")
-            # An outcome from outside the lock leaves the running status alone.
-            self.assertFalse(store.write_result_locked(WorkflowId.DESKTOP, {"workflow": "desktop", "status": "FAIL"}))
-        self.assertEqual(store.read_result(WorkflowId.DESKTOP)["status"], "READY")
+            code, report = self.run_cli("desktop", "apply", "--plan", plan["plan_digest"], "--json")
+        self.assertEqual((code, report["status"]), (3, "BUSY"))
         self.assertFalse((self.home / BINDINGS).exists())
 
     def test_stale_and_unknown_plans(self):
         code, report = self.run_cli("desktop", "apply", "--plan", "a" * 64, "--json")
         self.assertEqual((code, report["status"]), (3, "STALE"))
-        # A mistyped digest keeps the last real outcome.
-        self.assertIsNone(StateStore(self.home).read_result(WorkflowId.DESKTOP))
-        # A saved plan that went stale is recorded, so a handed-off terminal shows why.
         with mock.patch.object(cli, "session_environment", return_value={}):
             _, plan = self.run_cli("desktop", "plan", "--json")
         changed = replace(self.repository, source_digest="0" * 64)
         with mock.patch.object(cli, "compile_repository", return_value=changed):
             code, report = self.run_cli("desktop", "apply", "--plan", plan["plan_digest"], "--json")
         self.assertEqual((code, report["status"]), (3, "STALE"))
-        self.assertEqual(StateStore(self.home).read_result(WorkflowId.DESKTOP)["status"], "STALE")
         with mock.patch.object(cli.time, "sleep", side_effect=AssertionError("waited")):
             _, other = self.run_cli("desktop", "status", "--plan", "b" * 64, "--wait", "900", "--json")
         self.assertEqual(other["status"], "NO_RESULT")
-        code, report = self.run_cli("desktop", "apply", "--json")
-        self.assertEqual((code, report["status"]), (2, "FAIL"))
-        with self.assertRaises(SystemExit):
-            cli.main(["desktop", "plan", "--plan", "a" * 64])
+        for argv in (["desktop", "apply", "--json"], ["desktop", "plan", "--plan", "a" * 64], ["desktop", "plan", "--add", "vscode"]):
+            with self.assertRaises(SystemExit), mock.patch("sys.stderr"):
+                cli.main(argv)
 
     def test_stale_package_databases_ask_for_a_system_update(self):
         error = cli.CatalogError("package databases are stale or missing for omarchy; run omarchy update, then generate a new plan")
@@ -689,82 +567,12 @@ class UpdateCycleTests(CliCase):
         # Reported once: the apply keeps the file and stops tracking it.
         self.assertTrue(os.path.lexists(self.home / dropped))
         self.assertEqual(self.plan()["changes"]["files"]["orphaned"], [])
-        # Restoring that apply tracks the unchanged file again.
-        code, report = self.run_cli("desktop", "restore", "--plan", orphaned["plan_digest"], "--json")
-        self.assertEqual((code, report["status"]), (0, "RESTORED"))
-        self.assertIn(dropped, StateStore(self.home).read_managed(WorkflowId.DESKTOP))
 
         # Restore undoes that apply: the hand edit comes back from its backup.
         code, report = self.run_cli("desktop", "restore", "--plan", edited["plan_digest"], "--json")
         self.assertEqual((code, report["status"], report["restored"]), (0, "RESTORED", [BINDINGS]))
         self.assertTrue(bindings.read_text().endswith("-- my tweak\n"))
         self.assertNotEqual(bindings.read_text(), first)
-
-
-class FirewallTests(unittest.TestCase):
-    def test_unreadable_rules_fall_back_to_the_verified_marker(self):
-        from bootstrap import executor
-
-        with tempfile.TemporaryDirectory() as directory, cli.HomeFiles(Path(directory)) as home, mock.patch.object(
-            executor.Path, "read_text", side_effect=PermissionError
-        ):
-            self.assertIsNone(executor.ufw_rule_present())
-            self.assertFalse(executor.firewall_rule_satisfied(home))
-            home.ensure_directory(".local/state/arch-hypr-bootstrap", 0o700)
-            home.write_private_atomic(executor.FIREWALL_MARKER, b"limit 22/tcp\n")
-            self.assertTrue(executor.firewall_rule_satisfied(home))
-
-    def test_audit_warns_when_only_the_marker_vouches_for_the_rule(self):
-        from bootstrap import audit, executor
-        from bootstrap.domain import ActionKind
-        from bootstrap.planner import action
-
-        item = action(ActionKind.FIREWALL_RULE, "ssh-firewall", {"backend": "ufw", "rule": "limit", "port": 22, "protocol": "tcp"})
-        with tempfile.TemporaryDirectory() as directory, cli.HomeFiles(Path(directory)) as home, mock.patch.object(
-            executor, "ufw_rule_present", return_value=None
-        ), mock.patch.object(audit, "ufw_rule_present", return_value=None):
-            home.ensure_directory(".local/state/arch-hypr-bootstrap", 0o700)
-            home.write_private_atomic(executor.FIREWALL_MARKER, b"limit 22/tcp\n")
-            finding = audit.audit_action(item, home, False)
-        self.assertEqual(finding.status, "WARN")
-        self.assertIn("verified by the last terminal apply", finding.message)
-
-    def test_a_terminal_apply_rechecks_the_rule_despite_the_marker(self):
-        from bootstrap import executor
-        from bootstrap.domain import ActionKind
-        from bootstrap.planner import action
-
-        item = action(ActionKind.FIREWALL_RULE, "ssh-firewall", {"backend": "ufw", "rule": "limit", "port": 22, "protocol": "tcp"})
-        with tempfile.TemporaryDirectory() as directory, cli.HomeFiles(Path(directory)) as home, mock.patch.object(
-            executor, "ufw_rule_present", return_value=None
-        ):
-            home.ensure_directory(".local/state/arch-hypr-bootstrap", 0o700)
-            home.write_private_atomic(executor.FIREWALL_MARKER, b"limit 22/tcp\n")
-            # The marker spares an update the terminal ...
-            self.assertTrue(executor.terminal_action_satisfied(item, home))
-            # ... but a terminal apply does not skip the rule on it.
-            self.assertFalse(executor.action_satisfied(item, home))
-            missing = audit_finding_without_marker(item)
-        self.assertEqual(missing.status, "FAIL")
-
-    def test_readable_rules_decide(self):
-        from bootstrap import executor
-
-        with tempfile.TemporaryDirectory() as directory, cli.HomeFiles(Path(directory)) as home:
-            home.ensure_directory(".local/state/arch-hypr-bootstrap", 0o700)
-            home.write_private_atomic(executor.FIREWALL_MARKER, b"limit 22/tcp\n")
-            with mock.patch.object(executor.Path, "read_text", return_value="### tuple ### allow tcp 80\n"):
-                self.assertIs(executor.ufw_rule_present(), False)
-                self.assertFalse(executor.firewall_rule_satisfied(home))
-
-
-def audit_finding_without_marker(item):
-    from bootstrap import audit
-
-    with tempfile.TemporaryDirectory() as directory, cli.HomeFiles(Path(directory)) as home, mock.patch.object(
-        audit, "ufw_rule_present", return_value=None
-    ):
-        return audit.audit_action(item, home, False)
 
 
 class SelectionStateTests(unittest.TestCase):

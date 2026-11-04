@@ -7,7 +7,6 @@ from .catalog import CatalogError, Workspace
 from .domain import ActionKind, ExecutionPlan, PlannedAction, assert_plan_matches_host
 from .executor import (
     action_satisfied,
-    FIREWALL_MARKER,
     aur_installed_exact,
     capture,
     command_environment,
@@ -15,7 +14,6 @@ from .executor import (
     run_probe,
     strings,
     tool_installed,
-    ufw_rule_present,
 )
 from .packages import installed_versions, transaction_from_action
 from .files import FileBoundaryError, HomeFiles
@@ -98,16 +96,6 @@ def audit_action(item: PlannedAction, home: HomeFiles, isolated: bool) -> AuditF
             kind,
             item.feature,
             "authentication ready" if ready else f"manual login required: {item.data['label']}",
-        )
-    if item.kind is ActionKind.FIREWALL_RULE and ufw_rule_present() is None:
-        # Root-only rule files: the marker says a terminal apply verified the
-        # rule once, which is not a live check.
-        verified = home.read_text(FIREWALL_MARKER) is not None
-        return AuditFinding(
-            "WARN" if verified or isolated else "FAIL",
-            kind,
-            item.feature,
-            "UFW rule files are unreadable; " + ("verified by the last terminal apply" if verified else "never verified"),
         )
     if item.kind is ActionKind.USER_DAEMON_RELOAD:
         return AuditFinding("PASS", kind, item.feature, "daemon reload is an apply transition")
