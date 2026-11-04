@@ -14,9 +14,18 @@ from bootstrap.platform import detect_platform
 from bootstrap.repository import compile_repository
 from bootstrap.workflows import plan_desktop, plan_integrations, plan_packages
 from tests.fixtures import omarchy_probe
+from tests.test_ssh_keys import KEY
 
 
 ROOT = Path(__file__).resolve().parents[1]
+FLEET_OWNED_FILES = (".claude/CLAUDE.md", ".codex/AGENTS.md", ".config/pstack/model-teams.yaml")
+FLEET_OWNED_DIRECTORIES = (
+    ".agents/skills",
+    ".claude/skills",
+    ".codex/skills",
+    ".cursor/skills",
+    ".config/opencode/skills",
+)
 
 
 class DefaultPlanApplyTests(unittest.TestCase):
@@ -96,7 +105,7 @@ class DefaultPlanApplyTests(unittest.TestCase):
             self.repository,
             self.facts,
             self.state,
-            IntegrationsRequest(selected - agents, agents, frozenset(), frozenset()),
+            IntegrationsRequest(selected - agents, agents),
             self.evidence,
         )
         self.assertGreater(self.apply(plan).changed, 0)
@@ -107,6 +116,40 @@ class DefaultPlanApplyTests(unittest.TestCase):
         units = [item for item in findings if item.feature == "cloud.onedrive" and item.kind == "user-unit"]
         self.assertTrue(units)
         self.assertTrue(all(item.status == "WARN" and "waiting for login" in item.message for item in units))
+
+    def test_integrations_leave_fleet_owned_paths_alone(self):
+        # RedHot099/fleet owns skills, global agent instructions and model
+        # teams; a plan or apply here must never create, replace or remove them.
+        catalog = self.repository.workflow(WorkflowId.INTEGRATIONS).workspace.public_catalog
+        selected = frozenset(item.id for item in catalog.values() if item.visible)
+        agents = frozenset(item for item in selected if item.startswith("agent."))
+        plan = plan_integrations(
+            ROOT,
+            self.repository,
+            self.facts,
+            self.state,
+            IntegrationsRequest(selected - agents, agents),
+            self.evidence,
+            github_keys={"RedHot099": (KEY,)},
+        )
+        targets = [str(item.data["target"]) for item in plan.actions if "target" in item.data]
+        self.assertTrue(targets)
+        for target in targets:
+            self.assertFalse(
+                target in FLEET_OWNED_FILES or target.startswith(FLEET_OWNED_DIRECTORIES),
+                f"dotfiles plans a fleet-owned path: {target}",
+            )
+
+        home = Path(self.home.name)
+        seeded = {}
+        for relative in (*FLEET_OWNED_FILES, *(f"{root}/research/SKILL.md" for root in FLEET_OWNED_DIRECTORIES)):
+            path = home / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(f"fleet {relative}\n")
+            seeded[path] = path.read_text()
+        self.apply(plan)
+        for path, content in seeded.items():
+            self.assertEqual(path.read_text(), content)
 
 
 if __name__ == "__main__":

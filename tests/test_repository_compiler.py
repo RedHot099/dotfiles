@@ -102,7 +102,7 @@ class RepositoryCompilerTests(unittest.TestCase):
                 repository,
                 facts,
                 HostState(frozenset(), frozenset()),
-                IntegrationsRequest(frozenset({"tailscale"}), frozenset(), frozenset(), frozenset()),
+                IntegrationsRequest(frozenset({"tailscale"}), frozenset()),
                 PackagesEvidence.create(frozenset(), frozenset()),
             )
 
@@ -112,7 +112,7 @@ class RepositoryCompilerTests(unittest.TestCase):
             compile_repository(ROOT, PlatformId.OMARCHY),
             detect_platform(omarchy_probe()),
             HostState(frozenset(), frozenset()),
-            IntegrationsRequest(frozenset(), frozenset({"agent.codex"}), frozenset(), frozenset()),
+            IntegrationsRequest(frozenset(), frozenset({"agent.codex"})),
             PackagesEvidence.create(frozenset(), frozenset()),
         )
         self.assertIn("agent.codex", {item.feature for item in plan.actions})
@@ -136,7 +136,7 @@ class RepositoryCompilerTests(unittest.TestCase):
             repository,
             facts,
             state,
-            IntegrationsRequest(frozenset(), frozenset(), frozenset(), frozenset()),
+            IntegrationsRequest(frozenset(), frozenset()),
             evidence,
         )
 

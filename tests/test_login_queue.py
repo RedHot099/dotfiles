@@ -36,8 +36,6 @@ class LoginQueueTests(unittest.TestCase):
             IntegrationsRequest(
                 frozenset({"aws", "bitbucket", "docker-hub", "1password", "tailscale", "tool.github"}),
                 frozenset({"agent.claude", "agent.cursor"}),
-                frozenset(),
-                frozenset(),
             ),
             PackagesEvidence.create(
                 frozenset(),

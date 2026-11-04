@@ -137,8 +137,6 @@ class IntegrationsPlan:
             {
                 "integrations": sorted(request.integrations),
                 "agents": sorted(request.agents),
-                "skills": sorted(request.skills),
-                "harnesses": sorted(request.harnesses),
                 "package_evidence": _evidence_dict(package_evidence),
                 "unavailable": list(unavailable),
             },
@@ -152,8 +150,6 @@ class IntegrationsPlan:
             {
                 "integrations": sorted(self.request.integrations),
                 "agents": sorted(self.request.agents),
-                "skills": sorted(self.request.skills),
-                "harnesses": sorted(self.request.harnesses),
                 "package_evidence": _evidence_dict(self.package_evidence),
                 "unavailable": list(self.unavailable),
             },
@@ -224,8 +220,6 @@ def plan_from_dict(value: object) -> WorkflowPlan:
                 IntegrationsRequest(
                     _string_set(request, "integrations"),
                     _string_set(request, "agents"),
-                    _string_set(request, "skills"),
-                    _string_set(request, "harnesses"),
                 ),
                 evidence,
                 actions,

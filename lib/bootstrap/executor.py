@@ -17,7 +17,7 @@ from typing import Iterable
 
 from .catalog import CatalogError, SYSTEM_UNIT_ALLOWLIST, Workspace
 from .domain import ActionKind, ExecutionPlan, PlannedAction, assert_plan_matches_host
-from .files import FileBoundaryError, HomeFiles
+from .files import HomeFiles
 from .tui.terminal import ask_yes_no
 from .platform import PlatformFacts
 from .packages import (
@@ -107,7 +107,6 @@ def _apply_locked(
     skipped.update(strings(journal.get("skipped_features")))
     if system_changes:
         review_aur_actions(plan, skipped)
-        review_skill_collisions(plan, home)
         write_journal(home, journal_target, completed, skipped, plan.digest)
     sources = {
         (feature, entry.target, entry.sha256): entry
@@ -239,37 +238,6 @@ def review_aur_actions(plan: ExecutionPlan, skipped: set[str]) -> None:
                 print(f"[binary file, {len(content)} bytes]")
         if not ask_yes_no(f"Build and install reviewed AUR package {recipe.package_base}?"):
             skipped.update(dependent_feature_closure(plan, item.feature))
-
-
-def review_skill_collisions(plan: ExecutionPlan, home: HomeFiles) -> None:
-    collisions: list[str] = []
-    for item in plan.actions:
-        if item.feature != "user-skills" or item.kind is not ActionKind.USER_FILE:
-            continue
-        target = str(item.data["target"])
-        kind = home.target_kind(target)
-        if kind is None:
-            continue
-        try:
-            matches = home.matches(
-                target,
-                str(item.data["sha256"]),
-                integer(item.data["mode"]),
-                optional_string(item.data.get("symlink")),
-            )
-        except FileBoundaryError:
-            matches = False
-        if not matches:
-            collisions.append(target)
-    if not collisions:
-        return
-    print("\nSkill paths that will be replaced without backup:")
-    for target in sorted(collisions):
-        print(f"  {target}")
-    if not ask_yes_no("Replace exactly these selected skill paths?"):
-        raise CatalogError("skill collision replacement was declined")
-    for target in collisions:
-        home.remove_exact(target)
 
 
 def dependent_feature_closure(plan: ExecutionPlan, feature: str) -> set[str]:
