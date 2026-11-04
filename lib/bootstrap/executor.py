@@ -259,6 +259,7 @@ def _apply_locked(
                 deferred.append(Deferred(item.kind.value, item.feature, "waiting-for-login", str(item.data["name"])))
                 continue
             run(("/usr/bin/systemctl", "--user", "enable", "--now", str(item.data["name"])))
+            restart.discard(str(item.data["name"]))
             changed += 1
         elif item.kind is ActionKind.SYSTEM_UNIT:
             name = str(item.data["name"])
@@ -293,6 +294,10 @@ def _apply_locked(
         elif item.kind is ActionKind.AUTHORIZED_SSH_KEYS:
             install_ssh(home, tuple(strings(item.data["keys"])))
             changed += 1
+        elif item.kind is ActionKind.FIREWALL_RULE and not interactive:
+            # Rule files only root can read: the gate let this run go on, and
+            # the next terminal apply re-adds the rule.
+            unchanged += 1
         elif item.kind is ActionKind.FIREWALL_RULE:
             if subprocess.run(
                 ("/usr/bin/systemctl", "is-active", "ufw.service"),
@@ -455,6 +460,14 @@ def restore_files(
                 operations.append((target, backup))
             if conflicts and not discard_local:
                 raise LocalEditConflict(tuple(conflicts))
+            # A unit this plan created goes with its file: disable it while the file exists.
+            units = {str(item.data["name"]) for item in actions if item.kind is ActionKind.USER_UNIT}
+            for target, backup in operations:
+                if backup is None and target.removeprefix(UNIT_DIRECTORY) in units:
+                    try:
+                        run(("/usr/bin/systemctl", "--user", "disable", "--now", target.removeprefix(UNIT_DIRECTORY)))
+                    except (OSError, RuntimeError, subprocess.CalledProcessError):
+                        pass
             undo = f"{STATE_ROOT}/backups/restore-{state_digest}"
             managed = read_managed(home, workflow)
             restored: list[str] = []
