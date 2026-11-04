@@ -177,7 +177,7 @@ def workflow_command(workflow: WorkflowId, operation: str) -> int:
     )
     status = "READY" if not result.skipped_features and not result.simulated else "INCOMPLETE"
     code = EXIT_READY if status == "READY" else EXIT_INCOMPLETE
-    StateStore(Path(facts.target_home)).write_result(
+    StateStore(Path(facts.target_home)).write_result_locked(
         workflow, agent.result_record(workflow.value, plan.digest, status, code, result=result)
     )
     print(f"{workflow.value.title()}: {status}")
@@ -650,7 +650,7 @@ def approved_apply(
 
     def finish(status: str, code: int, message: str = "", **extra: object) -> tuple[dict[str, object], int]:
         record = agent.result_record(workflow.value, digest, status, code, message=message, checkout=checkout, **extra)
-        store.write_result(workflow, record)
+        store.write_result_locked(workflow, record)
         return {**record, "command": "apply"}, code
 
     if plan.header.repository_digest != repository.source_digest:
@@ -858,7 +858,7 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
         removed=list(result.removed),
         deferred=deferred,
     )
-    store.write_result(workflow, record)
+    store.write_result_locked(workflow, record)
     return {**record, "command": "restore"}, code
 
 

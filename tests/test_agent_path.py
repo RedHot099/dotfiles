@@ -262,6 +262,25 @@ class RestoreTests(AgentPathCase):
         self.assertIn(str(item.data["target"]), result.restored)
         self.assertEqual(target.stat().st_mode & 0o777, 0o644)
 
+    def test_resumed_restore_settles_the_manifest(self):
+        monitors = ".config/hypr/monitors.lua"
+
+        def plan_with(content):
+            return plan_desktop(
+                ROOT, self.repository, self.facts, self.state,
+                DesktopRequest(self.defaults(WorkflowId.DESKTOP), "detected"), self.evidence,
+                monitor_content=content,
+            )
+
+        first, second = plan_with("-- first\n"), plan_with("-- second\n")
+        self.apply(first, reviewed=True)
+        self.apply(second, reviewed=True)
+        # An interrupted restore put the file back but never wrote the manifest.
+        (self.home / monitors).write_text("-- first\n")
+        restore_files(self.home, second.actions, second.digest, "desktop", discard_local=False)
+        self.apply(plan_with("-- third\n"), reviewed=True)
+        self.assertEqual((self.home / monitors).read_text(), "-- third\n")
+
     def test_restore_refuses_files_edited_after_the_apply(self):
         plan = self.desktop_plan()
         self.apply(plan, reviewed=True)
@@ -408,7 +427,9 @@ class CliJsonTests(AgentPathCase):
         with open(state / "apply.lock", "a+") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
             code, report = self.run_cli("desktop", "apply", "--plan", digest, "--json")
-        self.assertEqual(report["status"], "BUSY")
+            self.assertEqual(report["status"], "BUSY")
+            # An outcome from outside the lock leaves the running status alone.
+            self.assertFalse(store.write_result_locked(WorkflowId.DESKTOP, {"workflow": "desktop", "status": "FAIL"}))
         self.assertEqual(store.read_result(WorkflowId.DESKTOP)["status"], "READY")
         self.assertFalse((self.home / BINDINGS).exists())
 

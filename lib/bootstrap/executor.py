@@ -462,6 +462,9 @@ def restore_files(
             backups = f"{STATE_ROOT}/backups/{state_digest}"
             operations: list[tuple[str, tuple[bytes | None, str | None, int] | None]] = []
             conflicts: list[str] = []
+            # Files an interrupted restore already put back still need their
+            # manifest entries settled.
+            settled: list[str] = []
             for item in reversed(actions):
                 if item.kind not in FILE_ACTIONS:
                     continue
@@ -471,6 +474,7 @@ def restore_files(
                     continue
                 # Content, link and mode all count: a chmod is a change too.
                 if home.entry(target) == backup:
+                    settled.append(target)
                     continue
                 if not home.matches(
                     target, str(item.data["sha256"]), int(item.data["mode"]), optional_string(item.data.get("symlink"))
@@ -502,9 +506,9 @@ def restore_files(
             # A restored file stays managed when the bootstrap had installed
             # that content before; anything else is the user's again.
             managed = read_managed(home, workflow)
-            for target in (*restored, *removed):
+            for target in (*restored, *removed, *settled):
                 previous = managed_before.get(target)
-                if target in restored and previous == home.hash(target):
+                if previous is not None and previous == home.hash(target):
                     managed[target] = previous
                 else:
                     managed.pop(target, None)
