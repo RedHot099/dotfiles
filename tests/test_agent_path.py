@@ -20,7 +20,6 @@ from bootstrap.session import session_environment
 from bootstrap.state import SelectionRecord, StateStore
 from bootstrap.workflows import plan_desktop, plan_integrations
 from tests.fixtures import omarchy_probe
-from tests.test_ssh_keys import KEY
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -168,27 +167,8 @@ class ResumeTests(AgentPathCase):
         self.assertTrue([call for call in run.call_args_list if "restart" in call.args[0]])
 
 
-class HeadlessFirewallTests(AgentPathCase):
-    def test_a_headless_apply_never_runs_sudo_for_root_only_rules(self):
-        selected = self.defaults(WorkflowId.INTEGRATIONS) | {"ssh-access", "ssh-firewall"}
-        agents = frozenset(item for item in selected if item.startswith("agent."))
-        plan = plan_integrations(
-            ROOT, self.repository, self.facts, self.state,
-            IntegrationsRequest(selected - agents, agents), self.evidence,
-            github_keys={"RedHot099": (KEY,)},
-        )
-        self.assertIn("firewall-rule", {item.kind.value for item in plan.actions})
-        (self.home / ".ssh").mkdir(mode=0o700)
-        (self.home / ".ssh/authorized_keys").write_text(KEY + "\n")
-        with mock.patch("bootstrap.executor.ufw_rule_present", return_value=None), mock.patch(
-            "bootstrap.executor.service_active", return_value=True
-        ), mock.patch("bootstrap.executor.run") as run, mock.patch("bootstrap.executor.run_probe", return_value=False):
-            apply_workflow_plan(ROOT, self.repository, plan, self.facts, system_changes=True, interactive=False, reviewed=True)
-        self.assertFalse([call for call in run.call_args_list if "/usr/bin/sudo" in call.args[0]])
-
-
 class FirewallTests(unittest.TestCase):
-    def test_root_only_rules_need_no_handoff_but_a_terminal_apply_re_adds(self):
+    def test_root_only_rules_need_the_terminal_and_audit_warns(self):
         from bootstrap import audit, executor
         from bootstrap.domain import ActionKind
         from bootstrap.planner import action
@@ -198,7 +178,7 @@ class FirewallTests(unittest.TestCase):
             executor.Path, "read_text", side_effect=PermissionError
         ):
             self.assertIsNone(executor.ufw_rule_present())
-            self.assertTrue(executor.terminal_action_satisfied(item, home))
+            self.assertFalse(executor.terminal_action_satisfied(item, home))
             self.assertFalse(executor.action_satisfied(item, home))
             self.assertEqual(audit.audit_action(item, home, False).status, "WARN")
 

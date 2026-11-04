@@ -294,10 +294,6 @@ def _apply_locked(
         elif item.kind is ActionKind.AUTHORIZED_SSH_KEYS:
             install_ssh(home, tuple(strings(item.data["keys"])))
             changed += 1
-        elif item.kind is ActionKind.FIREWALL_RULE and not interactive:
-            # Rule files only root can read: the gate let this run go on, and
-            # the next terminal apply re-adds the rule.
-            unchanged += 1
         elif item.kind is ActionKind.FIREWALL_RULE:
             if subprocess.run(
                 ("/usr/bin/systemctl", "is-active", "ufw.service"),
@@ -353,8 +349,8 @@ def terminal_action_satisfied(item: PlannedAction, home: HomeFiles) -> bool:
     if item.kind is ActionKind.SYSTEM_UNIT:
         return service_active(str(item.data["name"]))
     if item.kind is ActionKind.FIREWALL_RULE:
-        # Unreadable without root: no handoff just to look; a terminal apply re-adds it.
-        return ufw_rule_present() is not False
+        # Rule files only root can read prove nothing: the terminal apply re-adds the rule.
+        return ufw_rule_present() is True
     if item.kind is ActionKind.AUTHORIZED_SSH_KEYS:
         current = set((home.read_text(".ssh/authorized_keys") or "").splitlines())
         return set(strings(item.data["keys"])).issubset(current)
