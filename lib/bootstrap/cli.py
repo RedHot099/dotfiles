@@ -634,6 +634,23 @@ def load_workflow_plan(workflow: WorkflowId, digest: str) -> WorkflowPlan:
 def approved_apply(
     workflow: WorkflowId, digest: str, *, discard_local: bool, in_terminal: bool, prompts: bool
 ) -> tuple[dict[str, object], int]:
+    try:
+        return _approved_apply(workflow, digest, discard_local=discard_local, in_terminal=in_terminal, prompts=prompts)
+    except WORKFLOW_ERRORS as error:
+        # Saved also when the run fails before it takes the lock, so a
+        # handed-off terminal reports its real cause instead of HANDOFF_LOST.
+        status, code, next_actions = classify_error(error)
+        if DIGEST_RE.fullmatch(digest):
+            StateStore(Path.home()).write_result_locked(
+                workflow,
+                agent.result_record(workflow.value, digest, status, code, message=str(error), next_actions=next_actions),
+            )
+        raise
+
+
+def _approved_apply(
+    workflow: WorkflowId, digest: str, *, discard_local: bool, in_terminal: bool, prompts: bool
+) -> tuple[dict[str, object], int]:
     """Apply the plan named by its digest; naming it is the approval.
 
     Without a terminal it never prompts: packages, system services, the
@@ -791,12 +808,14 @@ def status_command(workflow: WorkflowId, digest: str | None, wait: int) -> tuple
     while True:
         record = store.read_result(workflow)
         if record is not None and digest and record.get("plan_digest") != digest:
+            # A handoff saves HANDED_OFF for its plan before the terminal
+            # starts, so nothing for this plan means nothing to wait for.
             record = None
         if record is not None and record.get("status") == "RUNNING" and not _process_alive(record.get("pid")):
             record = {**record, "status": "INTERRUPTED", "exit_code": agent.EXIT_ACTION_NEEDED, "message": "the apply stopped before it finished; apply the same plan again to resume"}
         if record is not None and record.get("status") == "HANDED_OFF" and _handoff_lost(record):
             record = {**record, "status": "HANDOFF_LOST", "exit_code": agent.EXIT_ACTION_NEEDED, "message": "the terminal never started the apply; ask the user to run the command in a terminal"}
-        waiting = record is None or record.get("status") in ACTIVE_STATUSES
+        waiting = record is not None and record.get("status") in ACTIVE_STATUSES
         if not waiting or time.monotonic() >= deadline:
             break
         time.sleep(2)
@@ -838,6 +857,8 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
     store = StateStore(Path(facts.target_home))
     try:
         result = restore_files(Path(facts.target_home), plan.actions, digest, workflow.value, discard_local=discard_local)
+    except ApplyLocked:
+        return {**busy(workflow, digest)[0], "command": "restore"}, agent.EXIT_ACTION_NEEDED
     except LocalEditConflict as error:
         report = agent.result_record(workflow.value, digest, "CONFLICT", agent.EXIT_ACTION_NEEDED, message=str(error), operation="restore", conflicts=list(error.targets))
         return {**report, "command": "restore"}, agent.EXIT_ACTION_NEEDED

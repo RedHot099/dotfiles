@@ -218,119 +218,123 @@ def _apply_locked(
     changed = unchanged = simulated = 0
     deferred: list[Deferred] = []
     systemd_files_changed = False
-    for item in plan.actions:
-        if item.feature in skipped:
-            continue
-        action_id = action_digest(item)
-        if item.kind in FILE_ACTIONS:
-            did_change = apply_file_action(root, home, item, sources, f"{STATE_ROOT}/backups/{state_digest}")
-            changed += int(did_change)
-            unchanged += int(not did_change)
-            systemd_files_changed |= did_change and str(item.data["target"]).startswith(
-                ".config/systemd/user/"
-            )
-        elif not system_changes:
-            simulated += 1
-            deferred.append(Deferred(item.kind.value, item.feature, "simulated"))
-            continue
-        elif item.kind is ActionKind.USER_DAEMON_RELOAD:
-            if action_id in completed and not systemd_files_changed:
-                unchanged += 1
-            else:
-                run(("/usr/bin/systemctl", "--user", "daemon-reload"))
-                changed += 1
-        elif item.kind is ActionKind.REPOSITORY_PACKAGES:
-            did_change = apply_repository_packages(item, facts)
-            changed += int(did_change)
-            unchanged += int(not did_change)
-        elif item.kind is ActionKind.AUR_BUILD:
-            did_change = apply_aur_package(item)
-            changed += int(did_change)
-            unchanged += int(not did_change)
-        elif item.kind is ActionKind.USER_UNIT:
-            name = str(item.data["name"])
-            if name not in restart and action_satisfied(item, home, environment):
-                unchanged += 1
-                completed.add(action_id)
-                save_journal()
+    try:
+        for item in plan.actions:
+            if item.feature in skipped:
                 continue
-            probes = item.data.get("auth_probes", ())
-            if not all(
-                run_probe(
-                    tuple(strings(probe["command"])),
-                    optional_string(probe.get("contains")),
-                    environment,
+            action_id = action_digest(item)
+            if item.kind in FILE_ACTIONS:
+                did_change = apply_file_action(root, home, item, sources, f"{STATE_ROOT}/backups/{state_digest}")
+                changed += int(did_change)
+                unchanged += int(not did_change)
+                systemd_files_changed |= did_change and str(item.data["target"]).startswith(
+                    ".config/systemd/user/"
                 )
-                for probe in probes
-            ):
+            elif not system_changes:
                 simulated += 1
-                deferred.append(Deferred(item.kind.value, item.feature, "waiting-for-login", name))
+                deferred.append(Deferred(item.kind.value, item.feature, "simulated"))
                 continue
-            run(("/usr/bin/systemctl", "--user", "enable", "--now", name))
-            if name in restart:
-                # A running unit keeps its old definition until it restarts.
-                run(("/usr/bin/systemctl", "--user", "restart", name))
-                restart.discard(name)
-            changed += 1
-        elif action_satisfied(item, home, environment):
-            unchanged += 1
-        elif item.kind is ActionKind.PINNED_TOOL:
-            run(("mise", "use", "-g", *strings(item.data["tools"])))
-            changed += 1
-        elif item.kind is ActionKind.SYSTEM_UNIT:
-            name = str(item.data["name"])
-            if name not in SYSTEM_UNIT_ALLOWLIST:
-                raise CatalogError(f"system unit is not allowlisted: {name}")
-            if name == "sshd.service":
-                run(("/usr/bin/sudo", "/usr/bin/sshd", "-t"))
-            run(("/usr/bin/sudo", "/usr/bin/systemctl", "enable", "--now", name))
-            changed += 1
-        elif item.kind is ActionKind.PINNED_GIT_ASSET:
-            apply_repository(Path(plan.target_home), plan.digest, item)
-            changed += 1
-        elif item.kind is ActionKind.OMARCHY_THEME:
-            theme_environment = dict(
-                os.environ,
-                HOME=plan.target_home,
-                OMARCHY_THEME_HEADLESS="1",
-            )
-            run(
-                ("omarchy", "theme", "set", str(item.data["name"])),
-                environment=theme_environment,
-            )
-            changed += 1
-        elif item.kind is ActionKind.MANUAL_AUTHENTICATION:
-            # Without a terminal nobody can answer a login; it stays queued.
-            if interactive and authenticate(item, environment):
+            elif item.kind is ActionKind.USER_DAEMON_RELOAD:
+                if action_id in completed and not systemd_files_changed:
+                    unchanged += 1
+                else:
+                    run(("/usr/bin/systemctl", "--user", "daemon-reload"))
+                    changed += 1
+            elif item.kind is ActionKind.REPOSITORY_PACKAGES:
+                did_change = apply_repository_packages(item, facts)
+                changed += int(did_change)
+                unchanged += int(not did_change)
+            elif item.kind is ActionKind.AUR_BUILD:
+                did_change = apply_aur_package(item)
+                changed += int(did_change)
+                unchanged += int(not did_change)
+            elif item.kind is ActionKind.USER_UNIT:
+                name = str(item.data["name"])
+                if name not in restart and action_satisfied(item, home, environment):
+                    unchanged += 1
+                    completed.add(action_id)
+                    save_journal()
+                    continue
+                probes = item.data.get("auth_probes", ())
+                if not all(
+                    run_probe(
+                        tuple(strings(probe["command"])),
+                        optional_string(probe.get("contains")),
+                        environment,
+                    )
+                    for probe in probes
+                ):
+                    simulated += 1
+                    deferred.append(Deferred(item.kind.value, item.feature, "waiting-for-login", name))
+                    continue
+                run(("/usr/bin/systemctl", "--user", "enable", "--now", name))
+                if name in restart:
+                    # A running unit keeps its old definition until it restarts.
+                    run(("/usr/bin/systemctl", "--user", "restart", name))
+                    restart.discard(name)
+                changed += 1
+            elif action_satisfied(item, home, environment):
+                unchanged += 1
+            elif item.kind is ActionKind.PINNED_TOOL:
+                run(("mise", "use", "-g", *strings(item.data["tools"])))
+                changed += 1
+            elif item.kind is ActionKind.SYSTEM_UNIT:
+                name = str(item.data["name"])
+                if name not in SYSTEM_UNIT_ALLOWLIST:
+                    raise CatalogError(f"system unit is not allowlisted: {name}")
+                if name == "sshd.service":
+                    run(("/usr/bin/sudo", "/usr/bin/sshd", "-t"))
+                run(("/usr/bin/sudo", "/usr/bin/systemctl", "enable", "--now", name))
+                changed += 1
+            elif item.kind is ActionKind.PINNED_GIT_ASSET:
+                apply_repository(Path(plan.target_home), plan.digest, item)
+                changed += 1
+            elif item.kind is ActionKind.OMARCHY_THEME:
+                theme_environment = dict(
+                    os.environ,
+                    HOME=plan.target_home,
+                    OMARCHY_THEME_HEADLESS="1",
+                )
+                run(
+                    ("omarchy", "theme", "set", str(item.data["name"])),
+                    environment=theme_environment,
+                )
+                changed += 1
+            elif item.kind is ActionKind.MANUAL_AUTHENTICATION:
+                # Without a terminal nobody can answer a login; it stays queued.
+                if interactive and authenticate(item, environment):
+                    changed += 1
+                else:
+                    simulated += 1
+                    deferred.append(Deferred(item.kind.value, item.feature, "needs-login", str(item.data["label"])))
+                    continue
+            elif item.kind is ActionKind.AUTHORIZED_SSH_KEYS:
+                install_ssh(home, tuple(strings(item.data["keys"])))
+                changed += 1
+            elif item.kind is ActionKind.FIREWALL_RULE:
+                if subprocess.run(
+                    ("/usr/bin/systemctl", "is-active", "ufw.service"),
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                ).returncode:
+                    raise RuntimeError("UFW is not active; refusing to change firewall policy")
+                run(("/usr/bin/sudo", "/usr/bin/ufw", "limit", "22/tcp"))
+                changed += 1
+            elif item.kind is ActionKind.HYPRLAND_RELOAD:
+                if not reload_hyprland():
+                    simulated += 1
+                    deferred.append(Deferred(item.kind.value, item.feature, "needs-session"))
+                    continue
                 changed += 1
             else:
-                simulated += 1
-                deferred.append(Deferred(item.kind.value, item.feature, "needs-login", str(item.data["label"])))
-                continue
-        elif item.kind is ActionKind.AUTHORIZED_SSH_KEYS:
-            install_ssh(home, tuple(strings(item.data["keys"])))
-            changed += 1
-        elif item.kind is ActionKind.FIREWALL_RULE:
-            if subprocess.run(
-                ("/usr/bin/systemctl", "is-active", "ufw.service"),
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            ).returncode:
-                raise RuntimeError("UFW is not active; refusing to change firewall policy")
-            run(("/usr/bin/sudo", "/usr/bin/ufw", "limit", "22/tcp"))
-            changed += 1
-        elif item.kind is ActionKind.HYPRLAND_RELOAD:
-            if not reload_hyprland():
-                simulated += 1
-                deferred.append(Deferred(item.kind.value, item.feature, "needs-session"))
-                continue
-            changed += 1
-        else:
-            raise CatalogError(f"executor does not implement action: {item.kind.value}")
-        completed.add(action_id)
-        save_journal()
-    if options.workflow:
-        record_managed_files(home, options.workflow, plan.actions, skipped)
+                raise CatalogError(f"executor does not implement action: {item.kind.value}")
+            completed.add(action_id)
+            save_journal()
+    finally:
+        # Also after a failure: the files that did land are the bootstrap's,
+        # so the next plan does not report them as local edits.
+        if options.workflow:
+            record_managed_files(home, options.workflow, plan.actions, skipped)
     return ApplyResult(changed, unchanged, simulated, tuple(sorted(skipped)), tuple(deferred))
 
 

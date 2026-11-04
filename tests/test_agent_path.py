@@ -108,6 +108,20 @@ class NonInteractiveApplyTests(AgentPathCase):
         self.assertEqual([item.reason for item in result.deferred], ["needs-session"])
 
 
+class FailedApplyTests(AgentPathCase):
+    def test_files_from_a_failed_apply_stay_managed(self):
+        plan = self.desktop_plan()
+        with mock.patch("bootstrap.executor.run"), mock.patch("bootstrap.executor.apply_repository"), mock.patch(
+            "bootstrap.executor.action_satisfied", return_value=False
+        ), mock.patch("bootstrap.executor.reload_hyprland", side_effect=RuntimeError("configerrors")):
+            with self.assertRaises(RuntimeError):
+                apply_workflow_plan(
+                    ROOT, self.repository, plan, self.facts, system_changes=True, interactive=False, reviewed=True
+                )
+        managed = StateStore(self.home).read_managed(WorkflowId.DESKTOP)
+        self.assertIn(BINDINGS, managed)
+
+
 class UserUnitTests(AgentPathCase):
     def test_changed_unit_file_restarts_a_running_unit(self):
         plan = self.integrations_plan()
@@ -448,6 +462,11 @@ class CliJsonTests(AgentPathCase):
     def test_stale_and_unknown_plans(self):
         code, report = self.run_cli("desktop", "apply", "--plan", "a" * 64, "--json")
         self.assertEqual((code, report["status"]), (3, "STALE"))
+        # Saved too, so a handed-off terminal that fails early shows why.
+        self.assertEqual(StateStore(self.home).read_result(WorkflowId.DESKTOP)["status"], "STALE")
+        with mock.patch.object(cli.time, "sleep", side_effect=AssertionError("waited")):
+            _, other = self.run_cli("desktop", "status", "--plan", "b" * 64, "--wait", "900", "--json")
+        self.assertEqual(other["status"], "NO_RESULT")
         code, report = self.run_cli("desktop", "apply", "--json")
         self.assertEqual((code, report["status"]), (2, "FAIL"))
         with self.assertRaises(SystemExit):

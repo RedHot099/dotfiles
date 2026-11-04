@@ -31,14 +31,14 @@ Use this runbook when the user asks you to install, update, or check the configu
 1. Checkout: `git status --short` is empty and the branch is `main`; then `git pull --ff-only`. A dirty checkout or another branch is the user's to resolve: stop and report it, leaving stash, reset, and branch switches to them.
 2. For `packages`, then `desktop`, then `integrations` (the later two read what Packages installed):
    1. `./bootstrap <workflow> plan --json`. It uses the saved selection, or the catalog defaults on a new host. Change it with `--add ID` or `--remove ID` only on the user's word. `NEEDS_PACKAGES` gives the Packages plan to run first; `NEEDS_SESSION` means the user must log in to Hyprland; `NEEDS_SYSTEM_UPDATE` means the user runs `omarchy update` first.
-   2. Show the user the report before applying when it lists `selection.new_items`, `changes.files.local-edit` or `unmanaged`, `changes.new_ssh_keys`, or `changes.aur_builds`. Otherwise go on.
+   2. Show the user the report before applying when it lists `selection.new_items`, `changes.files.local-edit` or `unmanaged`, `changes.new_ssh_keys`, or `changes.aur_builds`. Otherwise go on. On a host whose files an older bootstrap installed, the first plan lists every file it would change as `unmanaged`; after one approved apply they are managed.
    3. `./bootstrap <workflow> apply --plan <digest> --json`. Naming the digest approves exactly that plan.
       - `READY`: done.
       - `NEEDS_TERMINAL`: nothing changed; the plan touches packages, system services, the firewall, or SSH keys. Run the `--in-terminal` command from `next_actions`, tell the user a terminal opened that asks for their sudo password (and pacman's confirmation), then run `./bootstrap <workflow> status --plan <digest> --wait 900 --json` until the status is neither `HANDED_OFF` nor `RUNNING`.
       - `CONFLICT`: files changed outside the bootstrap. Show the list; add `--discard-local` only when the user approves (each file is backed up).
       - `INCOMPLETE`: queued logins (`needs-login`, `waiting-for-login`) need the user in a terminal: offer the handoff command. `needs-session` waits for a Hyprland login.
       - `STALE`: plan again. `BLOCKED`: back to step 1. `FAIL`: report the message. `INTERRUPTED` (from `status`) or a failure fixed later: apply the same digest again; it resumes from its journal.
-3. Verify: `./bootstrap <workflow> audit --plan <digest> --json` reports `CLEAN`, and a fresh `plan --json` shows no created or updated files and empty `terminal_required`. For Desktop the `hyprland-reload` finding passes only with a running session and no `hyprctl configerrors`.
+3. Verify: `./bootstrap <workflow> audit --plan <digest> --json` reports `CLEAN`, and a fresh `plan --json` shows no created or updated files and empty `terminal_required`. For Desktop the `hyprland-reload` finding must be `PASS`: it fails on `hyprctl configerrors` and is only a `WARN` without a running session.
 4. Undo the file changes of one apply with `./bootstrap <workflow> restore --plan <digest> --json`. Packages stay installed.
 
 The sudo password belongs to the user's terminal alone: sudo reads it there. Keep it out of your commands, files, and logs; that rules out `sudo -S`, askpass helpers, piped answers, `--noconfirm`, and sudoers changes.
