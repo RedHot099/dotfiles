@@ -246,7 +246,7 @@ class RestoreTests(AgentPathCase):
         plan = self.desktop_plan()
         item = next(
             entry for entry in plan.actions
-            if entry.kind.value == "user-file" and entry.data["mode"] == 0o775 and entry.data.get("symlink") is None
+            if entry.kind.value == "user-file" and entry.data["mode"] & 0o111 and entry.data.get("symlink") is None
         )
         target = self.home / str(item.data["target"])
         source = next(
@@ -255,12 +255,14 @@ class RestoreTests(AgentPathCase):
         )
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes((ROOT / str(source.source)).read_bytes())
-        target.chmod(0o644)
+        # Planned modes follow the checkout's umask; drop only the execute bits.
+        before = int(item.data["mode"]) & ~0o111
+        target.chmod(before)
         self.apply(plan, reviewed=True)
-        self.assertEqual(target.stat().st_mode & 0o777, 0o775)
+        self.assertEqual(target.stat().st_mode & 0o777, item.data["mode"])
         result = restore_files(self.home, plan.actions, plan.digest, "desktop", discard_local=False)
         self.assertIn(str(item.data["target"]), result.restored)
-        self.assertEqual(target.stat().st_mode & 0o777, 0o644)
+        self.assertEqual(target.stat().st_mode & 0o777, before)
 
     def test_resumed_restore_settles_the_manifest(self):
         monitors = ".config/hypr/monitors.lua"
