@@ -7,7 +7,6 @@ import re
 import shutil
 import subprocess
 import sys
-import tomllib
 from pathlib import Path
 
 from .catalog import CatalogError, Workspace
@@ -41,6 +40,12 @@ EXIT_DECLINED = 1
 EXIT_INCOMPLETE = 3
 # INCOMPLETE means deferred logins or skipped AUR builds, not a failed change.
 SETUP_STATUSES = {EXIT_READY: "READY", EXIT_DECLINED: "SKIPPED", EXIT_INCOMPLETE: "INCOMPLETE"}
+# Skills and global agent instructions belong to fleet; dotfiles never runs it.
+FLEET_HINT = (
+    "Agent skills and instructions come from RedHot099/fleet: "
+    "gh repo clone RedHot099/fleet ~/projects/fleet, "
+    "then ~/projects/fleet/bin/fleet plan and ~/projects/fleet/bin/fleet apply."
+)
 WORKFLOW_ERRORS = (
     CatalogError,
     PlanHostMismatch,
@@ -136,6 +141,7 @@ def setup_command() -> int:
     print("\nSummary")
     for name, status in statuses:
         print(f"{name.title():14} {status}")
+    print(f"\n{FLEET_HINT}")
     return int(any(status in {"FAIL", "INCOMPLETE"} for _, status in statuses))
 
 
@@ -221,41 +227,12 @@ def interactive_workflow_plan(workflow, repository, facts) -> WorkflowPlan:
                 repository,
                 facts,
                 state,
-                IntegrationsRequest(
-                    selected - agents,
-                    agents,
-                    select_skills(previous),
-                    select_harnesses(previous),
-                ),
+                IntegrationsRequest(selected - agents, agents),
                 evidence,
                 github_keys=github_keys,
             )
-    saved = selected
-    if workflow is WorkflowId.INTEGRATIONS:
-        saved |= frozenset(f"skill:{item}" for item in plan.request.skills)
-        saved |= frozenset(f"harness:{item}" for item in plan.request.harnesses)
-    store.write_selection(SelectionRecord(workflow, saved, repository.source_digest))
+    store.write_selection(SelectionRecord(workflow, selected, repository.source_digest))
     return plan
-
-
-def select_skills(previous: SelectionRecord | None) -> frozenset[str]:
-    directory = ROOT / "integrations/common/skills/private"
-    saved = {item.removeprefix("skill:") for item in previous.selected if item.startswith("skill:")} if previous else set()
-    rows = tuple(
-        ChoiceRow(path.name, "Skills", path.name, path.name in saved if saved else True)
-        for path in sorted(directory.iterdir()) if path.is_dir()
-    )
-    return select("Select skills for every chosen harness", SelectorState(rows)).selected_ids()
-
-
-def select_harnesses(previous: SelectionRecord | None) -> frozenset[str]:
-    data = tomllib.loads((ROOT / "integrations/common/harnesses.toml").read_text())
-    saved = {item.removeprefix("harness:") for item in previous.selected if item.startswith("harness:")} if previous else set()
-    rows = tuple(
-        ChoiceRow(item["id"], "Harnesses", item["label"], item["id"] in saved if saved else bool(item.get("default", False)))
-        for item in data["harnesses"]
-    )
-    return select("Select agent harnesses", SelectorState(rows)).selected_ids()
 
 
 def reviewed_github_keys(workspace: Workspace, selected: frozenset[str]) -> dict[str, tuple[str, ...]]:

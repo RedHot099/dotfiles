@@ -16,7 +16,7 @@ Setup runs three independent workflows in order:
 
 1. Packages installs selected applications and exact runtime tools.
 2. Desktop configures the monitor, Hyprland, Omarchy Shell, workspaces, shortcuts, themes, startup, and Calendar.
-3. Integrations configures AI agents, skills, cloud mounts, Todoist, GitHub SSH access, Tailscale, and firewall rules, then runs the login queue.
+3. Integrations configures AI agents, cloud mounts, Todoist, GitHub SSH access, Tailscale, and firewall rules, then runs the login queue.
 
 Run a workflow separately when needed:
 
@@ -42,9 +42,9 @@ The bootstrap never runs `pacman -Sy`, changes repository configuration, deletes
 
 Desktop keeps the Google Calendar Snooze and Todoist widgets and does not install Waybar, Mako, or another idle or lock daemon. Desktop apply reloads an active Hyprland session and fails when `hyprctl configerrors` reports an error.
 
-## Agents, skills, and credentials
+## Agents and credentials
 
-The curated agents are Claude Code, Codex, OpenCode, and Cursor Agent. Omarchy installs their CLIs; the bootstrap only configures them and queues their logins. Skills are selected once and linked from one managed canonical tree into `.agents`, Claude, Codex, OpenCode, and Cursor harness roots. Codex `.system`, Cursor `skills-cursor`, and unrelated non-colliding skills remain untouched.
+The curated agents are Claude Code, Codex, OpenCode, and Cursor Agent. Omarchy installs their CLIs; the bootstrap only configures them and queues their logins. Agent skills, global agent instructions, and pstack model teams come from the separate `RedHot099/fleet` repository; `./bootstrap setup` ends by printing the fleet commands to run.
 
 The repository stores no tokens, sessions, browser profiles, rclone configuration, private SSH keys, host fingerprints, or `known_hosts` entries.
 
@@ -57,7 +57,7 @@ Selections, digest-addressed plans, journals, and the global apply lock live und
 ```text
 packages/{common,omarchy}/       Applications and package bindings
 desktop/{common,omarchy}/        Hyprland, shell, monitor, and Calendar
-integrations/{common,omarchy}/   Agents, skills, cloud, Todoist, and access
+integrations/{common,omarchy}/   Agents, cloud, Todoist, and access
 lib/bootstrap/                   Compiler, planners, TUI, executor, and audit
 scripts/                         Maintenance and verification tools
 tests/                           Unit and isolated integration checks

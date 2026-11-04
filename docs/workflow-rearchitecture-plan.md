@@ -10,7 +10,7 @@ The current repository builds one platform-wide catalog and one global plan. Bro
 
 1. `packages` installs applications, command-line tools, runtimes, and technical dependencies.
 2. `desktop` configures the monitor, Hyprland, the Omarchy Shell bar, workspaces, bindings, themes, Calendar, and selected application startup.
-3. `integrations` configures agents, skills, MCP servers, plugins, cloud services, Todoist, SSH access, Tailscale, and Bitbucket instructions.
+3. `integrations` configures agents, MCP servers, plugins, cloud services, Todoist, SSH access, Tailscale, and Bitbucket instructions.
 
 `setup` runs the same workflows in that order. A skipped workflow does not stop later workflows.
 
@@ -41,7 +41,6 @@ Welcome and host check
 → monitor preview
 → desktop apply and Hyprland reload
 → integrations selection
-→ skill and harness selection
 → authentication queue
 → final status
 ```
@@ -138,10 +137,6 @@ integrations/
     implementations/<id>.toml
     payload/<integration>/...
     agents/...
-    skills/private/<skill>/...
-    skills/sources.toml
-    skills/groups.toml
-    harnesses.toml
   omarchy/
     implementations/<id>.toml
     payload/<integration>/...
@@ -211,8 +206,6 @@ class DesktopRequest:
 class IntegrationsRequest:
     integrations: frozenset[IntegrationId]
     agents: frozenset[AgentId]
-    skills: frozenset[SkillId]
-    harnesses: frozenset[HarnessId]
 
 @dataclass(frozen=True)
 class PackagesEvidence:
@@ -356,31 +349,7 @@ The authentication queue lists every selected login. An `order` value in the cat
 
 ## Skill supply chain
 
-Private skills live under `integrations/common/skills/private/`. They may include instructions and supporting files but no credentials, sessions, histories, tokens, or private keys.
-
-Each public skill has one explicit HTTPS Git URL and safe subdirectory in `sources.toml`. During Integrations planning, the resolver:
-
-1. fetches the latest remote commit into isolated staging;
-2. rejects submodules, Git LFS pointers, path escape, unsafe symlinks, missing `SKILL.md`, secret-like files, and duplicate IDs;
-3. enforces per-source limits before rendering a diff;
-4. records every file hash and executable bit;
-5. shows the URL, old and new commits, changed files, executable files, and expandable diff;
-6. aborts the complete skill operation if any selected source fails;
-7. writes the accepted revisions only to the machine-local lock after successful installation.
-
-Initial limits are 2,000 files, 50 MiB of materialized content, and 2 MiB of rendered diff per source. A limit failure asks the user to narrow or split the source. These values remain named constants with boundary tests.
-
-Apply fetches the exact reviewed commit and verifies every byte. "Latest" applies at plan time, never after review.
-
-The user selects one grouped skill set for all selected harnesses:
-
-- `~/.agents/skills`;
-- `~/.claude/skills`;
-- `~/.codex/skills`;
-- `~/.config/opencode/skills`;
-- `~/.cursor/skills`.
-
-Canonical immutable content lives under bootstrap-managed state. Harness entries are relative links to the canonical content. Before replacement, the review lists every colliding path. Apply deletes same-name collisions without backup, as explicitly chosen. It removes stale links previously managed by this repository. It preserves unknown noncolliding skills, Codex `.system`, Cursor `skills-cursor`, and packaged namespaces.
+Superseded: agent skills, global agent instructions, and pstack model teams moved to the separate `RedHot099/fleet` repository. Integrations no longer plans, installs, or removes anything under the harness skill roots, `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, or `~/.config/pstack/model-teams.yaml`.
 
 ## Migration sequence
 

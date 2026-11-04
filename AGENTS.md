@@ -9,7 +9,7 @@ The public interface is `./bootstrap setup` and `./bootstrap <packages|desktop|i
 - Treat `/usr/share/omarchy`, `/etc/skel`, package configuration, mirrors, and keyrings as read-only.
 - Keep package intent and bindings under `packages/{common,omarchy}`.
 - Keep Hyprland, shell, monitor, and Calendar under `desktop/{common,omarchy}`.
-- Keep agents, skills, cloud, Todoist, and access under `integrations/{common,omarchy}`.
+- Keep agents, cloud, Todoist, and access under `integrations/{common,omarchy}`.
 - Do not add profiles, Gum, schema-2 CLI adapters, or a distribution update command.
 
 Read `docs/workflow-rearchitecture-plan.md` before changing workflow boundaries, the executor, or package policy.
@@ -36,11 +36,7 @@ Planning writes only private selection and digest-addressed plan state. Audit is
 
 ## Agents and skills
 
-Run `scripts/capture-user-skills.py` to refresh `integrations/common/skills/private`. It reads direct real directories under `~/.agents/skills` and `~/.codex/skills`, rejecting packaged/system skills, conflicting IDs, and secret-like files.
-
-Run `scripts/update-external-skills.py` (`--check` to preview) to refresh public skills vendored from `integrations/common/skills/sources.toml`. It pins each source's commit and changes only that source's skills. Never edit vendored skills; put overrides in the payload's global agent instructions.
-
-Protect Codex `.system`, Cursor `skills-cursor`, and unrelated non-colliding user skills. Never copy complete agent configuration directories.
+Agent skills, global agent instructions (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`) and pstack model teams come from the separate `RedHot099/fleet` repository. dotfiles does not install, change, or remove them, and never runs fleet's code.
 
 ## Verification
 

@@ -60,8 +60,6 @@ class DesktopRequest:
 class IntegrationsRequest:
     integrations: frozenset[str]
     agents: frozenset[str]
-    skills: frozenset[str]
-    harnesses: frozenset[str]
 
 
 @dataclass(frozen=True)
