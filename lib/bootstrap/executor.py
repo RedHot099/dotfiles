@@ -10,6 +10,7 @@ import re
 import secrets
 import shutil
 import subprocess
+import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -339,9 +340,10 @@ def _apply_locked(
         if options.workflow:
             try:
                 record_managed_files(home, options.workflow, plan.actions, skipped)
-            except (OSError, ValueError):
+            except (OSError, ValueError) as error:
                 if not failed:
                     raise
+                print(f"could not record managed files after the failure: {error}", file=sys.stderr)
     return ApplyResult(changed, unchanged, simulated, tuple(sorted(skipped)), tuple(deferred))
 
 

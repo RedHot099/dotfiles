@@ -528,6 +528,20 @@ class SessionTests(unittest.TestCase):
         self.assertNotIn("UNRELATED_VARIABLE", session)
 
 
+class EmitTests(unittest.TestCase):
+    def test_a_partial_write_is_completed(self):
+        written = []
+
+        def short_write(_descriptor, data):
+            chunk = bytes(data[:7])
+            written.append(chunk)
+            return len(chunk)
+
+        with mock.patch("bootstrap.agent.os.write", side_effect=short_write):
+            agent.emit(1, {"status": "READY", "files": ["x" * 50]})
+        self.assertEqual(json.loads(b"".join(written)), {"status": "READY", "files": ["x" * 50]})
+
+
 class JsonStdoutTests(unittest.TestCase):
     def test_child_output_goes_to_stderr(self):
         with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:

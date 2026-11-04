@@ -58,7 +58,10 @@ def json_stdout() -> Iterator[int]:
 
 
 def emit(descriptor: int, report: dict[str, object]) -> None:
-    os.write(descriptor, (json.dumps(report, indent=2, sort_keys=True) + "\n").encode())
+    # A pipe can take a large report in parts; write until all of it is out.
+    view = memoryview((json.dumps(report, indent=2, sort_keys=True) + "\n").encode())
+    while view:
+        view = view[os.write(descriptor, view):]
 
 
 def now() -> str:

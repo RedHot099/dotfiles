@@ -396,8 +396,16 @@ def detect_monitor_content(environment: dict[str, str] | None = None) -> str | N
     return "\n".join(lines) + "\n"
 
 
+STATE_PLANS = ".local/state/arch-hypr-bootstrap/plans"
+
+
+def plan_target(workflow: WorkflowId, digest: str) -> str:
+    """Home-relative path of a saved plan."""
+    return f"{STATE_PLANS}/{workflow.value}/{digest}.json"
+
+
 def save_workflow_plan(plan: WorkflowPlan) -> Path:
-    target = f".local/state/arch-hypr-bootstrap/plans/{plan.header.workflow.value}/{plan.digest}.json"
+    target = plan_target(plan.header.workflow, plan.digest)
     path = Path(plan.header.target_home) / target
     content = json.dumps(plan.to_dict(), indent=2, sort_keys=True) + "\n"
     with HomeFiles(Path(plan.header.target_home)) as home:
@@ -405,13 +413,13 @@ def save_workflow_plan(plan: WorkflowPlan) -> Path:
         if existing is not None and existing != content:
             raise PlanSchemaError("digest-addressed plan content differs from existing plan")
         if existing is None:
-            home.ensure_directory(f".local/state/arch-hypr-bootstrap/plans/{plan.header.workflow.value}", 0o700)
+            home.ensure_directory(f"{STATE_PLANS}/{plan.header.workflow.value}", 0o700)
             home.write_private_atomic(target, content.encode())
     return path
 
 
 def load_latest_workflow_plan(workflow: WorkflowId) -> WorkflowPlan:
-    directory = Path.home() / ".local/state/arch-hypr-bootstrap/plans" / workflow.value
+    directory = Path.home() / STATE_PLANS / workflow.value
     paths = sorted(directory.glob("*.json"), key=lambda item: item.stat().st_mtime_ns, reverse=True)
     if not paths:
         raise CatalogError(f"no reviewed {workflow.value} plan; run './bootstrap {workflow.value} plan'")
@@ -482,7 +490,6 @@ class StalePlan(CatalogError):
 
 
 DIGEST_RE = re.compile(r"[0-9a-f]{64}")
-STATE_PLANS = ".local/state/arch-hypr-bootstrap/plans"
 ACTIVE_STATUSES = {"RUNNING", "HANDED_OFF"}
 
 
@@ -623,7 +630,7 @@ def agent_plan(
 def load_workflow_plan(workflow: WorkflowId, digest: str) -> WorkflowPlan:
     if not DIGEST_RE.fullmatch(digest):
         raise CatalogError("--plan needs the full 64-character plan digest")
-    path = Path.home() / STATE_PLANS / workflow.value / f"{digest}.json"
+    path = Path.home() / plan_target(workflow, digest)
     if not path.is_file():
         raise StalePlan(f"no saved {workflow.value} plan {digest[:12]}; plan again")
     plan = plan_from_dict(json.loads(path.read_text()))
@@ -642,7 +649,7 @@ def approved_apply(
         # handed-off terminal reports its real cause instead of HANDOFF_LOST.
         status, code, next_actions = classify_error(error)
         # Only for a saved plan: a mistyped digest keeps the last real outcome.
-        if DIGEST_RE.fullmatch(digest) and (Path.home() / STATE_PLANS / workflow.value / f"{digest}.json").is_file():
+        if DIGEST_RE.fullmatch(digest) and (Path.home() / plan_target(workflow, digest)).is_file():
             StateStore(Path.home()).write_result_locked(
                 workflow,
                 agent.result_record(workflow.value, digest, status, code, message=str(error), next_actions=next_actions),
@@ -791,16 +798,20 @@ def _approved_apply(
 
 
 
-def busy(workflow: WorkflowId, digest: str) -> tuple[dict[str, object], int]:
+def busy(workflow: WorkflowId, digest: str, command: str = "apply") -> tuple[dict[str, object], int]:
     """Another apply holds the lock; its saved status stays untouched."""
+    retry = bootstrap_command(workflow.value, command, "--plan", digest, "--json")
     return {
         "schema": agent.REPORT_SCHEMA,
-        "command": "apply",
+        "command": command,
         "workflow": workflow.value,
         "plan_digest": digest,
         "status": "BUSY",
         "message": "another bootstrap apply is running; nothing changed",
-        "next_actions": [{"who": "agent", "why": "wait for it, then plan again", "command": bootstrap_command(workflow.value, "status", "--wait", "900", "--json")}],
+        "next_actions": [
+            {"who": "agent", "why": "wait for the running apply", "command": bootstrap_command(workflow.value, "status", "--wait", "900", "--json")},
+            {"who": "agent", "why": f"then {command} again (plan again first if the repository changed)", "command": retry},
+        ],
     }, agent.EXIT_ACTION_NEEDED
 
 
@@ -860,7 +871,7 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
     try:
         result = restore_files(Path(facts.target_home), plan.actions, digest, workflow.value, discard_local=discard_local)
     except ApplyLocked:
-        return {**busy(workflow, digest)[0], "command": "restore"}, agent.EXIT_ACTION_NEEDED
+        return busy(workflow, digest, "restore")
     except LocalEditConflict as error:
         report = agent.result_record(workflow.value, digest, "CONFLICT", agent.EXIT_ACTION_NEEDED, message=str(error), operation="restore", conflicts=list(error.targets))
         return {**report, "command": "restore"}, agent.EXIT_ACTION_NEEDED

@@ -39,7 +39,7 @@ Use this runbook when the user asks you to install, update, or check the configu
       - `INCOMPLETE`: queued logins (`needs-login`, `waiting-for-login`) need the user in a terminal: offer the handoff command. `needs-session` waits for a Hyprland login.
       - `STALE`: plan again. `BLOCKED`: back to step 1. `FAIL`: report the message. `INTERRUPTED` (from `status`) or a failure fixed later: apply the same digest again; it resumes from its journal.
 3. Verify: `./bootstrap <workflow> audit --plan <digest> --json` reports `CLEAN`, and a fresh `plan --json` shows no created or updated files and empty `terminal_required`. For Desktop the `hyprland-reload` finding must be `PASS`: it fails on `hyprctl configerrors` and is only a `WARN` without a running session.
-4. Undo the file changes of one apply with `./bootstrap <workflow> restore --plan <digest> --json`. Packages stay installed.
+4. Undo the file changes of one apply with `./bootstrap <workflow> restore --plan <digest> --json`. Packages and pinned git checkouts stay as they are.
 
 The sudo password belongs to the user's terminal alone: sudo reads it there. Keep it out of your commands, files, and logs; that rules out `sudo -S`, askpass helpers, piped answers, `--noconfirm`, and sudoers changes.
 
