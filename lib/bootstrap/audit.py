@@ -104,7 +104,7 @@ def audit_action(item: PlannedAction, home: HomeFiles, isolated: bool) -> AuditF
         # rule once, which is not a live check.
         verified = home.read_text(FIREWALL_MARKER) is not None
         return AuditFinding(
-            "WARN",
+            "WARN" if verified or isolated else "FAIL",
             kind,
             item.feature,
             "UFW rule files are unreadable; " + ("verified by the last terminal apply" if verified else "never verified"),

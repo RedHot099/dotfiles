@@ -861,7 +861,10 @@ def action_satisfied(
         current = set((home.read_text(".ssh/authorized_keys") or "").splitlines())
         return set(strings(item.data["keys"])).issubset(current) and service_active("sshd.service")
     if item.kind is ActionKind.FIREWALL_RULE:
-        return firewall_rule_satisfied(home)
+        # Live state only. The verified marker spares an update the terminal
+        # (terminal_action_satisfied); a terminal apply re-adds and re-checks
+        # the rule whenever the rule files cannot show it.
+        return ufw_rule_present() is True
     return False
 
 

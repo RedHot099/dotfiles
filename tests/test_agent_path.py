@@ -729,6 +729,24 @@ class FirewallTests(unittest.TestCase):
         self.assertEqual(finding.status, "WARN")
         self.assertIn("verified by the last terminal apply", finding.message)
 
+    def test_a_terminal_apply_rechecks_the_rule_despite_the_marker(self):
+        from bootstrap import executor
+        from bootstrap.domain import ActionKind
+        from bootstrap.planner import action
+
+        item = action(ActionKind.FIREWALL_RULE, "ssh-firewall", {"backend": "ufw", "rule": "limit", "port": 22, "protocol": "tcp"})
+        with tempfile.TemporaryDirectory() as directory, cli.HomeFiles(Path(directory)) as home, mock.patch.object(
+            executor, "ufw_rule_present", return_value=None
+        ):
+            home.ensure_directory(".local/state/arch-hypr-bootstrap", 0o700)
+            home.write_private_atomic(executor.FIREWALL_MARKER, b"limit 22/tcp\n")
+            # The marker spares an update the terminal ...
+            self.assertTrue(executor.terminal_action_satisfied(item, home))
+            # ... but a terminal apply does not skip the rule on it.
+            self.assertFalse(executor.action_satisfied(item, home))
+            missing = audit_finding_without_marker(item)
+        self.assertEqual(missing.status, "FAIL")
+
     def test_readable_rules_decide(self):
         from bootstrap import executor
 
@@ -738,6 +756,15 @@ class FirewallTests(unittest.TestCase):
             with mock.patch.object(executor.Path, "read_text", return_value="### tuple ### allow tcp 80\n"):
                 self.assertIs(executor.ufw_rule_present(), False)
                 self.assertFalse(executor.firewall_rule_satisfied(home))
+
+
+def audit_finding_without_marker(item):
+    from bootstrap import audit
+
+    with tempfile.TemporaryDirectory() as directory, cli.HomeFiles(Path(directory)) as home, mock.patch.object(
+        audit, "ufw_rule_present", return_value=None
+    ):
+        return audit.audit_action(item, home, False)
 
 
 class SelectionStateTests(unittest.TestCase):
