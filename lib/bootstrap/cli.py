@@ -25,6 +25,8 @@ from .domain import (
 )
 from .execution import apply_workflow_plan, execution_plan, execution_workspace
 from .executor import (
+    ApplyLocked,
+    Declined,
     LocalEditConflict,
     NeedsTerminal,
     local_conflicts,
@@ -653,6 +655,9 @@ def approved_apply(
 
     if plan.header.repository_digest != repository.source_digest:
         raise StalePlan("the repository changed after planning; plan again")
+    current = store.read_result(workflow)
+    if current is not None and current.get("status") == "RUNNING" and _process_alive(current.get("pid")):
+        return busy(workflow, digest)
     problem = agent.checkout_problem(checkout)
     if problem:
         return finish("BLOCKED", agent.EXIT_ACTION_NEEDED, f"{problem}; ask the user", next_actions=[{"who": "user", "why": problem, "command": ""}])
@@ -701,10 +706,13 @@ def approved_apply(
                     next_actions=[{"who": "user", "why": "run this in a terminal", "command": shlex.join(terminal)}],
                 )
             return handed_off
-        # Saved before any prompt, so a terminal closed at the password prompt
-        # reads as INTERRUPTED instead of a handoff that never ends.
-        store.write_result(workflow, agent.result_record(workflow.value, digest, "RUNNING", agent.EXIT_ACTION_NEEDED, checkout=checkout, pid=os.getpid()))
-        if prompts and pending:
+        def locked() -> None:
+            # Saved once the lock is held and before any prompt: a terminal
+            # closed at the password prompt reads as INTERRUPTED, and a second
+            # apply that loses the lock never overwrites this record.
+            store.write_result(workflow, agent.result_record(workflow.value, digest, "RUNNING", agent.EXIT_ACTION_NEEDED, checkout=checkout, pid=os.getpid()))
+            if not (prompts and pending):
+                return
             print(f"\n{workflow.value.title()} plan {digest[:12]} needs your authority for:")
             for item in pending:
                 print(f"  {item}")
@@ -715,7 +723,8 @@ def approved_apply(
                 print("sudo asks for your password now; pacman may ask before its transaction.")
                 subprocess.run(("/usr/bin/sudo", "-v"), check=True)
             elif not confirm("Trust these SSH keys for incoming access?"):
-                return finish("DECLINED", agent.EXIT_DRIFT, "SSH key trust was declined")
+                raise Declined("SSH key trust was declined")
+
         result = apply_workflow_plan(
             ROOT,
             repository,
@@ -725,7 +734,12 @@ def approved_apply(
             interactive=prompts,
             reviewed=True,
             discard_local=discard_local,
+            on_locked=locked,
         )
+    except ApplyLocked:
+        return busy(workflow, digest)
+    except Declined as error:
+        return finish("DECLINED", agent.EXIT_DRIFT, str(error))
     except NeedsTerminal as error:
         return finish(
             "NEEDS_TERMINAL",
@@ -756,6 +770,19 @@ def approved_apply(
         next_actions=next_actions,
     )
 
+
+
+def busy(workflow: WorkflowId, digest: str) -> tuple[dict[str, object], int]:
+    """Another apply holds the lock; its saved status stays untouched."""
+    return {
+        "schema": agent.REPORT_SCHEMA,
+        "command": "apply",
+        "workflow": workflow.value,
+        "plan_digest": digest,
+        "status": "BUSY",
+        "message": "another bootstrap apply is running; nothing changed",
+        "next_actions": [{"who": "agent", "why": "wait for it, then plan again", "command": bootstrap_command(workflow.value, "status", "--wait", "900", "--json")}],
+    }, agent.EXIT_ACTION_NEEDED
 
 
 def status_command(workflow: WorkflowId, digest: str | None, wait: int) -> tuple[dict[str, object], int]:

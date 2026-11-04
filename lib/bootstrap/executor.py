@@ -13,7 +13,7 @@ import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable
 
 from .catalog import CatalogError, SYSTEM_UNIT_ALLOWLIST, Workspace
 from .domain import ActionKind, ExecutionPlan, PlannedAction, assert_plan_matches_host
@@ -56,6 +56,14 @@ TERMINAL_ACTIONS = frozenset(
 )
 
 
+class ApplyLocked(CatalogError):
+    pass
+
+
+class Declined(CatalogError):
+    pass
+
+
 class NeedsTerminal(CatalogError):
     def __init__(self, pending: tuple[str, ...]) -> None:
         self.pending = pending
@@ -80,6 +88,9 @@ class ApplyOptions:
     # Refuse to replace files edited since the last apply, or never managed.
     guard_local_edits: bool = False
     discard_local: bool = False
+    # Runs once the apply lock is held, before any check or change: the CLI
+    # saves RUNNING there and asks for sudo. Raising Declined stops the apply.
+    on_locked: Callable[[], None] | None = None
 
 
 @dataclass(frozen=True)
@@ -125,7 +136,7 @@ def apply_install(
             try:
                 fcntl.flock(lock_descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError as error:
-                raise CatalogError("another bootstrap apply is running") from error
+                raise ApplyLocked("another bootstrap apply is running") from error
             skipped = initialize_skipped_features(home)
             return _apply_locked(
                 root,
@@ -165,6 +176,8 @@ def _apply_locked(
     if not isinstance(managed_before, dict):
         managed_before = read_managed(home, options.workflow) if options.workflow else {}
     skipped.update(strings(journal.get("skipped_features")))
+    if options.on_locked is not None:
+        options.on_locked()
     # Both checks run under the apply lock and before the first change.
     if system_changes and not interactive:
         pending = terminal_pending(plan, home, skipped)
@@ -437,7 +450,7 @@ def restore_files(
             try:
                 fcntl.flock(lock_descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError as error:
-                raise CatalogError("another bootstrap apply is running") from error
+                raise ApplyLocked("another bootstrap apply is running") from error
             journal = home.read_text(f"{STATE_ROOT}/journals/{state_digest}.json")
             if journal is None:
                 raise CatalogError(f"plan {state_digest[:12]} was never applied here; nothing to restore")
@@ -456,11 +469,12 @@ def restore_files(
                 backup = home.entry(f"{backups}/{target}")
                 if backup is None and target not in created:
                     continue
-                current = home.hash(target)
-                previous = None if backup is None else _entry_digest(backup)
-                if current == previous:
+                # Content, link and mode all count: a chmod is a change too.
+                if home.entry(target) == backup:
                     continue
-                if current != item.data["sha256"]:
+                if not home.matches(
+                    target, str(item.data["sha256"]), int(item.data["mode"]), optional_string(item.data.get("symlink"))
+                ):
                     conflicts.append(target)
                     if not discard_local:
                         continue

@@ -227,6 +227,26 @@ class RestoreTests(AgentPathCase):
         self.apply(plan_with("-- third\n"), reviewed=True)
         self.assertEqual((self.home / monitors).read_text(), "-- third\n")
 
+    def test_restore_puts_back_the_mode_too(self):
+        plan = self.desktop_plan()
+        item = next(
+            entry for entry in plan.actions
+            if entry.kind.value == "user-file" and entry.data["mode"] == 0o775 and entry.data.get("symlink") is None
+        )
+        target = self.home / str(item.data["target"])
+        source = next(
+            entry for entry in self.repository.workflow(WorkflowId.DESKTOP).workspace.payload[item.feature]
+            if entry.target == item.data["target"]
+        )
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((ROOT / str(source.source)).read_bytes())
+        target.chmod(0o644)
+        self.apply(plan, reviewed=True)
+        self.assertEqual(target.stat().st_mode & 0o777, 0o775)
+        result = restore_files(self.home, plan.actions, plan.digest, "desktop", discard_local=False)
+        self.assertIn(str(item.data["target"]), result.restored)
+        self.assertEqual(target.stat().st_mode & 0o777, 0o644)
+
     def test_restore_refuses_files_edited_after_the_apply(self):
         plan = self.desktop_plan()
         self.apply(plan, reviewed=True)
@@ -354,6 +374,28 @@ class CliJsonTests(AgentPathCase):
             _, report = self.run_cli("integrations", "apply", "--plan", digest, "--json", "--in-terminal")
         self.assertEqual(report["status"], "NEEDS_TERMINAL")
         self.assertIn("no terminal", report["message"])
+
+    def test_a_second_apply_leaves_the_running_status_alone(self):
+        with mock.patch.object(cli, "session_environment", return_value={}):
+            _, plan = self.run_cli("desktop", "plan", "--json")
+        digest = plan["plan_digest"]
+        store = StateStore(self.home)
+        running = agent.result_record("desktop", digest, "RUNNING", 3, pid=os.getpid())
+        store.write_result(WorkflowId.DESKTOP, running)
+        code, report = self.run_cli("desktop", "apply", "--plan", digest, "--json")
+        self.assertEqual((code, report["status"]), (3, "BUSY"))
+        self.assertEqual(store.read_result(WorkflowId.DESKTOP), running)
+
+        store.write_result(WorkflowId.DESKTOP, {**running, "status": "READY", "pid": None})
+        state = self.home / ".local/state/arch-hypr-bootstrap"
+        import fcntl
+
+        with open(state / "apply.lock", "a+") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            code, report = self.run_cli("desktop", "apply", "--plan", digest, "--json")
+        self.assertEqual(report["status"], "BUSY")
+        self.assertEqual(store.read_result(WorkflowId.DESKTOP)["status"], "READY")
+        self.assertFalse((self.home / BINDINGS).exists())
 
     def test_stale_and_unknown_plans(self):
         code, report = self.run_cli("desktop", "apply", "--plan", "a" * 64, "--json")
