@@ -313,6 +313,9 @@ class CliJsonTests(AgentPathCase):
             mock.patch.object(cli.agent, "emit", side_effect=lambda _fd, report: self.reports.append(report)),
             mock.patch.object(cli.agent, "checkout_state", return_value=CLEAN_MAIN),
             mock.patch("bootstrap.agent.run_probe", return_value=False),
+            # Never reach the real user manager or Hyprland session.
+            mock.patch.object(cli, "run"),
+            mock.patch("bootstrap.executor.session_environment", return_value=None),
         ]
         for patch in patches:
             patch.start()
@@ -360,9 +363,16 @@ class CliJsonTests(AgentPathCase):
         code, other = self.run_cli("desktop", "status", "--plan", "f" * 64, "--json")
         self.assertEqual(other["status"], "NO_RESULT")
 
-        code, restored = self.run_cli("desktop", "restore", "--plan", digest, "--json")
-        self.assertEqual(restored["operation"], "restore")
-        self.assertFalse((self.home / BINDINGS).exists())
+        with mock.patch.object(cli, "reload_hyprland", return_value=True) as reload:
+            code, restored = self.run_cli("desktop", "restore", "--plan", digest, "--json")
+            self.assertEqual((code, restored["status"]), (0, "RESTORED"))
+            self.assertFalse((self.home / BINDINGS).exists())
+            # A repeated restore changes nothing but still reloads and checks.
+            code, again = self.run_cli("desktop", "restore", "--plan", digest, "--json")
+            self.assertEqual((code, again["removed"]), (0, []))
+            self.assertEqual(reload.call_count, 2)
+        _, pending = self.run_cli("desktop", "restore", "--plan", digest, "--json")
+        self.assertEqual(pending["status"], "INCOMPLETE")
 
     def test_new_catalog_items_are_reported_not_selected(self):
         visible = cli.visible_catalog(self.repository, WorkflowId.DESKTOP)

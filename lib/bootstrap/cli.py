@@ -841,11 +841,13 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
     except LocalEditConflict as error:
         report = agent.result_record(workflow.value, digest, "CONFLICT", agent.EXIT_ACTION_NEEDED, message=str(error), operation="restore", conflicts=list(error.targets))
         return {**report, "command": "restore"}, agent.EXIT_ACTION_NEEDED
-    changed = (*result.restored, *result.removed)
     deferred: list[dict[str, str]] = []
-    if any(target.startswith(".config/systemd/user/") for target in changed):
+    # Reload on every run, not only when files changed now: a restore resumed
+    # after an interruption or a failed reload must still finish both.
+    targets = [str(item.data.get("target", "")) for item in plan.actions]
+    if any(target.startswith(".config/systemd/user/") for target in targets):
         run(("/usr/bin/systemctl", "--user", "daemon-reload"))
-    if workflow is WorkflowId.DESKTOP and changed and not reload_hyprland():
+    if workflow is WorkflowId.DESKTOP and not reload_hyprland():
         deferred.append({"kind": "hyprland-reload", "feature": "core-desktop", "reason": "needs-session", "detail": ""})
     status, code = ("INCOMPLETE", agent.EXIT_ACTION_NEEDED) if deferred else ("RESTORED", agent.EXIT_READY)
     record = agent.result_record(
