@@ -28,7 +28,6 @@ from .executor import (
 )
 from .files import HomeFiles
 from .planning.model import WorkflowPlan
-from .ssh import ssh_fingerprint
 
 
 REPORT_SCHEMA = 1
@@ -78,10 +77,7 @@ def checkout_state(root: Path) -> dict[str, object]:
             stderr=subprocess.DEVNULL,
         )
 
-    try:
-        commit = git("rev-parse", "HEAD")
-    except OSError:
-        return {"git": False}
+    commit = git("rev-parse", "HEAD")
     if commit.returncode:
         return {"git": False}
     return {
@@ -123,7 +119,7 @@ def describe_changes(plan: WorkflowPlan, home: HomeFiles, managed: dict[str, str
         if item.kind in TERMINAL_ACTIONS and not terminal_action_satisfied(item, home):
             terminal.append(f"{item.kind.value}: {item.feature}")
             if item.kind is ActionKind.AUTHORIZED_SSH_KEYS:
-                keys[item.feature] = [ssh_fingerprint(key) for key in strings(item.data["keys"])]
+                keys[item.feature] = list(strings(item.data["fingerprints"]))
             if item.kind is ActionKind.AUR_BUILD:
                 aur.append(
                     {

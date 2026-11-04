@@ -469,8 +469,10 @@ class CliJsonTests(CliCase):
         with mock.patch.object(cli, "session_environment", return_value={}):
             _, again = self.run_cli("desktop", "plan", "--json")
             self.assertEqual([item["id"] for item in again["selection"]["new_items"]], ["vscode"])
-            self.run_cli("desktop", "plan", "--json", "--remove", "vscode")
+            # Declining it: --remove of an unselected item only clears the report.
+            _, declined = self.run_cli("desktop", "plan", "--json", "--remove", "vscode")
             _, seen = self.run_cli("desktop", "plan", "--json")
+        self.assertEqual(declined["plan_digest"], again["plan_digest"])
         self.assertEqual(seen["selection"]["new_items"], [])
 
     def test_restore_restarts_only_units_it_put_back(self):
