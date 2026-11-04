@@ -428,6 +428,11 @@ def local_conflicts(
 
 def record_managed_files(home: HomeFiles, workflow: str, actions: Iterable[PlannedAction], skipped: set[str]) -> None:
     managed = read_managed(home, workflow)
+    actions = tuple(actions)
+    planned = {str(item.data["target"]) for item in actions if item.kind in FILE_ACTIONS}
+    # A file that left the configuration stays listed until the user deletes it.
+    for target in [target for target in managed if target not in planned and home.hash(target) is None]:
+        del managed[target]
     for item in actions:
         if item.kind not in FILE_ACTIONS or item.feature in skipped or item.data.get("seed") is True:
             continue
@@ -450,6 +455,7 @@ def restore_files(
     workflow: str,
     *,
     discard_local: bool,
+    dry_run: bool = False,
 ) -> RestoreResult:
     """Undo the file changes one applied plan made; packages stay as they are.
 
@@ -498,6 +504,11 @@ def restore_files(
                 operations.append((target, backup))
             if conflicts and not discard_local:
                 raise LocalEditConflict(tuple(conflicts))
+            if dry_run:
+                return RestoreResult(
+                    tuple(target for target, backup in operations if backup is not None),
+                    tuple(target for target, backup in operations if backup is None),
+                )
             undo = f"{STATE_ROOT}/backups/restore-{state_digest}"
             restored: list[str] = []
             removed: list[str] = []

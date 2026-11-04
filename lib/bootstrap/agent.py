@@ -137,8 +137,11 @@ def describe_changes(plan: WorkflowPlan, home: HomeFiles, managed: dict[str, str
             tuple(strings(item.data["probe"])), optional_string(item.data.get("probe_contains")), environment
         ):
             logins.append(str(item.data["label"]))
+    planned = {str(item.data["target"]) for item in plan.actions if item.kind in FILE_ACTIONS}
+    # Installed by an earlier apply, gone from the configuration since.
+    orphaned = sorted(target for target in managed if target not in planned and home.hash(target) is not None)
     return {
-        "files": {**files, "unchanged": unchanged},
+        "files": {**files, "unchanged": unchanged, "orphaned": orphaned},
         "terminal_required": terminal,
         "logins_pending": logins,
         "new_ssh_keys": keys,

@@ -26,12 +26,12 @@ Planning writes only private selection and digest-addressed plan state. Audit is
 
 ## Install or update a host
 
-Use this runbook when the user asks you to install, update, or check the configuration on a host. Run it on that host, from its checkout. Every command takes `--json` and prints one report on stdout; branch on its `status` and follow its `next_actions`. Exit codes: 0 done, 1 drift or declined, 2 failure, 3 action needed.
+Use this runbook when the user asks you to install, update, or check the configuration on a host. Run it on that host, from its checkout. Every command takes `--json` and prints one report on stdout; branch on its `status` and follow its `next_actions`. Exit codes: 0 done, 1 drift or declined, 2 failure, 3 action needed, 130 cancelled (`CANCELLED`).
 
 1. Checkout: `git status --short` is empty and the branch is `main`; then `git pull --ff-only`. A dirty checkout or another branch is the user's to resolve: stop and report it, leaving stash, reset, and branch switches to them.
 2. For `packages`, then `desktop`, then `integrations` (the later two read what Packages installed):
    1. `./bootstrap <workflow> plan --json`. It uses the saved selection, or the catalog defaults on a new host. Change it with `--add ID` or `--remove ID` only on the user's word. `NEEDS_PACKAGES` gives the Packages plan to run first; `NEEDS_SESSION` means the user must log in to Hyprland; `NEEDS_SYSTEM_UPDATE` means the user runs `omarchy update` first.
-   2. Show the user the report before applying when it lists `selection.new_items`, `changes.files.local-edit` or `unmanaged`, `changes.new_ssh_keys`, or `changes.aur_builds`. Otherwise go on. On a host whose files an older bootstrap installed, the first plan lists every file it would change as `unmanaged`; after one approved apply they are managed.
+   2. Show the user the report before applying when it lists `selection.new_items`, `changes.files.local-edit` or `unmanaged`, `changes.new_ssh_keys`, `changes.aur_builds`, or `changes.files.orphaned` (files an earlier apply installed that left the configuration; deleting them is the user's call). Otherwise go on. On a host whose files an older bootstrap installed, the first plan lists every file it would change as `unmanaged`; after one approved apply they are managed.
    3. `./bootstrap <workflow> apply --plan <digest> --json`. Naming the digest approves exactly that plan.
       - `READY`: done.
       - `NEEDS_TERMINAL`: nothing changed; the plan touches packages, system services, the firewall, or SSH keys. Run the `--in-terminal` command from `next_actions`, tell the user a terminal opened that asks for their sudo password (and pacman's confirmation), then run `./bootstrap <workflow> status --plan <digest> --wait 900 --json` until the status is neither `HANDED_OFF` nor `RUNNING`.
@@ -39,7 +39,7 @@ Use this runbook when the user asks you to install, update, or check the configu
       - `INCOMPLETE`: queued logins (`needs-login`, `waiting-for-login`) need the user in a terminal: offer the handoff command. `needs-session` waits for a Hyprland login.
       - `STALE`: plan again. `BLOCKED`: back to step 1. `FAIL`: report the message. `INTERRUPTED` (from `status`) or a failure fixed later: apply the same digest again; it resumes from its journal.
 3. Verify: `./bootstrap <workflow> audit --plan <digest> --json` reports `CLEAN`, and a fresh `plan --json` shows no created or updated files and empty `terminal_required`. For Desktop the `hyprland-reload` finding must be `PASS`: it fails on `hyprctl configerrors` and is only a `WARN` without a running session.
-4. Undo the file changes of one apply with `./bootstrap <workflow> restore --plan <digest> --json`. Packages and pinned git checkouts stay as they are.
+4. Undo the file changes of one apply with `./bootstrap <workflow> restore --plan <digest> --json`, newest apply first: a file a later apply changed again is a conflict. Packages and pinned git checkouts stay as they are.
 
 The sudo password belongs to the user's terminal alone: sudo reads it there. Keep it out of your commands, files, and logs; that rules out `sudo -S`, askpass helpers, piped answers, `--noconfirm`, and sudoers changes.
 

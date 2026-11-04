@@ -402,6 +402,54 @@ class CliJsonTests(CliCase):
             _, plan = self.run_cli("desktop", "plan", "--json")
         self.assertEqual([item["id"] for item in plan["selection"]["new_items"]], ["vscode"])
         self.assertNotIn("vscode", plan["selection"]["selected"])
+        # Still reported by the next plan; an apply marks the catalog as seen.
+        with mock.patch.object(cli, "session_environment", return_value={}):
+            _, again = self.run_cli("desktop", "plan", "--json")
+        self.assertEqual([item["id"] for item in again["selection"]["new_items"]], ["vscode"])
+        cli.mark_catalog_seen(StateStore(self.home), self.repository, WorkflowId.DESKTOP)
+        with mock.patch.object(cli, "session_environment", return_value={}):
+            _, seen = self.run_cli("desktop", "plan", "--json")
+        self.assertEqual(seen["selection"]["new_items"], [])
+
+    def test_restore_disables_units_it_removes(self):
+        with mock.patch.object(cli, "fetch_github_keys", return_value=()):
+            _, plan = self.run_cli("integrations", "plan", "--json")
+        digest = plan["plan_digest"]
+        with mock.patch("bootstrap.executor.terminal_action_satisfied", return_value=True), mock.patch(
+            "bootstrap.executor.action_satisfied", return_value=True
+        ), mock.patch("bootstrap.executor.run"):
+            code, applied = self.run_cli("integrations", "apply", "--plan", digest, "--json")
+        self.assertEqual(code, 3, applied)
+        unit = self.home / ".config/systemd/user/rclone-onedrive.service"
+        self.assertTrue(unit.exists())
+        cli.run.reset_mock()
+        code, restored = self.run_cli("integrations", "restore", "--plan", digest, "--json")
+        self.assertEqual((code, restored["status"]), (0, "RESTORED"))
+        self.assertFalse(unit.exists())
+        calls = [call.args[0] for call in cli.run.call_args_list]
+        self.assertIn(("/usr/bin/systemctl", "--user", "disable", "--now", "rclone-onedrive.service"), calls)
+        self.assertLess(
+            calls.index(("/usr/bin/systemctl", "--user", "disable", "--now", "rclone-onedrive.service")),
+            calls.index(("/usr/bin/systemctl", "--user", "daemon-reload")),
+        )
+        self.assertFalse([call for call in calls if "try-restart" in call])
+
+    def test_handoff_without_the_lock_does_not_open_a_terminal(self):
+        with mock.patch.object(cli, "fetch_github_keys", return_value=()):
+            _, plan = self.run_cli("integrations", "plan", "--json")
+        import fcntl
+
+        state = self.home / ".local/state/arch-hypr-bootstrap"
+        state.mkdir(parents=True, exist_ok=True)
+        with open(state / "apply.lock", "a+") as lock, mock.patch.object(
+            cli, "session_environment", return_value={"PATH": ""}
+        ), mock.patch.object(cli.agent, "launch_terminal") as launch, mock.patch(
+            "bootstrap.executor.terminal_action_satisfied", return_value=False
+        ):
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            _, report = self.run_cli("integrations", "apply", "--plan", plan["plan_digest"], "--json", "--in-terminal", "--discard-local")
+        self.assertEqual(report["status"], "BUSY")
+        launch.assert_not_called()
 
     def test_privileged_plan_is_handed_to_a_terminal(self):
         with mock.patch.object(cli, "fetch_github_keys", return_value=()):
@@ -574,6 +622,16 @@ class UpdateCycleTests(CliCase):
         code, report = self.apply(edited["plan_digest"], "--discard-local")
         self.assertEqual((code, report["status"]), (0, "READY"))
         self.assertTrue(bindings.read_text().endswith("-- second change\n"))
+
+        # A file dropped from the repository is reported, never deleted.
+        dropped = ".config/nvim/lua/plugins/theme.lua"
+        source = next(self.root.glob(f"desktop/*/payload/*/{dropped}"))
+        source.unlink()
+        orphaned = self.plan()
+        self.assertEqual(orphaned["changes"]["files"]["orphaned"], [dropped])
+        self.assertTrue(os.path.lexists(self.home / dropped))
+        (self.home / dropped).unlink()
+        self.assertEqual(self.plan()["changes"]["files"]["orphaned"], [])
 
         # Restore undoes that apply: the hand edit comes back from its backup.
         code, report = self.run_cli("desktop", "restore", "--plan", edited["plan_digest"], "--json")

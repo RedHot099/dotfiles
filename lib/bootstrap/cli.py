@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import time
+from dataclasses import replace
 from pathlib import Path
 
 from . import agent
@@ -26,6 +27,7 @@ from .domain import (
 from .execution import apply_workflow_plan, execution_plan, execution_workspace
 from .executor import (
     ApplyLocked,
+    user_unit_name,
     Declined,
     LocalEditConflict,
     NeedsTerminal,
@@ -320,8 +322,19 @@ def plan_for_selection(workflow, repository, facts, state, store, selected, *, i
                 github_keys=github_keys,
             )
     known = frozenset(visible_catalog(repository, workflow))
+    previous = store.read_selection(workflow)
+    if not interactive and previous is not None:
+        # New catalog items stay reported until an apply, not just one plan.
+        known = previous.known
     store.write_selection(SelectionRecord(workflow, selected, repository.source_digest, known))
     return plan
+
+
+def mark_catalog_seen(store: StateStore, repository, workflow: WorkflowId) -> None:
+    record = store.read_selection(workflow)
+    if record is not None:
+        known = (record.known or frozenset()) | frozenset(visible_catalog(repository, workflow))
+        store.write_selection(replace(record, known=known))
 
 
 def reviewed_github_keys(
@@ -530,7 +543,7 @@ def classify_error(error: Exception) -> tuple[str, int, list[dict[str, str]]]:
         return "STALE", agent.EXIT_ACTION_NEEDED, [{"who": "agent", "why": "plan again", "command": ""}]
     if message.startswith("NEEDS PACKAGES: "):
         missing = message.removeprefix("NEEDS PACKAGES: ").replace(",", " ").split()
-        command = bootstrap_command("packages", "plan", "--json", *(f"--add {item}" for item in missing))
+        command = bootstrap_command("packages", "plan", "--json", *(f"--add {shlex.quote(item)}" for item in missing))
         return "NEEDS_PACKAGES", agent.EXIT_ACTION_NEEDED, [{"who": "agent", "why": "install the prerequisites first", "command": command}]
     if message.startswith("package databases are stale or missing"):
         # The bootstrap never refreshes or updates the distribution itself.
@@ -604,6 +617,15 @@ def agent_plan(
                 "why": "approve replacing files changed outside the bootstrap (each is backed up); then apply with --discard-local",
                 "command": f"{apply_command} --discard-local",
                 "files": conflicts,
+            }
+        )
+    if files["orphaned"]:
+        next_actions.append(
+            {
+                "who": "user",
+                "why": "these files left the configuration; the bootstrap never deletes them, so remove them if they are no longer wanted",
+                "command": "",
+                "files": files["orphaned"],
             }
         )
     next_actions.append({"who": "agent", "why": "apply the reviewed plan", "command": apply_command})
@@ -713,14 +735,19 @@ def _approved_apply(
                 )
             # Saved before the launch: the terminal run overwrites it with
             # RUNNING as soon as it starts.
-            handed_off = finish(
+            handed_off = agent.result_record(
+                workflow.value,
+                digest,
                 "HANDED_OFF",
                 agent.EXIT_ACTION_NEEDED,
-                "a terminal opened on the session; the user types the sudo password there",
+                message="a terminal opened on the session; the user types the sudo password there",
                 terminal_required=list(pending),
                 handed_off_epoch=time.time(),
+                checkout=checkout,
                 next_actions=[{"who": "agent", "why": "wait for the terminal apply", "command": bootstrap_command(workflow.value, "status", "--plan", digest, "--wait", "900", "--json")}],
             )
+            if not store.write_result_locked(workflow, handed_off):
+                return busy(workflow, digest)
             try:
                 agent.launch_terminal(terminal, session)
             except (OSError, CatalogError) as error:
@@ -731,7 +758,7 @@ def _approved_apply(
                     terminal_required=list(pending),
                     next_actions=[{"who": "user", "why": "run this in a terminal", "command": shlex.join(terminal)}],
                 )
-            return handed_off
+            return {**handed_off, "command": "apply"}, agent.EXIT_ACTION_NEEDED
         def locked() -> None:
             # Saved once the lock is held and before any prompt: a terminal
             # closed at the password prompt reads as INTERRUPTED, and a second
@@ -788,6 +815,7 @@ def _approved_apply(
         next_actions.append({"who": "user", "why": "log in to the Hyprland session, then the agent applies the same plan again", "command": bootstrap_command(workflow.value, "apply", "--plan", digest, "--json")})
     if result.skipped_features:
         next_actions.append({"who": "user", "why": "declined AUR builds stay skipped for this plan", "command": ""})
+    mark_catalog_seen(store, repository, workflow)
     ready = not result.deferred and not result.skipped_features
     return finish(
         "READY" if ready else "INCOMPLETE",
@@ -818,8 +846,10 @@ def busy(workflow: WorkflowId, digest: str, command: str = "apply") -> tuple[dic
 def status_command(workflow: WorkflowId, digest: str | None, wait: int) -> tuple[dict[str, object], int]:
     store = StateStore(Path.home())
     deadline = time.monotonic() + wait
+    latest: object = None
     while True:
         record = store.read_result(workflow)
+        latest = record.get("plan_digest") if record is not None else None
         if record is not None and digest and record.get("plan_digest") != digest:
             # A handoff saves HANDED_OFF for its plan before the terminal
             # starts, so nothing for this plan means nothing to wait for.
@@ -833,7 +863,15 @@ def status_command(workflow: WorkflowId, digest: str | None, wait: int) -> tuple
             break
         time.sleep(2)
     if record is None:
-        return {"schema": agent.REPORT_SCHEMA, "command": "status", "workflow": workflow.value, "plan_digest": digest, "status": "NO_RESULT"}, agent.EXIT_ACTION_NEEDED
+        return {
+            "schema": agent.REPORT_SCHEMA,
+            "command": "status",
+            "workflow": workflow.value,
+            "plan_digest": digest,
+            "status": "NO_RESULT",
+            "message": "no saved outcome for this plan" + (f"; the last one is for plan {latest}" if latest else ""),
+            "latest_plan_digest": latest,
+        }, agent.EXIT_ACTION_NEEDED
     code = record.get("exit_code")
     if record.get("status") in ACTIVE_STATUSES or not isinstance(code, int):
         code = agent.EXIT_ACTION_NEEDED
@@ -868,8 +906,16 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
     if plan.header.target_home != facts.target_home:
         raise PlanHostMismatch("plan target home differs from the current home")
     store = StateStore(Path(facts.target_home))
+    home = Path(facts.target_home)
+    units = {str(item.data["name"]) for item in plan.actions if item.kind is ActionKind.USER_UNIT}
     try:
-        result = restore_files(Path(facts.target_home), plan.actions, digest, workflow.value, discard_local=discard_local)
+        # A unit the plan created and enabled is disabled while its file
+        # still exists, so no enable link is left pointing at nothing.
+        preview = restore_files(home, plan.actions, digest, workflow.value, discard_local=discard_local, dry_run=True)
+        for target in preview.removed:
+            if user_unit_name(target) in units and target == f".config/systemd/user/{user_unit_name(target)}":
+                run(("/usr/bin/systemctl", "--user", "disable", "--now", str(user_unit_name(target))))
+        result = restore_files(home, plan.actions, digest, workflow.value, discard_local=discard_local)
     except ApplyLocked:
         return busy(workflow, digest, "restore")
     except LocalEditConflict as error:
@@ -881,6 +927,11 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
     targets = [str(item.data.get("target", "")) for item in plan.actions]
     if any(target.startswith(".config/systemd/user/") for target in targets):
         run(("/usr/bin/systemctl", "--user", "daemon-reload"))
+    # A running unit keeps its definition until it restarts; try-restart
+    # leaves stopped units alone and also covers a resumed restore.
+    for unit in sorted(units):
+        if (home / ".config/systemd/user" / unit).is_file():
+            run(("/usr/bin/systemctl", "--user", "try-restart", unit))
     if workflow is WorkflowId.DESKTOP and not reload_hyprland():
         deferred.append({"kind": "hyprland-reload", "feature": "core-desktop", "reason": "needs-session", "detail": ""})
     status, code = ("INCOMPLETE", agent.EXIT_ACTION_NEEDED) if deferred else ("RESTORED", agent.EXIT_READY)
@@ -925,7 +976,7 @@ def print_change_summary(report: dict[str, object]) -> None:
     files = changes["files"]
     assert isinstance(files, dict)
     print(f"Files: {len(files['create'])} new, {len(files['update'])} updated, {files['unchanged']} unchanged")
-    for kind in ("local-edit", "unmanaged"):
+    for kind in ("local-edit", "unmanaged", "orphaned"):
         for target in files[kind]:
             print(f"  {kind}: {target}")
     for item in changes["terminal_required"]:
