@@ -462,7 +462,15 @@ class CliJsonTests(AgentPathCase):
     def test_stale_and_unknown_plans(self):
         code, report = self.run_cli("desktop", "apply", "--plan", "a" * 64, "--json")
         self.assertEqual((code, report["status"]), (3, "STALE"))
-        # Saved too, so a handed-off terminal that fails early shows why.
+        # A mistyped digest keeps the last real outcome.
+        self.assertIsNone(StateStore(self.home).read_result(WorkflowId.DESKTOP))
+        # A saved plan that went stale is recorded, so a handed-off terminal shows why.
+        with mock.patch.object(cli, "session_environment", return_value={}):
+            _, plan = self.run_cli("desktop", "plan", "--json")
+        changed = replace(self.repository, source_digest="0" * 64)
+        with mock.patch.object(cli, "compile_repository", return_value=changed):
+            code, report = self.run_cli("desktop", "apply", "--plan", plan["plan_digest"], "--json")
+        self.assertEqual((code, report["status"]), (3, "STALE"))
         self.assertEqual(StateStore(self.home).read_result(WorkflowId.DESKTOP)["status"], "STALE")
         with mock.patch.object(cli.time, "sleep", side_effect=AssertionError("waited")):
             _, other = self.run_cli("desktop", "status", "--plan", "b" * 64, "--wait", "900", "--json")

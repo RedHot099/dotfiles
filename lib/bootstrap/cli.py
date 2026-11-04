@@ -482,6 +482,7 @@ class StalePlan(CatalogError):
 
 
 DIGEST_RE = re.compile(r"[0-9a-f]{64}")
+STATE_PLANS = ".local/state/arch-hypr-bootstrap/plans"
 ACTIVE_STATUSES = {"RUNNING", "HANDED_OFF"}
 
 
@@ -622,7 +623,7 @@ def agent_plan(
 def load_workflow_plan(workflow: WorkflowId, digest: str) -> WorkflowPlan:
     if not DIGEST_RE.fullmatch(digest):
         raise CatalogError("--plan needs the full 64-character plan digest")
-    path = Path.home() / ".local/state/arch-hypr-bootstrap/plans" / workflow.value / f"{digest}.json"
+    path = Path.home() / STATE_PLANS / workflow.value / f"{digest}.json"
     if not path.is_file():
         raise StalePlan(f"no saved {workflow.value} plan {digest[:12]}; plan again")
     plan = plan_from_dict(json.loads(path.read_text()))
@@ -640,7 +641,8 @@ def approved_apply(
         # Saved also when the run fails before it takes the lock, so a
         # handed-off terminal reports its real cause instead of HANDOFF_LOST.
         status, code, next_actions = classify_error(error)
-        if DIGEST_RE.fullmatch(digest):
+        # Only for a saved plan: a mistyped digest keeps the last real outcome.
+        if DIGEST_RE.fullmatch(digest) and (Path.home() / STATE_PLANS / workflow.value / f"{digest}.json").is_file():
             StateStore(Path.home()).write_result_locked(
                 workflow,
                 agent.result_record(workflow.value, digest, status, code, message=str(error), next_actions=next_actions),

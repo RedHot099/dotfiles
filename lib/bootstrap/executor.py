@@ -218,6 +218,7 @@ def _apply_locked(
     changed = unchanged = simulated = 0
     deferred: list[Deferred] = []
     systemd_files_changed = False
+    failed = True
     try:
         for item in plan.actions:
             if item.feature in skipped:
@@ -330,11 +331,17 @@ def _apply_locked(
                 raise CatalogError(f"executor does not implement action: {item.kind.value}")
             completed.add(action_id)
             save_journal()
+        failed = False
     finally:
         # Also after a failure: the files that did land are the bootstrap's,
-        # so the next plan does not report them as local edits.
+        # so the next plan does not report them as local edits. A manifest
+        # error must not hide the failure that ended the apply.
         if options.workflow:
-            record_managed_files(home, options.workflow, plan.actions, skipped)
+            try:
+                record_managed_files(home, options.workflow, plan.actions, skipped)
+            except (OSError, ValueError):
+                if not failed:
+                    raise
     return ApplyResult(changed, unchanged, simulated, tuple(sorted(skipped)), tuple(deferred))
 
 
