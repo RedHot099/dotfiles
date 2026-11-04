@@ -623,7 +623,7 @@ def agent_plan(
         next_actions.append(
             {
                 "who": "user",
-                "why": "these files left the configuration; the bootstrap never deletes them, so remove them if they are no longer wanted",
+                "why": "these files left the configuration; the bootstrap never deletes them and stops tracking them after this apply; mention them in your report",
                 "command": "",
                 "files": files["orphaned"],
             }
@@ -908,14 +908,19 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
     store = StateStore(Path(facts.target_home))
     home = Path(facts.target_home)
     units = {str(item.data["name"]) for item in plan.actions if item.kind is ActionKind.USER_UNIT}
-    try:
+
+    def disable_removed_units(preview) -> None:
         # A unit the plan created and enabled is disabled while its file
         # still exists, so no enable link is left pointing at nothing.
-        preview = restore_files(home, plan.actions, digest, workflow.value, discard_local=discard_local, dry_run=True)
         for target in preview.removed:
-            if user_unit_name(target) in units and target == f".config/systemd/user/{user_unit_name(target)}":
-                run(("/usr/bin/systemctl", "--user", "disable", "--now", str(user_unit_name(target))))
-        result = restore_files(home, plan.actions, digest, workflow.value, discard_local=discard_local)
+            unit = user_unit_name(target)
+            if unit in units and target == f".config/systemd/user/{unit}":
+                run(("/usr/bin/systemctl", "--user", "disable", "--now", unit))
+
+    try:
+        result = restore_files(
+            home, plan.actions, digest, workflow.value, discard_local=discard_local, before_changes=disable_removed_units
+        )
     except ApplyLocked:
         return busy(workflow, digest, "restore")
     except LocalEditConflict as error:
@@ -927,11 +932,15 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
     targets = [str(item.data.get("target", "")) for item in plan.actions]
     if any(target.startswith(".config/systemd/user/") for target in targets):
         run(("/usr/bin/systemctl", "--user", "daemon-reload"))
-    # A running unit keeps its definition until it restarts; try-restart
-    # leaves stopped units alone and also covers a resumed restore.
-    for unit in sorted(units):
-        if (home / ".config/systemd/user" / unit).is_file():
+    # A running unit keeps its definition until it restarts. Only units whose
+    # files this restore put back (now or in an interrupted earlier run);
+    # try-restart leaves stopped units alone.
+    touched = {user_unit_name(target) for target in (*result.restored, *result.settled) if os.path.lexists(home / target)}
+    for unit in sorted(units & touched):
+        try:
             run(("/usr/bin/systemctl", "--user", "try-restart", unit))
+        except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
+            deferred.append({"kind": "user-unit", "feature": unit, "reason": "restart-failed", "detail": str(error)})
     if workflow is WorkflowId.DESKTOP and not reload_hyprland():
         deferred.append({"kind": "hyprland-reload", "feature": "core-desktop", "reason": "needs-session", "detail": ""})
     status, code = ("INCOMPLETE", agent.EXIT_ACTION_NEEDED) if deferred else ("RESTORED", agent.EXIT_READY)

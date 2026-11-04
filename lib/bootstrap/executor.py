@@ -430,8 +430,9 @@ def record_managed_files(home: HomeFiles, workflow: str, actions: Iterable[Plann
     managed = read_managed(home, workflow)
     actions = tuple(actions)
     planned = {str(item.data["target"]) for item in actions if item.kind in FILE_ACTIONS}
-    # A file that left the configuration stays listed until the user deletes it.
-    for target in [target for target in managed if target not in planned and home.hash(target) is None]:
+    # A file that left the configuration is no longer the bootstrap's: the plan
+    # reported it once as orphaned, and the apply releases it.
+    for target in [target for target in managed if target not in planned]:
         del managed[target]
     for item in actions:
         if item.kind not in FILE_ACTIONS or item.feature in skipped or item.data.get("seed") is True:
@@ -446,6 +447,8 @@ def record_managed_files(home: HomeFiles, workflow: str, actions: Iterable[Plann
 class RestoreResult:
     restored: tuple[str, ...]
     removed: tuple[str, ...]
+    # Already equal to their backup: put back by an earlier, interrupted restore.
+    settled: tuple[str, ...] = ()
 
 
 def restore_files(
@@ -455,7 +458,7 @@ def restore_files(
     workflow: str,
     *,
     discard_local: bool,
-    dry_run: bool = False,
+    before_changes: Callable[[RestoreResult], None] | None = None,
 ) -> RestoreResult:
     """Undo the file changes one applied plan made; packages stay as they are.
 
@@ -504,10 +507,14 @@ def restore_files(
                 operations.append((target, backup))
             if conflicts and not discard_local:
                 raise LocalEditConflict(tuple(conflicts))
-            if dry_run:
-                return RestoreResult(
-                    tuple(target for target, backup in operations if backup is not None),
-                    tuple(target for target, backup in operations if backup is None),
+            if before_changes is not None:
+                # Under the same lock, before any file changes (the CLI
+                # disables units whose files are about to go).
+                before_changes(
+                    RestoreResult(
+                        tuple(target for target, backup in operations if backup is not None),
+                        tuple(target for target, backup in operations if backup is None),
+                    )
                 )
             undo = f"{STATE_ROOT}/backups/restore-{state_digest}"
             restored: list[str] = []
@@ -537,7 +544,7 @@ def restore_files(
                 else:
                     managed.pop(target, None)
             write_managed(home, workflow, managed)
-            return RestoreResult(tuple(restored), tuple(removed))
+            return RestoreResult(tuple(restored), tuple(removed), tuple(settled))
         finally:
             os.close(lock_descriptor)
 

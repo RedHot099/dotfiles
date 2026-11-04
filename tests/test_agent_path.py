@@ -434,6 +434,32 @@ class CliJsonTests(CliCase):
         )
         self.assertFalse([call for call in calls if "try-restart" in call])
 
+    def test_restore_restarts_only_units_it_put_back(self):
+        unit = self.home / ".config/systemd/user/rclone-onedrive.service"
+        unit.parent.mkdir(parents=True)
+        unit.write_text("[Service]\nExecStart=/bin/true\n")
+        with mock.patch.object(cli, "fetch_github_keys", return_value=()):
+            _, plan = self.run_cli("integrations", "plan", "--json")
+        digest = plan["plan_digest"]
+        with mock.patch("bootstrap.executor.terminal_action_satisfied", return_value=True), mock.patch(
+            "bootstrap.executor.action_satisfied", return_value=True
+        ), mock.patch("bootstrap.executor.run"):
+            self.run_cli("integrations", "apply", "--plan", digest, "--json", "--discard-local")
+
+        def failing_restart(argv):
+            if "try-restart" in argv:
+                raise subprocess.CalledProcessError(1, argv)
+
+        cli.run.reset_mock()
+        cli.run.side_effect = failing_restart
+        code, restored = self.run_cli("integrations", "restore", "--plan", digest, "--json")
+        cli.run.side_effect = None
+        self.assertEqual(unit.read_text(), "[Service]\nExecStart=/bin/true\n")
+        restarts = [call.args[0][-1] for call in cli.run.call_args_list if "try-restart" in call.args[0]]
+        self.assertEqual(restarts, ["rclone-onedrive.service"])
+        self.assertEqual((code, restored["status"]), (3, "INCOMPLETE"))
+        self.assertEqual(restored["deferred"][0]["reason"], "restart-failed")
+
     def test_handoff_without_the_lock_does_not_open_a_terminal(self):
         with mock.patch.object(cli, "fetch_github_keys", return_value=()):
             _, plan = self.run_cli("integrations", "plan", "--json")
@@ -629,8 +655,10 @@ class UpdateCycleTests(CliCase):
         source.unlink()
         orphaned = self.plan()
         self.assertEqual(orphaned["changes"]["files"]["orphaned"], [dropped])
+        code, report = self.apply(orphaned["plan_digest"])
+        self.assertEqual((code, report["status"]), (0, "READY"))
+        # Reported once: the apply keeps the file and stops tracking it.
         self.assertTrue(os.path.lexists(self.home / dropped))
-        (self.home / dropped).unlink()
         self.assertEqual(self.plan()["changes"]["files"]["orphaned"], [])
 
         # Restore undoes that apply: the hand edit comes back from its backup.
