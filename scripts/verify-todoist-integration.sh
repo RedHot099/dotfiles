@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Arch's qt6-declarative installs qmllint under /usr/lib/qt6/bin, outside PATH.
+export PATH="$PATH:/usr/lib/qt6/bin"
+
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 plugin_dir="$repo_root/integrations/omarchy/payload/todoist/.config/omarchy/plugins/kuba.tasks"
 helper="$repo_root/integrations/common/payload/todoist-helper/.local/bin/todoist-helper"

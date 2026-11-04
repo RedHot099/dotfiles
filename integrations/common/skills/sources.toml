@@ -1,2 +1,15 @@
 schema = 1
-sources = []
+
+# Public skills vendored from upstream Git repositories.
+# Refresh with scripts/update-external-skills.py; it rewrites `commit`.
+# Override upstream behavior in the payload's global agent instructions,
+# never by editing vendored files, so updates stay hands-off.
+
+[[sources]]
+id = "tstack"
+url = "https://github.com/t3dotgg/tstack"
+ref = "main"
+commit = "1085050f3baed1ac724caa4a8166145fb2ac88af"
+path = "skills"
+license = "LICENSE"
+skills = ["babysit-pr", "council", "full-send", "full-stop", "leaving-pr-comments", "sol-loop"]

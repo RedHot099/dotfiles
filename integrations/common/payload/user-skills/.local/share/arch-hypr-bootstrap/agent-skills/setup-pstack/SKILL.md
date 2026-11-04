@@ -9,7 +9,7 @@ Manage `~/.config/pstack/model-teams.yaml`, the shared source of truth for pstac
 
 ## Model teams
 
-Every team contains one OpenAI, Anthropic, and xAI member. A member has separate `model` and `effort` fields. Provider-specific settings such as Anthropic's adaptive thinking use their own field. Never encode effort in the model slug.
+Every team contains one OpenAI, Anthropic, and Z.ai (GLM, hosted by Cursor) member, in that panel order. The Z.ai member may name a `fallback` (an xAI Grok member) to use when its host has no usage left. A member has separate `model` and `effort` fields. Provider-specific settings such as Anthropic's adaptive thinking use their own field. Never encode effort in the model slug.
 
 - `explore`: codebase search, history, logs, and evidence gathering.
 - `build`: scoped implementation, refactoring, tests, and mechanical migrations.
@@ -29,7 +29,7 @@ Treat `model-teams.yaml` as configuration, not proof of availability. Before wri
 2. Detect models and effort levels available in each target host the user placed in scope.
 3. Show the current matrix and mark entries that the target host rejects or cannot verify.
 4. Apply only the requested changes. Keep all three providers in every team.
-5. Parse the YAML and verify that every team has exactly `openai`, `anthropic`, and `xai`, each with `model` and `effort`. Allow provider-specific fields such as `thinking` only when the provider supports them.
+5. Parse the YAML and verify that every team has exactly `openai`, `anthropic`, and `zai`, each with `model` and `effort`, and that any `fallback` also has `provider`, `model`, and `effort`. Allow provider-specific fields such as `thinking` only when the provider supports them.
 6. Report the changed entries and which hosts were verified.
 
 New delegations read the updated file immediately. Existing subagents keep the model selected when they were spawned.

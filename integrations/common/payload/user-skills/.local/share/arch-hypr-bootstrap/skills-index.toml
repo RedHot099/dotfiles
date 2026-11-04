@@ -1,5 +1,5 @@
 schema = 1
-count = 93
+count = 99
 
 [[skills]]
 id = "architect"
@@ -20,6 +20,11 @@ sha256 = "18874dff54b8ba0edc126aad38790a9f98e9129fa401f975df136ef56e157281"
 id = "automate-me"
 origin = ".codex"
 sha256 = "455e6a19f23316a991e312985c2ffbd3e17e3c6b012a6ebec93399bcfe6e9c38"
+
+[[skills]]
+id = "babysit-pr"
+origin = "tstack@1085050f3baed1ac724caa4a8166145fb2ac88af"
+sha256 = "725c0770577f485d21909c6c35c937e80eceb9edc7e7b51979c5debff7e358a6"
 
 [[skills]]
 id = "benchmark-checklist"
@@ -62,6 +67,11 @@ origin = ".codex"
 sha256 = "c290cfd062e27751d1a9ee5388bb6bc4b30646453907d154302d5c840baea64d"
 
 [[skills]]
+id = "council"
+origin = "tstack@1085050f3baed1ac724caa4a8166145fb2ac88af"
+sha256 = "b311fb923dbdf190195010a80cf88c0ceca1f8683741b4ede9e669c4e73f85ad"
+
+[[skills]]
 id = "create-verification-skill"
 origin = ".codex"
 sha256 = "cf08764345ea8423d3d29f678c98854aac121c51e4204470f864d5db21549603"
@@ -100,6 +110,16 @@ sha256 = "6c272f8957fe04905baf7ae159592522d837aee3296243d1d5608743c8941553"
 id = "find-skills"
 origin = ".agents"
 sha256 = "9ace7a53843a1c0ffbddf4f9bc3b93fd6b7fc06ec49e722636dc279dba9a33de"
+
+[[skills]]
+id = "full-send"
+origin = "tstack@1085050f3baed1ac724caa4a8166145fb2ac88af"
+sha256 = "abdfc27cca25fec312d933f6aa61bf80888e1ec3b1297a504df79f1ee82f08cd"
+
+[[skills]]
+id = "full-stop"
+origin = "tstack@1085050f3baed1ac724caa4a8166145fb2ac88af"
+sha256 = "b93f4d646a3f1f56abe7cd31a20fce6dcf2c60d9c720cbd3967b78eadfb07f50"
 
 [[skills]]
 id = "git-guardrails-claude-code"
@@ -165,6 +185,11 @@ sha256 = "cf438b64311fa097466ef4573fdee8d9f88f4a16c0db7560ae8382074cab5497"
 id = "learning-workspace"
 origin = ".agents"
 sha256 = "700d18a5029dcd4c6bb276d1fc9e300b69127d433a42214653a63e3affaa18df"
+
+[[skills]]
+id = "leaving-pr-comments"
+origin = "tstack@1085050f3baed1ac724caa4a8166145fb2ac88af"
+sha256 = "62c29db0df1e1af592b93f18fb5c42b25942958d0c983d6dd1a0b7dd75855d53"
 
 [[skills]]
 id = "loop-me"
@@ -369,12 +394,17 @@ sha256 = "0cb8f0c71637f02e91483f375fbe65389deceb4718cd6d22c81b067309f90539"
 [[skills]]
 id = "setup-pstack"
 origin = ".codex"
-sha256 = "3b4303affcad01c2c8315b31d4ea86eaa1263a9accf05ed9b10003d8992054b5"
+sha256 = "d0d9d1189581b85a84ee953faec3062414c202a09b2ac14183d97fd34b398071"
 
 [[skills]]
 id = "show-me-your-work"
 origin = ".codex"
 sha256 = "b1b4efc212d5ceb5838ed985eae3c28fd289057055607b1dd0b2f3410db5c14f"
+
+[[skills]]
+id = "sol-loop"
+origin = "tstack@1085050f3baed1ac724caa4a8166145fb2ac88af"
+sha256 = "ff9ccb2aae4b020f867d6ddcf7eec538f9530281275bf20ebedb45c4d6c30384"
 
 [[skills]]
 id = "swarm"

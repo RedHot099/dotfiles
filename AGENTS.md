@@ -38,6 +38,8 @@ Planning writes only private selection and digest-addressed plan state. Audit is
 
 Run `scripts/capture-user-skills.py` to refresh `integrations/common/skills/private`. It reads direct real directories under `~/.agents/skills` and `~/.codex/skills`, rejecting packaged/system skills, conflicting IDs, and secret-like files.
 
+Run `scripts/update-external-skills.py` (`--check` to preview) to refresh public skills vendored from `integrations/common/skills/sources.toml`. It pins each source's commit and changes only that source's skills. Never edit vendored skills; put overrides in the payload's global agent instructions.
+
 Protect Codex `.system`, Cursor `skills-cursor`, and unrelated non-colliding user skills. Never copy complete agent configuration directories.
 
 ## Verification

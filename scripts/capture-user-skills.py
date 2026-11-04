@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import tempfile
+import tomllib
 from pathlib import Path
 
 
@@ -25,7 +26,8 @@ def main() -> int:
     parser.add_argument("--destination", type=Path, default=Path("integrations/common/skills/private"))
     args = parser.parse_args()
     sources = (args.home / ".agents" / "skills", args.home / ".codex" / "skills")
-    skills = discover(sources)
+    external = external_skill_ids()
+    skills = {skill_id: path for skill_id, path in discover(sources).items() if skill_id not in external}
     destination = args.destination.resolve()
     allowed_destination = (Path(__file__).resolve().parents[1] / "integrations/common/skills/private").resolve()
     if destination != allowed_destination:
@@ -40,11 +42,22 @@ def main() -> int:
             make_portable(skill_id, target)
             reject_secrets(target)
             index.append((skill_id, source.parent.parent.name, tree_hash(target)))
+        for skill_id in sorted(external):
+            vendored = destination / skill_id
+            if vendored.is_dir():
+                shutil.copytree(vendored, temporary / skill_id, symlinks=True)
         if destination.exists():
             shutil.rmtree(destination)
         shutil.copytree(temporary, destination, symlinks=True)
     print(f"Captured {len(skills)} user-owned skills in {destination}")
     return 0
+
+
+def external_skill_ids() -> set[str]:
+    """Skills vendored by update-external-skills.py, owned by sources.toml."""
+    sources = Path(__file__).resolve().parents[1] / "integrations/common/skills/sources.toml"
+    data = tomllib.loads(sources.read_text()) if sources.is_file() else {}
+    return {skill for source in data.get("sources", []) for skill in source.get("skills", [])}
 
 
 def discover(sources: tuple[Path, ...]) -> dict[str, Path]:

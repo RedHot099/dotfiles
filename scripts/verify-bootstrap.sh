@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Arch's qt6-declarative installs qmllint under /usr/lib/qt6/bin, outside PATH.
+export PATH="$PATH:/usr/lib/qt6/bin"
+
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 content_roots=(packages desktop integrations)
 
 PYTHONPATH=lib python3 -m unittest discover -s tests -p 'test*.py'
-python3 -m compileall -q lib scripts/capture-user-skills.py
+python3 -m compileall -q lib scripts/capture-user-skills.py scripts/update-external-skills.py
 
 if ! command -v luac >/dev/null 2>&1; then
   echo "luac is required to verify Hyprland payloads" >&2

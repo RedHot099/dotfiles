@@ -6,6 +6,10 @@ commands = ["codex"]
 source = "payload/ai-development/.codex/config.toml"
 target = ".codex/config.toml"
 
+[[files]]
+source = "payload/ai-development/.codex/AGENTS.md"
+target = ".codex/AGENTS.md"
+
 [[authentication]]
 label = "Codex"
 command = ["codex", "login"]

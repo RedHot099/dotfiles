@@ -4,3 +4,7 @@ id = "user-skills"
 [[files]]
 source = "payload/user-skills"
 target = "."
+
+[[files]]
+source = "payload/ai-development/.config/pstack/model-teams.yaml"
+target = ".config/pstack/model-teams.yaml"

@@ -6,6 +6,10 @@ commands = ["claude"]
 source = "payload/ai-development/.claude/settings.json"
 target = ".claude/settings.json"
 
+[[files]]
+source = "payload/ai-development/.claude/CLAUDE.md"
+target = ".claude/CLAUDE.md"
+
 [[authentication]]
 label = "Claude"
 command = ["claude", "auth", "login"]
