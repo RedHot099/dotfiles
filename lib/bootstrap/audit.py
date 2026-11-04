@@ -8,6 +8,7 @@ from .domain import ActionKind, ExecutionPlan, PlannedAction, assert_plan_matche
 from .executor import (
     action_satisfied,
     aur_installed_exact,
+    capture,
     command_environment,
     optional_string,
     run_probe,
@@ -17,6 +18,7 @@ from .executor import (
 from .packages import installed_versions, transaction_from_action
 from .files import FileBoundaryError, HomeFiles
 from .platform import PlatformFacts
+from .session import session_environment
 
 
 @dataclass(frozen=True)
@@ -95,8 +97,19 @@ def audit_action(item: PlannedAction, home: HomeFiles, isolated: bool) -> AuditF
             item.feature,
             "authentication ready" if ready else f"manual login required: {item.data['label']}",
         )
-    if item.kind in {ActionKind.USER_DAEMON_RELOAD, ActionKind.HYPRLAND_RELOAD}:
+    if item.kind is ActionKind.USER_DAEMON_RELOAD:
         return AuditFinding("PASS", kind, item.feature, "daemon reload is an apply transition")
+    if item.kind is ActionKind.HYPRLAND_RELOAD:
+        session = session_environment()
+        if session is None:
+            return AuditFinding("WARN", kind, item.feature, "no running Hyprland session to check")
+        errors = capture(("/usr/bin/hyprctl", "configerrors"), environment=session).strip()
+        return AuditFinding(
+            "FAIL" if errors else "PASS",
+            kind,
+            item.feature,
+            f"Hyprland configuration errors: {errors}" if errors else "Hyprland reports no configuration errors",
+        )
     environment = command_environment(str(home.path))
     if item.kind is ActionKind.USER_UNIT and not all(
         run_probe(tuple(strings(probe["command"])), optional_string(probe.get("contains")), environment)

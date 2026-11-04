@@ -27,7 +27,9 @@ The public CLI is interactive, terminal-only, and English:
 ./bootstrap integrations plan|apply|audit
 ```
 
-There are no `--yes`, `--defaults`, `--select`, or headless public modes. Tests call the internal planner and executor APIs directly.
+There are no `--yes`, `--defaults`, or `--select` modes. Tests call the internal planner and executor APIs directly.
+
+Amendment (agent path): every workflow command also takes `--json`, which never prompts and prints one report. `plan --json` uses the saved selection or the defaults, changed only by `--add` and `--remove`. `apply --plan <digest>` approves exactly that saved plan, AUR recipes and GitHub keys included, from a clean checkout of `main`; it refuses files changed outside the bootstrap without `--discard-local`. Without a terminal it applies only home files and user units: packages, system units, the firewall, and authorized SSH keys raise `NEEDS_TERMINAL` before any change, and `--in-terminal` opens a floating terminal on the session where sudo reads the password. `status` reads the saved outcome of the last apply, and `restore --plan` undoes that plan's file changes from its backups and journal.
 
 `setup` follows this sequence:
 
@@ -443,7 +445,7 @@ It rejects three independent executors, three autonomous loaders, a generic work
 - Public skill planning depends on the network and current remote HEAD. Apply remains tied to the exact reviewed commit and hashes.
 - A public skill source failure aborts the complete skill operation.
 - Same-name user skills are deleted without backup after exact-path review.
-- The public CLI cannot run headlessly. Internal APIs remain testable.
+- Without a terminal the CLI applies only home files and user units; privileged changes still need the user's terminal.
 - Package updates and rollbacks remain the responsibility of the installed distribution.
 
 ## Approval checkpoint

@@ -20,6 +20,8 @@ from .domain import ActionKind, ExecutionPlan, PlannedAction, assert_plan_matche
 from .files import HomeFiles
 from .tui.terminal import ask_yes_no
 from .platform import PlatformFacts
+from .session import session_environment
+from .state import read_managed, write_managed
 from .packages import (
     LocalPackageProvider,
     bindings_from_action,
@@ -38,12 +40,63 @@ from .packages import (
 STATE_ROOT = ".local/state/arch-hypr-bootstrap"
 
 
+FILE_ACTIONS = frozenset({ActionKind.USER_FILE, ActionKind.GENERATED_FILE})
+# Changes to packages, system services, the firewall, and incoming SSH access
+# run only from an interactive terminal: sudo reads the password there and
+# pacman asks before its transaction. An agent hands such a plan to that
+# terminal instead of applying it.
+TERMINAL_ACTIONS = frozenset(
+    {
+        ActionKind.REPOSITORY_PACKAGES,
+        ActionKind.AUR_BUILD,
+        ActionKind.SYSTEM_UNIT,
+        ActionKind.FIREWALL_RULE,
+        ActionKind.AUTHORIZED_SSH_KEYS,
+    }
+)
+
+
+class NeedsTerminal(CatalogError):
+    def __init__(self, pending: tuple[str, ...]) -> None:
+        self.pending = pending
+        super().__init__("these changes need an interactive terminal: " + ", ".join(pending))
+
+
+class LocalEditConflict(CatalogError):
+    def __init__(self, targets: tuple[str, ...]) -> None:
+        self.targets = targets
+        super().__init__("files changed outside the bootstrap: " + ", ".join(targets))
+
+
+@dataclass(frozen=True)
+class ApplyOptions:
+    # Names the journal and backups; the workflow plan digest, so restore and
+    # status find them from the digest an agent approved.
+    state_digest: str | None = None
+    # Records the installed files as managed by this workflow.
+    workflow: str | None = None
+    # The plan was approved by its digest, AUR recipes included.
+    reviewed: bool = False
+    # Refuse to replace files edited since the last apply, or never managed.
+    guard_local_edits: bool = False
+    discard_local: bool = False
+
+
+@dataclass(frozen=True)
+class Deferred:
+    kind: str
+    feature: str
+    reason: str
+    detail: str = ""
+
+
 @dataclass(frozen=True)
 class ApplyResult:
     changed: int
     unchanged: int
     simulated: int
     skipped_features: tuple[str, ...]
+    deferred: tuple[Deferred, ...] = ()
 
 
 def apply_install(
@@ -54,6 +107,7 @@ def apply_install(
     *,
     system_changes: bool,
     interactive: bool,
+    options: ApplyOptions = ApplyOptions(),
 ) -> ApplyResult:
     assert_plan_matches_host(plan, facts)
     if plan.workspace_digest != workspace.source_digest:
@@ -62,8 +116,6 @@ def apply_install(
         raise CatalogError("workspace platform differs from the host")
     if system_changes and os.geteuid() == 0:
         raise CatalogError("run bootstrap as the target user, not root")
-    if system_changes and not interactive:
-        raise CatalogError("real system changes require an interactive terminal")
 
     target_home = Path(plan.target_home)
     with HomeFiles(target_home) as home:
@@ -84,6 +136,7 @@ def apply_install(
                 system_changes=system_changes,
                 interactive=interactive,
                 skipped=skipped,
+                options=options,
             )
         finally:
             os.close(lock_descriptor)
@@ -99,28 +152,46 @@ def _apply_locked(
     system_changes: bool,
     interactive: bool,
     skipped: set[str],
+    options: ApplyOptions,
 ) -> ApplyResult:
     environment = command_environment(plan.target_home)
-    journal_target = f"{STATE_ROOT}/journals/{plan.digest}.json"
+    state_digest = options.state_digest or plan.digest
+    journal_target = f"{STATE_ROOT}/journals/{state_digest}.json"
     journal = read_json(home.read_text(journal_target), {"completed": [], "skipped_features": []})
     completed = set(strings(journal.get("completed")))
+    created = set(strings(journal.get("created", [])))
     skipped.update(strings(journal.get("skipped_features")))
+    # Both checks run under the apply lock and before the first change.
+    if system_changes and not interactive:
+        pending = terminal_pending(plan, home, skipped)
+        if pending:
+            raise NeedsTerminal(pending)
+    if options.guard_local_edits and not options.discard_local:
+        managed = read_managed(home, options.workflow) if options.workflow else {}
+        conflicts = local_conflicts(home, plan.actions, managed, skipped)
+        if conflicts:
+            raise LocalEditConflict(conflicts)
     if system_changes:
-        review_aur_actions(plan, skipped)
-        write_journal(home, journal_target, completed, skipped, plan.digest)
+        if interactive and not options.reviewed:
+            review_aur_actions(plan, skipped)
+        write_journal(home, journal_target, completed, skipped, plan.digest, created)
     sources = {
         (feature, entry.target, entry.sha256): entry
         for feature, entries in workspace.payload.items()
         for entry in entries
     }
     changed = unchanged = simulated = 0
+    deferred: list[Deferred] = []
     systemd_files_changed = False
     for item in plan.actions:
         if item.feature in skipped:
             continue
         action_id = action_digest(item)
-        if item.kind in {ActionKind.USER_FILE, ActionKind.GENERATED_FILE}:
-            did_change = apply_file_action(root, home, plan, item, sources)
+        if item.kind in FILE_ACTIONS:
+            existed = home.hash(str(item.data["target"])) is not None
+            did_change = apply_file_action(root, home, item, sources, f"{STATE_ROOT}/backups/{state_digest}")
+            if did_change and not existed:
+                created.add(str(item.data["target"]))
             changed += int(did_change)
             unchanged += int(not did_change)
             systemd_files_changed |= did_change and str(item.data["target"]).startswith(
@@ -128,6 +199,7 @@ def _apply_locked(
             )
         elif not system_changes:
             simulated += 1
+            deferred.append(Deferred(item.kind.value, item.feature, "simulated"))
             continue
         elif item.kind is ActionKind.USER_DAEMON_RELOAD:
             if action_id in completed and not systemd_files_changed:
@@ -159,6 +231,7 @@ def _apply_locked(
                 for probe in probes
             ):
                 simulated += 1
+                deferred.append(Deferred(item.kind.value, item.feature, "waiting-for-login", str(item.data["name"])))
                 continue
             run(("/usr/bin/systemctl", "--user", "enable", "--now", str(item.data["name"])))
             changed += 1
@@ -185,10 +258,12 @@ def _apply_locked(
             )
             changed += 1
         elif item.kind is ActionKind.MANUAL_AUTHENTICATION:
-            if authenticate(item, environment):
+            # Without a terminal nobody can answer a login; it stays queued.
+            if interactive and authenticate(item, environment):
                 changed += 1
             else:
                 simulated += 1
+                deferred.append(Deferred(item.kind.value, item.feature, "needs-login", str(item.data["label"])))
                 continue
         elif item.kind is ActionKind.AUTHORIZED_SSH_KEYS:
             install_ssh(home, tuple(strings(item.data["keys"])))
@@ -203,19 +278,183 @@ def _apply_locked(
             run(("/usr/bin/sudo", "/usr/bin/ufw", "limit", "22/tcp"))
             changed += 1
         elif item.kind is ActionKind.HYPRLAND_RELOAD:
-            if not os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
+            if not reload_hyprland():
                 simulated += 1
+                deferred.append(Deferred(item.kind.value, item.feature, "needs-session"))
                 continue
-            run(("/usr/bin/hyprctl", "reload"), environment=environment)
-            errors = capture(("/usr/bin/hyprctl", "configerrors"), environment=environment).strip()
-            if errors:
-                raise RuntimeError(f"Hyprland configuration errors after reload:\n{errors}")
             changed += 1
         else:
             raise CatalogError(f"executor does not implement action: {item.kind.value}")
         completed.add(action_id)
-        write_journal(home, journal_target, completed, skipped, plan.digest)
-    return ApplyResult(changed, unchanged, simulated, tuple(sorted(skipped)))
+        write_journal(home, journal_target, completed, skipped, plan.digest, created)
+    if options.workflow:
+        record_managed_files(home, options.workflow, plan.actions, skipped)
+    return ApplyResult(changed, unchanged, simulated, tuple(sorted(skipped)), tuple(deferred))
+
+
+def reload_hyprland() -> bool:
+    """Reload the running session; False when there is none."""
+    environment = session_environment()
+    if environment is None:
+        return False
+    run(("/usr/bin/hyprctl", "reload"), environment=environment)
+    errors = capture(("/usr/bin/hyprctl", "configerrors"), environment=environment).strip()
+    if errors:
+        raise RuntimeError(f"Hyprland configuration errors after reload:\n{errors}")
+    return True
+
+
+def terminal_pending(plan: ExecutionPlan, home: HomeFiles, skipped: set[str] = frozenset()) -> tuple[str, ...]:
+    return tuple(
+        f"{item.kind.value}: {item.feature}"
+        for item in plan.actions
+        if item.kind in TERMINAL_ACTIONS
+        and item.feature not in skipped
+        and not terminal_action_satisfied(item, home)
+    )
+
+
+def terminal_action_satisfied(item: PlannedAction, home: HomeFiles) -> bool:
+    if item.kind is ActionKind.REPOSITORY_PACKAGES:
+        planned = {package.name: package.version for package in transaction_from_action(dict(item.data))}
+        direct = strings(item.data["packages"])
+        installed = installed_versions(direct)
+        return all(installed.get(package) == planned[package] for package in direct)
+    if item.kind is ActionKind.AUR_BUILD:
+        return aur_installed_exact(item)
+    if item.kind is ActionKind.SYSTEM_UNIT:
+        return service_active(str(item.data["name"]))
+    if item.kind is ActionKind.FIREWALL_RULE:
+        return ufw_rule_present()
+    if item.kind is ActionKind.AUTHORIZED_SSH_KEYS:
+        current = set((home.read_text(".ssh/authorized_keys") or "").splitlines())
+        return set(strings(item.data["keys"])).issubset(current)
+    raise CatalogError(f"not a terminal action: {item.kind.value}")
+
+
+def file_change(home: HomeFiles, item: PlannedAction, managed: dict[str, str]) -> str:
+    """create, unchanged, update, local-edit (managed file edited), or unmanaged."""
+    target = str(item.data["target"])
+    current = home.hash(target)
+    if current is None:
+        return "create"
+    if item.data.get("seed") is True:
+        return "unchanged"
+    if home.matches(target, str(item.data["sha256"]), int(item.data["mode"]), optional_string(item.data.get("symlink"))):
+        return "unchanged"
+    if current == item.data["sha256"] or current == managed.get(target):
+        return "update"
+    return "local-edit" if target in managed else "unmanaged"
+
+
+def local_conflicts(
+    home: HomeFiles,
+    actions: Iterable[PlannedAction],
+    managed: dict[str, str],
+    skipped: set[str] = frozenset(),
+) -> tuple[str, ...]:
+    return tuple(
+        str(item.data["target"])
+        for item in actions
+        if item.kind in FILE_ACTIONS
+        and item.feature not in skipped
+        and file_change(home, item, managed) in {"local-edit", "unmanaged"}
+    )
+
+
+def record_managed_files(home: HomeFiles, workflow: str, actions: Iterable[PlannedAction], skipped: set[str]) -> None:
+    managed = read_managed(home, workflow)
+    for item in actions:
+        if item.kind not in FILE_ACTIONS or item.feature in skipped or item.data.get("seed") is True:
+            continue
+        target = str(item.data["target"])
+        if home.matches(target, str(item.data["sha256"]), int(item.data["mode"]), optional_string(item.data.get("symlink"))):
+            managed[target] = str(item.data["sha256"])
+    write_managed(home, workflow, managed)
+
+
+@dataclass(frozen=True)
+class RestoreResult:
+    restored: tuple[str, ...]
+    removed: tuple[str, ...]
+
+
+def restore_files(
+    target_home: Path,
+    actions: tuple[PlannedAction, ...],
+    state_digest: str,
+    workflow: str,
+    *,
+    discard_local: bool,
+) -> RestoreResult:
+    """Undo the file changes one applied plan made; packages stay as they are.
+
+    A replaced file comes back from the plan's backup and a created file is
+    removed. A file edited after that apply is a conflict unless
+    discard_local. The current files are backed up before they change.
+    """
+    with HomeFiles(target_home, create=False) as home:
+        lock_descriptor = home.open_lock(f"{STATE_ROOT}/apply.lock")
+        try:
+            try:
+                fcntl.flock(lock_descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError as error:
+                raise CatalogError("another bootstrap apply is running") from error
+            journal = home.read_text(f"{STATE_ROOT}/journals/{state_digest}.json")
+            if journal is None:
+                raise CatalogError(f"plan {state_digest[:12]} was never applied here; nothing to restore")
+            created = set(strings(read_json(journal, {}).get("created", [])))
+            backups = f"{STATE_ROOT}/backups/{state_digest}"
+            operations: list[tuple[str, tuple[bytes | None, str | None, int] | None]] = []
+            conflicts: list[str] = []
+            for item in reversed(actions):
+                if item.kind not in FILE_ACTIONS:
+                    continue
+                target = str(item.data["target"])
+                backup = home.entry(f"{backups}/{target}")
+                if backup is None and target not in created:
+                    continue
+                current = home.hash(target)
+                previous = None if backup is None else _entry_digest(backup)
+                if current == previous:
+                    continue
+                if current != item.data["sha256"]:
+                    conflicts.append(target)
+                    if not discard_local:
+                        continue
+                operations.append((target, backup))
+            if conflicts and not discard_local:
+                raise LocalEditConflict(tuple(conflicts))
+            undo = f"{STATE_ROOT}/backups/restore-{state_digest}"
+            restored: list[str] = []
+            removed: list[str] = []
+            for target, backup in operations:
+                if backup is None:
+                    home.remove(target, backup_root=undo)
+                    removed.append(target)
+                    continue
+                content, symlink, mode = backup
+                home.install(
+                    target,
+                    content=content,
+                    symlink=symlink,
+                    mode=mode,
+                    expected_sha256=_entry_digest(backup),
+                    backup_root=undo,
+                )
+                restored.append(target)
+            managed = read_managed(home, workflow)
+            for target in (*restored, *removed):
+                managed.pop(target, None)
+            write_managed(home, workflow, managed)
+            return RestoreResult(tuple(restored), tuple(removed))
+        finally:
+            os.close(lock_descriptor)
+
+
+def _entry_digest(entry: tuple[bytes | None, str | None, int]) -> str:
+    content, symlink, _ = entry
+    return hashlib.sha256(f"symlink:{symlink}".encode() if symlink is not None else content or b"").hexdigest()
 
 
 def review_aur_actions(plan: ExecutionPlan, skipped: set[str]) -> None:
@@ -372,9 +611,9 @@ def aur_installed_exact(item: PlannedAction) -> bool:
 def apply_file_action(
     root: Path,
     home: HomeFiles,
-    plan: ExecutionPlan,
     item: PlannedAction,
     sources: dict[tuple[str, str, str], object],
+    backup_root: str,
 ) -> bool:
     target = str(item.data["target"])
     if item.data.get("seed") is True and home.read_text(target) is not None:
@@ -401,7 +640,7 @@ def apply_file_action(
         symlink=symlink,
         mode=mode,
         expected_sha256=expected,
-        backup_root=f"{STATE_ROOT}/backups/{plan.digest}",
+        backup_root=backup_root,
     )
 
 
@@ -429,10 +668,20 @@ def initialize_skipped_features(home: HomeFiles) -> set[str]:
 
 
 def write_journal(
-    home: HomeFiles, target: str, completed: set[str], skipped: set[str], digest: str
+    home: HomeFiles,
+    target: str,
+    completed: set[str],
+    skipped: set[str],
+    digest: str,
+    created: set[str] = frozenset(),
 ) -> None:
     content = json_bytes(
-        {"plan_digest": digest, "completed": sorted(completed), "skipped_features": sorted(skipped)}
+        {
+            "plan_digest": digest,
+            "completed": sorted(completed),
+            "created": sorted(created),
+            "skipped_features": sorted(skipped),
+        }
     )
     home.install(
         target,

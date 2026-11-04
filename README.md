@@ -1,6 +1,6 @@
 # Arch Hyprland bootstrap
 
-This repository configures a fresh Omarchy 4 installation. It performs initial setup only; use `omarchy update` afterward.
+This repository configures an Omarchy 4 installation and keeps it in step with the repository. `omarchy update` still updates the distribution.
 
 ## Run setup
 
@@ -32,7 +32,21 @@ Run a workflow separately when needed:
 ./bootstrap integrations audit
 ```
 
-`plan` is read-only except for private plan and selection state. `apply` requires an interactive terminal and explicit confirmation. `audit` does not mutate the machine.
+`plan` is read-only except for private plan and selection state. `apply` asks for confirmation in an interactive terminal. `audit` does not mutate the machine.
+
+## Hand it to an agent
+
+An agent can install and update the configuration with little help; `AGENTS.md` holds its runbook. The agent path never prompts and prints one JSON report per command:
+
+```bash
+./bootstrap desktop plan --json                    # saved selection or defaults; --add/--remove ID
+./bootstrap desktop apply --plan <digest> --json   # naming the digest approves that plan
+./bootstrap desktop status --plan <digest> --wait 900 --json
+./bootstrap desktop audit --plan <digest> --json
+./bootstrap desktop restore --plan <digest> --json # undo that apply's file changes
+```
+
+Without a terminal, apply changes only files and user services in your home. Packages, system services, the firewall, and incoming SSH keys stop it before any change; the agent then opens a floating terminal on your session (`apply --plan <digest> --json --in-terminal`), where you type the sudo password and confirm pacman's transaction. Logins that need a browser stay queued for that terminal. Apply also refuses to replace a file changed outside the bootstrap until you approve it with `--discard-local`, and `--plan` applies only from a clean checkout of `main`.
 
 ## Safety
 

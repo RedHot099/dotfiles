@@ -4,7 +4,7 @@ from dataclasses import replace
 
 from .catalog import Workspace
 from .domain import ExecutionPlan, WorkflowId
-from .executor import ApplyResult, apply_install
+from .executor import ApplyOptions, ApplyResult, apply_install
 from .planning.model import WorkflowPlan
 from .platform import PlatformFacts
 from .repository.model import RepositoryModel
@@ -18,7 +18,15 @@ def apply_workflow_plan(
     *,
     system_changes: bool,
     interactive: bool,
+    reviewed: bool = False,
+    discard_local: bool = False,
 ) -> ApplyResult:
+    """Apply one workflow plan.
+
+    `reviewed` means the plan was approved by its digest (`apply --plan`):
+    no AUR prompts, and files edited outside the bootstrap are refused
+    unless `discard_local`.
+    """
     workspace = execution_workspace(repository, plan.header.workflow)
     legacy = execution_plan(repository, plan)
     return apply_install(
@@ -28,6 +36,13 @@ def apply_workflow_plan(
         facts,
         system_changes=system_changes,
         interactive=interactive,
+        options=ApplyOptions(
+            state_digest=plan.digest,
+            workflow=plan.header.workflow.value,
+            reviewed=reviewed,
+            guard_local_edits=reviewed,
+            discard_local=discard_local,
+        ),
     )
 
 

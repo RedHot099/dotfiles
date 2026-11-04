@@ -4,14 +4,18 @@ import argparse
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
+from . import agent
 from .catalog import CatalogError, Workspace
 from .audit import audit_install
 from .domain import (
+    ActionKind,
     DesktopRequest,
     IntegrationsRequest,
     PackagesRequest,
@@ -20,13 +24,23 @@ from .domain import (
     WorkflowId,
 )
 from .execution import apply_workflow_plan, execution_plan, execution_workspace
+from .executor import (
+    LocalEditConflict,
+    NeedsTerminal,
+    local_conflicts,
+    reload_hyprland,
+    restore_files,
+    run,
+    terminal_pending,
+)
 from .files import HomeFiles
 from .host import LocalHostProbe
 from .planner import HostState
 from .planning.model import PackagesEvidence, WorkflowPlan, plan_from_dict
 from .platform import PlatformDetectionError, detect_platform
 from .repository import compile_repository
-from .state import SelectionRecord, StateStore
+from .session import session_environment
+from .state import SelectionRecord, StateStore, read_managed
 from .ssh import fetch_github_keys, ssh_fingerprint
 from .tui.model import ChoiceRow, SelectorState
 from .tui.screens import select
@@ -60,11 +74,28 @@ WORKFLOW_ERRORS = (
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = create_parser().parse_args(argv)
+    parser = create_parser()
+    args = parser.parse_args(argv)
+    if args.command != "setup":
+        problem = option_problem(args)
+        if problem:
+            parser.error(problem)
+    if args.command != "setup" and args.json:
+        return json_command(args)
     try:
         if args.command == "setup":
             return setup_command()
-        return workflow_command(WorkflowId(args.command), args.operation)
+        workflow = WorkflowId(args.command)
+        if args.operation == "plan" and (args.add or args.remove):
+            plan, report = agent_plan(workflow, frozenset(args.add), frozenset(args.remove))
+            print_workflow_plan(plan)
+            print_change_summary(report)
+            return 0
+        if args.operation in {"status", "restore"} or args.plan:
+            report, code = agent_command(args, workflow)
+            print_report(report)
+            return code
+        return workflow_command(workflow, args.operation)
     except WORKFLOW_ERRORS as error:
         print(f"FAIL: {error}", file=sys.stderr)
         return 2
@@ -79,8 +110,34 @@ def create_parser() -> argparse.ArgumentParser:
     commands.add_parser("setup", help="Run Packages, Desktop, and Integrations")
     for workflow in WorkflowId:
         command = commands.add_parser(workflow.value, help=f"Manage {workflow.value}")
-        command.add_argument("operation", choices=("plan", "apply", "audit"))
+        command.add_argument("operation", choices=("plan", "apply", "audit", "status", "restore"))
+        command.add_argument("--json", action="store_true", help="never prompt; print one JSON report on stdout")
+        command.add_argument("--plan", metavar="DIGEST", help="the full digest of a saved plan; naming it approves it")
+        command.add_argument("--add", action="append", default=[], metavar="ID", help="plan: select ID (no selector)")
+        command.add_argument("--remove", action="append", default=[], metavar="ID", help="plan: clear ID (no selector)")
+        command.add_argument("--discard-local", action="store_true", help="apply/restore: replace files changed outside the bootstrap")
+        command.add_argument("--in-terminal", action="store_true", help="apply: run the approved plan in a terminal on the user's session")
+        command.add_argument("--wait", type=int, default=0, metavar="SECONDS", help="status: wait for a running or handed-off apply")
     return parser
+
+
+def option_problem(args: argparse.Namespace) -> str | None:
+    operation = args.operation
+    if (args.add or args.remove) and operation != "plan":
+        return "--add and --remove belong to plan"
+    if args.plan and operation == "plan":
+        return "plan creates a digest; --plan names an existing one"
+    if operation == "restore" and not args.plan:
+        return "restore needs --plan DIGEST"
+    if args.discard_local and operation not in {"apply", "restore"}:
+        return "--discard-local belongs to apply and restore"
+    if args.in_terminal and (operation != "apply" or not args.plan):
+        return "--in-terminal needs apply --plan DIGEST"
+    if args.wait and operation != "status":
+        return "--wait belongs to status"
+    if args.wait < 0:
+        return "--wait must not be negative"
+    return None
 
 
 def workflow_command(workflow: WorkflowId, operation: str) -> int:
@@ -117,9 +174,13 @@ def workflow_command(workflow: WorkflowId, operation: str) -> int:
         interactive=sys.stdin.isatty(),
     )
     status = "READY" if not result.skipped_features and not result.simulated else "INCOMPLETE"
+    code = EXIT_READY if status == "READY" else EXIT_INCOMPLETE
+    StateStore(Path(facts.target_home)).write_result(
+        workflow, agent.result_record(workflow.value, plan.digest, status, code, result=result)
+    )
     print(f"{workflow.value.title()}: {status}")
     print(f"Changed: {result.changed}; unchanged: {result.unchanged}; deferred: {result.simulated}")
-    return EXIT_READY if status == "READY" else EXIT_INCOMPLETE
+    return code
 
 
 def setup_command() -> int:
@@ -171,6 +232,17 @@ def hardware_hint(application_id: str, hint: str | None) -> str | None:
     return hint if hint and probe is not None and probe() else None
 
 
+def visible_catalog(repository, workflow: WorkflowId) -> dict[str, tuple[str, bool]]:
+    """Visible catalog ID -> (label, default) for one workflow."""
+    if workflow is WorkflowId.PACKAGES:
+        items = repository.applications.values()
+    else:
+        actual = repository.workflow(workflow).workspace
+        assert actual is not None
+        items = actual.public_catalog.values()
+    return {item.id: (item.label, item.default) for item in items if item.visible}
+
+
 def interactive_workflow_plan(workflow, repository, facts) -> WorkflowPlan:
     workspace = execution_workspace(repository, workflow)
     state = detect_host_state(workspace)
@@ -190,10 +262,6 @@ def interactive_workflow_plan(workflow, repository, facts) -> WorkflowPlan:
             if item.visible
         )
         selected = select("Select applications", SelectorState(rows)).selected_ids()
-        selected |= frozenset(
-            item.id for item in repository.applications.values() if item.default and not item.visible
-        )
-        plan = plan_packages(repository, facts, state, PackagesRequest(selected))
     else:
         actual = repository.workflow(workflow).workspace
         assert actual is not None
@@ -203,13 +271,31 @@ def interactive_workflow_plan(workflow, repository, facts) -> WorkflowPlan:
             if item.visible
         )
         selected = select(f"Select {workflow.value}", SelectorState(rows)).selected_ids()
+    return plan_for_selection(workflow, repository, facts, state, store, selected, interactive=True)
+
+
+def plan_for_selection(workflow, repository, facts, state, store, selected, *, interactive: bool) -> WorkflowPlan:
+    """Plan one workflow for a selection and save that selection."""
+    if workflow is WorkflowId.PACKAGES:
+        selected |= frozenset(
+            item.id for item in repository.applications.values() if item.default and not item.visible
+        )
+        plan = plan_packages(repository, facts, state, PackagesRequest(selected))
+    else:
+        actual = repository.workflow(workflow).workspace
+        assert actual is not None
         package_selection = store.read_selection(WorkflowId.PACKAGES)
         evidence = PackagesEvidence.create(
             package_selection.selected if package_selection else frozenset(),
             frozenset(state.packages | state.commands),
         )
         if workflow is WorkflowId.DESKTOP:
-            monitor = detect_monitor_content()
+            session = session_environment()
+            # Without the session the monitor falls back to a generic layout;
+            # an agent must not replace a real monitor setup with it.
+            if session is None and not interactive:
+                raise CatalogError("NEEDS SESSION: desktop planning reads the monitors from a running Hyprland session")
+            monitor = detect_monitor_content(session)
             plan = plan_desktop(
                 ROOT,
                 repository,
@@ -221,7 +307,7 @@ def interactive_workflow_plan(workflow, repository, facts) -> WorkflowPlan:
             )
         else:
             agents = frozenset(item for item in selected if item.startswith("agent."))
-            github_keys = reviewed_github_keys(actual, selected)
+            github_keys = reviewed_github_keys(actual, selected, interactive=interactive)
             plan = plan_integrations(
                 ROOT,
                 repository,
@@ -231,11 +317,19 @@ def interactive_workflow_plan(workflow, repository, facts) -> WorkflowPlan:
                 evidence,
                 github_keys=github_keys,
             )
-    store.write_selection(SelectionRecord(workflow, selected, repository.source_digest))
+    known = frozenset(visible_catalog(repository, workflow))
+    store.write_selection(SelectionRecord(workflow, selected, repository.source_digest, known))
     return plan
 
 
-def reviewed_github_keys(workspace: Workspace, selected: frozenset[str]) -> dict[str, tuple[str, ...]]:
+def reviewed_github_keys(
+    workspace: Workspace, selected: frozenset[str], *, interactive: bool = True
+) -> dict[str, tuple[str, ...]]:
+    """Fetch the GitHub keys to trust for incoming SSH.
+
+    Without a terminal the keys go into the plan unasked: the plan report
+    lists their fingerprints, and only a terminal apply installs them.
+    """
     usernames = {
         workspace.implementations[feature].github_ssh_user
         for feature in selected
@@ -246,23 +340,27 @@ def reviewed_github_keys(workspace: Workspace, selected: frozenset[str]) -> dict
     for username in sorted(usernames):
         assert username is not None
         keys = fetch_github_keys(username)
-        print(f"\nGitHub public keys for {username}:")
-        for key in keys:
-            print(f"  {ssh_fingerprint(key)}")
-        if not confirm("Trust these public keys for incoming SSH access?"):
-            raise CatalogError("SSH key approval was declined")
+        if interactive:
+            print(f"\nGitHub public keys for {username}:")
+            for key in keys:
+                print(f"  {ssh_fingerprint(key)}")
+            if not confirm("Trust these public keys for incoming SSH access?"):
+                raise CatalogError("SSH key approval was declined")
         reviewed[username] = keys
     return reviewed
 
 
-def detect_monitor_content() -> str | None:
-    if not shutil.which("hyprctl") or not os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
+def detect_monitor_content(environment: dict[str, str] | None = None) -> str | None:
+    if environment is None and os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
+        environment = dict(os.environ)
+    if not shutil.which("hyprctl") or environment is None:
         return None
     result = subprocess.run(
         ("hyprctl", "monitors", "all", "-j"),
         check=True,
         text=True,
         stdout=subprocess.PIPE,
+        env=environment,
     )
     monitors = json.loads(result.stdout)
     if not isinstance(monitors, list) or not monitors:
@@ -375,6 +473,388 @@ def confirm(prompt: str) -> bool:
     if not sys.stdin.isatty():
         raise CatalogError("interactive mode requires a terminal")
     return ask_yes_no(prompt)
+
+
+class StalePlan(CatalogError):
+    pass
+
+
+DIGEST_RE = re.compile(r"[0-9a-f]{64}")
+ACTIVE_STATUSES = {"RUNNING", "HANDED_OFF"}
+
+
+def bootstrap_command(*arguments: str) -> str:
+    return " ".join((str(ROOT / "bootstrap"), *arguments))
+
+
+def json_command(args: argparse.Namespace) -> int:
+    workflow = WorkflowId(args.command)
+    with agent.json_stdout() as descriptor:
+        try:
+            if args.operation == "plan":
+                _, report = agent_plan(workflow, frozenset(args.add), frozenset(args.remove))
+                code = agent.EXIT_READY
+            else:
+                report, code = agent_command(args, workflow)
+        except WORKFLOW_ERRORS as error:
+            status, code, next_actions = classify_error(error)
+            report = {
+                "schema": agent.REPORT_SCHEMA,
+                "command": args.operation,
+                "workflow": workflow.value,
+                "plan_digest": args.plan,
+                "status": status,
+                "message": str(error),
+                "next_actions": next_actions,
+            }
+        except KeyboardInterrupt:
+            report = {"schema": agent.REPORT_SCHEMA, "command": args.operation, "workflow": workflow.value, "status": "CANCELLED"}
+            code = 130
+        agent.emit(descriptor, report)
+    return code
+
+
+def classify_error(error: Exception) -> tuple[str, int, list[dict[str, str]]]:
+    message = str(error)
+    if isinstance(error, StalePlan):
+        return "STALE", agent.EXIT_ACTION_NEEDED, [{"who": "agent", "why": "plan again", "command": ""}]
+    if message.startswith("NEEDS PACKAGES: "):
+        missing = message.removeprefix("NEEDS PACKAGES: ").replace(",", " ").split()
+        command = bootstrap_command("packages", "plan", "--json", *(f"--add {item}" for item in missing))
+        return "NEEDS_PACKAGES", agent.EXIT_ACTION_NEEDED, [{"who": "agent", "why": "install the prerequisites first", "command": command}]
+    if message.startswith("NEEDS SESSION: "):
+        return "NEEDS_SESSION", agent.EXIT_ACTION_NEEDED, [{"who": "user", "why": "log in to the Hyprland session, then plan again", "command": ""}]
+    return "FAIL", agent.EXIT_FAIL, []
+
+
+def agent_command(args: argparse.Namespace, workflow: WorkflowId) -> tuple[dict[str, object], int]:
+    if args.operation == "status":
+        return status_command(workflow, args.plan, args.wait)
+    if args.operation == "restore":
+        return restore_command(workflow, args.plan, args.discard_local)
+    if args.operation == "audit":
+        return audit_command(workflow, args.plan)
+    if args.operation == "apply":
+        if not args.plan:
+            raise CatalogError("apply --json needs --plan DIGEST from a reviewed plan report")
+        return approved_apply(
+            workflow,
+            args.plan,
+            discard_local=args.discard_local,
+            in_terminal=args.in_terminal,
+            prompts=not args.json and sys.stdin.isatty(),
+        )
+    raise CatalogError(f"unsupported operation: {args.operation}")
+
+
+def agent_plan(
+    workflow: WorkflowId, add: frozenset[str], remove: frozenset[str]
+) -> tuple[WorkflowPlan, dict[str, object]]:
+    """Plan without the selector: the saved selection, or the defaults, plus add/remove."""
+    facts = detect_platform(LocalHostProbe(Path.home()))
+    repository = compile_repository(ROOT, facts.platform)
+    catalog = visible_catalog(repository, workflow)
+    unknown = (add | remove) - catalog.keys()
+    if unknown:
+        raise CatalogError(f"unknown {workflow.value} IDs: {', '.join(sorted(unknown))}")
+    if add & remove:
+        raise CatalogError(f"IDs both added and removed: {', '.join(sorted(add & remove))}")
+    store = StateStore(Path(facts.target_home))
+    previous = store.read_selection(workflow)
+    if workflow is WorkflowId.PACKAGES:
+        every = frozenset(repository.applications)
+    else:
+        workspace = repository.workflow(workflow).workspace
+        assert workspace is not None
+        every = frozenset(workspace.public_catalog)
+    base = previous.selected if previous else frozenset(item for item, (_, default) in catalog.items() if default)
+    selected = ((base & every) | add) - remove
+    new_items = sorted(catalog.keys() - previous.known) if previous and previous.known is not None else []
+    state = detect_host_state(execution_workspace(repository, workflow))
+    plan = plan_for_selection(workflow, repository, facts, state, store, selected, interactive=False)
+    path = save_workflow_plan(plan)
+    with HomeFiles(Path(facts.target_home)) as home:
+        changes = agent.describe_changes(plan, home, read_managed(home, workflow.value))
+    checkout = agent.checkout_state(ROOT)
+    next_actions: list[dict[str, object]] = []
+    problem = agent.checkout_problem(checkout)
+    if problem:
+        next_actions.append({"who": "user", "why": f"apply refuses this checkout: {problem}", "command": ""})
+    files = changes["files"]
+    assert isinstance(files, dict)
+    conflicts = [*files["local-edit"], *files["unmanaged"]]
+    apply_command = bootstrap_command(workflow.value, "apply", "--plan", plan.digest, "--json")
+    if conflicts:
+        next_actions.append(
+            {
+                "who": "user",
+                "why": "approve replacing files changed outside the bootstrap (each is backed up); then apply with --discard-local",
+                "command": f"{apply_command} --discard-local",
+                "files": conflicts,
+            }
+        )
+    next_actions.append({"who": "agent", "why": "apply the reviewed plan", "command": apply_command})
+    report: dict[str, object] = {
+        "schema": agent.REPORT_SCHEMA,
+        "command": "plan",
+        "workflow": workflow.value,
+        "status": "PLANNED",
+        "plan_digest": plan.digest,
+        "plan_path": str(path),
+        "checkout": checkout,
+        "selection": {
+            "selected": sorted(selected),
+            "new_items": [{"id": item, "label": catalog[item][0], "default": catalog[item][1]} for item in new_items],
+            "dropped_items": sorted(base - every),
+        },
+        "changes": changes,
+        "unavailable": list(getattr(plan, "unavailable", ())),
+        "next_actions": next_actions,
+    }
+    return plan, report
+
+
+def load_workflow_plan(workflow: WorkflowId, digest: str) -> WorkflowPlan:
+    if not DIGEST_RE.fullmatch(digest):
+        raise CatalogError("--plan needs the full 64-character plan digest")
+    path = Path.home() / ".local/state/arch-hypr-bootstrap/plans" / workflow.value / f"{digest}.json"
+    if not path.is_file():
+        raise StalePlan(f"no saved {workflow.value} plan {digest[:12]}; plan again")
+    plan = plan_from_dict(json.loads(path.read_text()))
+    if plan.header.workflow is not workflow or plan.digest != digest:
+        raise PlanSchemaError("saved plan does not match its digest or workflow")
+    return plan
+
+
+def approved_apply(
+    workflow: WorkflowId, digest: str, *, discard_local: bool, in_terminal: bool, prompts: bool
+) -> tuple[dict[str, object], int]:
+    """Apply the plan named by its digest; naming it is the approval.
+
+    Without a terminal it never prompts: packages, system services, the
+    firewall, and incoming SSH keys stop it with NEEDS_TERMINAL before any
+    change, and logins stay queued. Every outcome is saved for `status`.
+    """
+    facts = detect_platform(LocalHostProbe(Path.home()))
+    repository = compile_repository(ROOT, facts.platform)
+    plan = load_workflow_plan(workflow, digest)
+    store = StateStore(Path(facts.target_home))
+    checkout = agent.checkout_state(ROOT)
+    terminal = agent.terminal_command(ROOT, workflow.value, digest, discard_local)
+    handoff = bootstrap_command(workflow.value, "apply", "--plan", digest, "--json", "--in-terminal", *(("--discard-local",) if discard_local else ()))
+
+    def finish(status: str, code: int, message: str = "", **extra: object) -> tuple[dict[str, object], int]:
+        record = agent.result_record(workflow.value, digest, status, code, message=message, checkout=checkout, **extra)
+        store.write_result(workflow, record)
+        return {**record, "command": "apply"}, code
+
+    if plan.header.repository_digest != repository.source_digest:
+        raise StalePlan("the repository changed after planning; plan again")
+    problem = agent.checkout_problem(checkout)
+    if problem:
+        return finish("BLOCKED", agent.EXIT_ACTION_NEEDED, f"{problem}; ask the user", next_actions=[{"who": "user", "why": problem, "command": ""}])
+    try:
+        execution = execution_plan(repository, plan)
+        with HomeFiles(Path(plan.header.target_home)) as home:
+            conflicts = () if discard_local else local_conflicts(home, plan.actions, read_managed(home, workflow.value))
+            pending = terminal_pending(execution, home)
+            changes = agent.describe_changes(plan, home, {}) if prompts and pending else None
+        if conflicts:
+            return finish(
+                "CONFLICT",
+                agent.EXIT_ACTION_NEEDED,
+                "files changed outside the bootstrap; ask the user before replacing them",
+                conflicts=list(conflicts),
+                next_actions=[{"who": "user", "why": "approve replacing these files (each is backed up)", "command": f"{bootstrap_command(workflow.value, 'apply', '--plan', digest, '--json')} --discard-local"}],
+            )
+        if in_terminal:
+            session = session_environment()
+            if session is None:
+                return finish(
+                    "NEEDS_TERMINAL",
+                    agent.EXIT_ACTION_NEEDED,
+                    "no Hyprland session to open a terminal on",
+                    terminal_required=list(pending),
+                    next_actions=[{"who": "user", "why": "run this in a terminal", "command": shlex.join(terminal)}],
+                )
+            agent.launch_terminal(terminal, session)
+            return finish(
+                "HANDED_OFF",
+                agent.EXIT_ACTION_NEEDED,
+                "a terminal opened on the session; the user types the sudo password there",
+                terminal_required=list(pending),
+                next_actions=[{"who": "agent", "why": "wait for the terminal apply", "command": bootstrap_command(workflow.value, "status", "--plan", digest, "--wait", "900", "--json")}],
+            )
+        if prompts and pending:
+            print(f"\n{workflow.value.title()} plan {digest[:12]} needs your authority for:")
+            for item in pending:
+                print(f"  {item}")
+            assert changes is not None
+            for user, fingerprints in dict(changes["new_ssh_keys"]).items():
+                print(f"  incoming SSH keys from {user}: {', '.join(fingerprints)}")
+            if any(not item.startswith(f"{ActionKind.AUTHORIZED_SSH_KEYS.value}:") for item in pending):
+                print("sudo asks for your password now; pacman may ask before its transaction.")
+                subprocess.run(("/usr/bin/sudo", "-v"), check=True)
+            elif not confirm("Trust these SSH keys for incoming access?"):
+                return finish("DECLINED", agent.EXIT_DRIFT, "SSH key trust was declined")
+        store.write_result(workflow, agent.result_record(workflow.value, digest, "RUNNING", agent.EXIT_ACTION_NEEDED, checkout=checkout, pid=os.getpid()))
+        result = apply_workflow_plan(
+            ROOT,
+            repository,
+            plan,
+            facts,
+            system_changes=True,
+            interactive=prompts,
+            reviewed=True,
+            discard_local=discard_local,
+        )
+    except NeedsTerminal as error:
+        return finish(
+            "NEEDS_TERMINAL",
+            agent.EXIT_ACTION_NEEDED,
+            "nothing changed; packages, services, firewall or SSH keys need the user's terminal",
+            terminal_required=list(error.pending),
+            next_actions=[{"who": "agent", "why": "open a terminal where the user types the sudo password", "command": handoff}],
+        )
+    except LocalEditConflict as error:
+        return finish("CONFLICT", agent.EXIT_ACTION_NEEDED, str(error), conflicts=list(error.targets))
+    except KeyboardInterrupt:
+        return finish("CANCELLED", 130, "interrupted; apply the same plan again to resume")
+    except WORKFLOW_ERRORS as error:
+        return finish("FAIL", agent.EXIT_FAIL, str(error), next_actions=[{"who": "agent", "why": "report the error to the user; the same plan resumes after a fix", "command": ""}])
+    next_actions: list[dict[str, object]] = []
+    reasons = {item.reason for item in result.deferred}
+    if "needs-login" in reasons or "waiting-for-login" in reasons:
+        next_actions.append({"who": "agent", "why": "open a terminal where the user finishes the queued logins", "command": handoff})
+    if "needs-session" in reasons:
+        next_actions.append({"who": "user", "why": "log in to the Hyprland session, then the agent applies the same plan again", "command": bootstrap_command(workflow.value, "apply", "--plan", digest, "--json")})
+    if result.skipped_features:
+        next_actions.append({"who": "user", "why": "declined AUR builds stay skipped for this plan", "command": ""})
+    ready = not result.deferred and not result.skipped_features
+    return finish(
+        "READY" if ready else "INCOMPLETE",
+        agent.EXIT_READY if ready else agent.EXIT_ACTION_NEEDED,
+        result=result,
+        next_actions=next_actions,
+    )
+
+
+
+def status_command(workflow: WorkflowId, digest: str | None, wait: int) -> tuple[dict[str, object], int]:
+    store = StateStore(Path.home())
+    deadline = time.monotonic() + wait
+    while True:
+        record = store.read_result(workflow)
+        if record is not None and digest and record.get("plan_digest") != digest:
+            record = None
+        if record is not None and record.get("status") == "RUNNING" and not _process_alive(record.get("pid")):
+            record = {**record, "status": "INTERRUPTED", "exit_code": agent.EXIT_ACTION_NEEDED, "message": "the apply stopped before it finished; apply the same plan again to resume"}
+        waiting = record is None or record.get("status") in ACTIVE_STATUSES
+        if not waiting or time.monotonic() >= deadline:
+            break
+        time.sleep(2)
+    if record is None:
+        return {"schema": agent.REPORT_SCHEMA, "command": "status", "workflow": workflow.value, "plan_digest": digest, "status": "NO_RESULT"}, agent.EXIT_ACTION_NEEDED
+    code = record.get("exit_code")
+    if record.get("status") in ACTIVE_STATUSES or not isinstance(code, int):
+        code = agent.EXIT_ACTION_NEEDED
+    return {**record, "command": "status"}, code
+
+
+def _process_alive(pid: object) -> bool:
+    if not isinstance(pid, int) or pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> tuple[dict[str, object], int]:
+    """Put back the files one applied plan replaced and remove those it created."""
+    facts = detect_platform(LocalHostProbe(Path.home()))
+    plan = load_workflow_plan(workflow, digest)
+    if plan.header.target_home != facts.target_home:
+        raise PlanHostMismatch("plan target home differs from the current home")
+    store = StateStore(Path(facts.target_home))
+    try:
+        result = restore_files(Path(facts.target_home), plan.actions, digest, workflow.value, discard_local=discard_local)
+    except LocalEditConflict as error:
+        report = agent.result_record(workflow.value, digest, "CONFLICT", agent.EXIT_ACTION_NEEDED, message=str(error), operation="restore", conflicts=list(error.targets))
+        return {**report, "command": "restore"}, agent.EXIT_ACTION_NEEDED
+    changed = (*result.restored, *result.removed)
+    deferred: list[dict[str, str]] = []
+    if any(target.startswith(".config/systemd/user/") for target in changed):
+        run(("/usr/bin/systemctl", "--user", "daemon-reload"))
+    if workflow is WorkflowId.DESKTOP and changed and not reload_hyprland():
+        deferred.append({"kind": "hyprland-reload", "feature": "core-desktop", "reason": "needs-session", "detail": ""})
+    status, code = ("INCOMPLETE", agent.EXIT_ACTION_NEEDED) if deferred else ("RESTORED", agent.EXIT_READY)
+    record = agent.result_record(
+        workflow.value,
+        digest,
+        status,
+        code,
+        operation="restore",
+        restored=list(result.restored),
+        removed=list(result.removed),
+        deferred=deferred,
+    )
+    store.write_result(workflow, record)
+    return {**record, "command": "restore"}, code
+
+
+def audit_command(workflow: WorkflowId, digest: str | None) -> tuple[dict[str, object], int]:
+    facts = detect_platform(LocalHostProbe(Path.home()))
+    repository = compile_repository(ROOT, facts.platform)
+    plan = load_workflow_plan(workflow, digest) if digest else load_latest_workflow_plan(workflow)
+    if plan.header.repository_digest != repository.source_digest:
+        raise StalePlan("the repository changed after planning; plan again and audit that plan")
+    findings = audit_install(execution_workspace(repository, workflow), execution_plan(repository, plan), facts)
+    drift = any(item.status == "FAIL" for item in findings)
+    return {
+        "schema": agent.REPORT_SCHEMA,
+        "command": "audit",
+        "workflow": workflow.value,
+        "plan_digest": plan.digest,
+        "status": "DRIFT" if drift else "CLEAN",
+        "findings": [
+            {"status": item.status, "kind": item.kind, "feature": item.feature, "message": item.message}
+            for item in findings
+        ],
+    }, agent.EXIT_DRIFT if drift else agent.EXIT_READY
+
+
+def print_change_summary(report: dict[str, object]) -> None:
+    changes = report["changes"]
+    assert isinstance(changes, dict)
+    files = changes["files"]
+    assert isinstance(files, dict)
+    print(f"Files: {len(files['create'])} new, {len(files['update'])} updated, {files['unchanged']} unchanged")
+    for kind in ("local-edit", "unmanaged"):
+        for target in files[kind]:
+            print(f"  {kind}: {target}")
+    for item in changes["terminal_required"]:
+        print(f"  needs a terminal: {item}")
+    for item in changes["logins_pending"]:
+        print(f"  login queued: {item}")
+
+
+def print_report(report: dict[str, object]) -> None:
+    print(f"{str(report.get('workflow', '')).title()}: {report.get('status')}")
+    if report.get("message"):
+        print(report["message"])
+    for name in ("conflicts", "terminal_required", "restored", "removed"):
+        for item in report.get(name, ()) or ():
+            print(f"  {name}: {item}")
+    for item in report.get("deferred", ()) or ():
+        print(f"  deferred: {item['feature']} ({item['reason']})")
+    for item in report.get("findings", ()) or ():
+        print(f"{item['status']:4} {item['feature']}: {item['message']}")
+    for item in report.get("next_actions", ()) or ():
+        print(f"  next ({item['who']}): {item['why']}" + (f": {item['command']}" if item.get("command") else ""))
 
 
 if __name__ == "__main__":

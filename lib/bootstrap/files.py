@@ -244,6 +244,44 @@ class HomeFiles:
             raise FileBoundaryError(f"postcondition failed for {target}")
         return True
 
+    def entry(self, target: str) -> tuple[bytes | None, str | None, int] | None:
+        """Return (content, symlink, mode) of a regular file or symlink."""
+        parent, name = self._parent(target, create=False)
+        if parent is None:
+            return None
+        try:
+            metadata = os.stat(name, dir_fd=parent, follow_symlinks=False)
+            if stat.S_ISLNK(metadata.st_mode):
+                return None, os.readlink(name, dir_fd=parent), metadata.st_mode & 0o777
+            if not stat.S_ISREG(metadata.st_mode):
+                raise FileBoundaryError(f"target is not a regular file: {target}")
+            descriptor = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=parent)
+            try:
+                chunks: list[bytes] = []
+                while chunk := os.read(descriptor, 1024 * 1024):
+                    chunks.append(chunk)
+            finally:
+                os.close(descriptor)
+            return b"".join(chunks), None, metadata.st_mode & 0o777
+        except FileNotFoundError:
+            return None
+        finally:
+            os.close(parent)
+
+    def remove(self, target: str, *, backup_root: str) -> bool:
+        """Back up a file or symlink once, then unlink it."""
+        if self.hash(target) is None:
+            return False
+        self._backup_once(target, backup_root)
+        parent, name = self._parent(target, create=False)
+        assert parent is not None
+        try:
+            os.unlink(name, dir_fd=parent)
+            os.fsync(parent)
+        finally:
+            os.close(parent)
+        return True
+
     def _backup_once(self, target: str, backup_root: str) -> None:
         if self.hash(target) is None:
             return
