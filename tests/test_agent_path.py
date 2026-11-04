@@ -660,12 +660,40 @@ class UpdateCycleTests(CliCase):
         # Reported once: the apply keeps the file and stops tracking it.
         self.assertTrue(os.path.lexists(self.home / dropped))
         self.assertEqual(self.plan()["changes"]["files"]["orphaned"], [])
+        # Restoring that apply tracks the unchanged file again.
+        code, report = self.run_cli("desktop", "restore", "--plan", orphaned["plan_digest"], "--json")
+        self.assertEqual((code, report["status"]), (0, "RESTORED"))
+        self.assertIn(dropped, StateStore(self.home).read_managed(WorkflowId.DESKTOP))
 
         # Restore undoes that apply: the hand edit comes back from its backup.
         code, report = self.run_cli("desktop", "restore", "--plan", edited["plan_digest"], "--json")
         self.assertEqual((code, report["status"], report["restored"]), (0, "RESTORED", [BINDINGS]))
         self.assertTrue(bindings.read_text().endswith("-- my tweak\n"))
         self.assertNotEqual(bindings.read_text(), first)
+
+
+class FirewallTests(unittest.TestCase):
+    def test_unreadable_rules_fall_back_to_the_verified_marker(self):
+        from bootstrap import executor
+
+        with tempfile.TemporaryDirectory() as directory, cli.HomeFiles(Path(directory)) as home, mock.patch.object(
+            executor.Path, "read_text", side_effect=PermissionError
+        ):
+            self.assertIsNone(executor.ufw_rule_present())
+            self.assertFalse(executor.firewall_rule_satisfied(home))
+            home.ensure_directory(".local/state/arch-hypr-bootstrap", 0o700)
+            home.write_private_atomic(executor.FIREWALL_MARKER, b"limit 22/tcp\n")
+            self.assertTrue(executor.firewall_rule_satisfied(home))
+
+    def test_readable_rules_decide(self):
+        from bootstrap import executor
+
+        with tempfile.TemporaryDirectory() as directory, cli.HomeFiles(Path(directory)) as home:
+            home.ensure_directory(".local/state/arch-hypr-bootstrap", 0o700)
+            home.write_private_atomic(executor.FIREWALL_MARKER, b"limit 22/tcp\n")
+            with mock.patch.object(executor.Path, "read_text", return_value="### tuple ### allow tcp 80\n"):
+                self.assertIs(executor.ufw_rule_present(), False)
+                self.assertFalse(executor.firewall_rule_satisfied(home))
 
 
 class SelectionStateTests(unittest.TestCase):

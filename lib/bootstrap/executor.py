@@ -321,6 +321,12 @@ def _apply_locked(
                 ).returncode:
                     raise RuntimeError("UFW is not active; refusing to change firewall policy")
                 run(("/usr/bin/sudo", "/usr/bin/ufw", "limit", "22/tcp"))
+                # Verified through sudo while it is at hand, and remembered:
+                # the rule files may be readable by root only.
+                status = capture(("/usr/bin/sudo", "/usr/bin/ufw", "status"))
+                if not re.search(r"^22/tcp\s+LIMIT\b", status, re.MULTILINE):
+                    raise RuntimeError("UFW does not report the SSH limit rule after adding it")
+                home.write_private_atomic(FIREWALL_MARKER, b"limit 22/tcp\n")
                 changed += 1
             elif item.kind is ActionKind.HYPRLAND_RELOAD:
                 if not reload_hyprland():
@@ -389,7 +395,7 @@ def terminal_action_satisfied(item: PlannedAction, home: HomeFiles) -> bool:
     if item.kind is ActionKind.SYSTEM_UNIT:
         return service_active(str(item.data["name"]))
     if item.kind is ActionKind.FIREWALL_RULE:
-        return ufw_rule_present()
+        return firewall_rule_satisfied(home)
     if item.kind is ActionKind.AUTHORIZED_SSH_KEYS:
         current = set((home.read_text(".ssh/authorized_keys") or "").splitlines())
         return set(strings(item.data["keys"])).issubset(current)
@@ -543,6 +549,11 @@ def restore_files(
                     managed[target] = previous
                 else:
                     managed.pop(target, None)
+            # Orphans that apply released are tracked again while unchanged.
+            planned = {str(item.data["target"]) for item in actions if item.kind in FILE_ACTIONS}
+            for target, previous in managed_before.items():
+                if target not in planned and target not in managed and home.hash(target) == previous:
+                    managed[target] = previous
             write_managed(home, workflow, managed)
             return RestoreResult(tuple(restored), tuple(removed), tuple(settled))
         finally:
@@ -845,7 +856,7 @@ def action_satisfied(
         current = set((home.read_text(".ssh/authorized_keys") or "").splitlines())
         return set(strings(item.data["keys"])).issubset(current) and service_active("sshd.service")
     if item.kind is ActionKind.FIREWALL_RULE:
-        return ufw_rule_present()
+        return firewall_rule_satisfied(home)
     return False
 
 
@@ -989,15 +1000,30 @@ def service_active(name: str) -> bool:
     return not enabled and not active
 
 
-def ufw_rule_present() -> bool:
+FIREWALL_MARKER = f"{STATE_ROOT}/firewall-limit-22.verified"
+
+
+def ufw_rule_present() -> bool | None:
+    """True or False from the UFW rule files; None when none is readable."""
     pattern = re.compile(r"^### tuple ### limit tcp 22(?:\s|$)")
+    readable = False
     for path in (Path("/etc/ufw/user.rules"), Path("/etc/ufw/user6.rules")):
         try:
-            if any(pattern.search(line) for line in path.read_text().splitlines()):
-                return True
+            lines = path.read_text().splitlines()
         except OSError:
             continue
-    return False
+        readable = True
+        if any(pattern.search(line) for line in lines):
+            return True
+    return False if readable else None
+
+
+def firewall_rule_satisfied(home: HomeFiles) -> bool:
+    """The rule files decide; without read access, an earlier verified apply does."""
+    present = ufw_rule_present()
+    if present is None:
+        return home.read_text(FIREWALL_MARKER) is not None
+    return present
 
 
 def git_output(target: Path, *arguments: str) -> str:

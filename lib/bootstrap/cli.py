@@ -151,6 +151,10 @@ def workflow_command(workflow: WorkflowId, operation: str) -> int:
         plan = interactive_workflow_plan(workflow, repository, facts)
         save_workflow_plan(plan)
         print_workflow_plan(plan)
+        with HomeFiles(Path(facts.target_home)) as home:
+            orphaned = agent.describe_changes(plan, home, read_managed(home, workflow.value))["files"]["orphaned"]
+        for target in orphaned:
+            print(f"  no longer in the configuration (kept, tracking ends with this apply): {target}")
         return 0
     plan = load_latest_workflow_plan(workflow)
     if plan.header.repository_digest != repository.source_digest:
@@ -619,15 +623,6 @@ def agent_plan(
                 "files": conflicts,
             }
         )
-    if files["orphaned"]:
-        next_actions.append(
-            {
-                "who": "user",
-                "why": "these files left the configuration; the bootstrap never deletes them and stops tracking them after this apply; mention them in your report",
-                "command": "",
-                "files": files["orphaned"],
-            }
-        )
     next_actions.append({"who": "agent", "why": "apply the reviewed plan", "command": apply_command})
     report: dict[str, object] = {
         "schema": agent.REPORT_SCHEMA,
@@ -909,13 +904,18 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
     home = Path(facts.target_home)
     units = {str(item.data["name"]) for item in plan.actions if item.kind is ActionKind.USER_UNIT}
 
+    deferred: list[dict[str, str]] = []
+
     def disable_removed_units(preview) -> None:
         # A unit the plan created and enabled is disabled while its file
         # still exists, so no enable link is left pointing at nothing.
         for target in preview.removed:
             unit = user_unit_name(target)
             if unit in units and target == f".config/systemd/user/{unit}":
-                run(("/usr/bin/systemctl", "--user", "disable", "--now", unit))
+                try:
+                    run(("/usr/bin/systemctl", "--user", "disable", "--now", unit))
+                except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
+                    deferred.append({"kind": "user-unit", "feature": unit, "reason": "disable-failed", "detail": str(error)})
 
     try:
         result = restore_files(
@@ -926,7 +926,6 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
     except LocalEditConflict as error:
         report = agent.result_record(workflow.value, digest, "CONFLICT", agent.EXIT_ACTION_NEEDED, message=str(error), operation="restore", conflicts=list(error.targets))
         return {**report, "command": "restore"}, agent.EXIT_ACTION_NEEDED
-    deferred: list[dict[str, str]] = []
     # Reload on every run, not only when files changed now: a restore resumed
     # after an interruption or a failed reload must still finish both.
     targets = [str(item.data.get("target", "")) for item in plan.actions]
@@ -944,6 +943,13 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
     if workflow is WorkflowId.DESKTOP and not reload_hyprland():
         deferred.append({"kind": "hyprland-reload", "feature": "core-desktop", "reason": "needs-session", "detail": ""})
     status, code = ("INCOMPLETE", agent.EXIT_ACTION_NEEDED) if deferred else ("RESTORED", agent.EXIT_READY)
+    next_actions = [
+        {"who": "user", "why": f"unit {item['feature']}: {item['reason']}; check it", "command": f"systemctl --user status {shlex.quote(item['feature'])}"}
+        for item in deferred
+        if item["kind"] == "user-unit"
+    ]
+    if any(item["reason"] == "needs-session" for item in deferred):
+        next_actions.append({"who": "user", "why": "log in to the Hyprland session, then the agent runs the same restore again", "command": bootstrap_command(workflow.value, "restore", "--plan", digest, "--json")})
     record = agent.result_record(
         workflow.value,
         digest,
@@ -953,6 +959,7 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
         restored=list(result.restored),
         removed=list(result.removed),
         deferred=deferred,
+        next_actions=next_actions,
     )
     store.write_result_locked(workflow, record)
     return {**record, "command": "restore"}, code
