@@ -261,7 +261,7 @@ def interactive_workflow_plan(workflow, repository, facts) -> WorkflowPlan:
     return plan_for_selection(workflow, repository, facts, state, store, selected, interactive=True)
 
 
-def plan_for_selection(workflow, repository, facts, state, store, selected, *, interactive: bool) -> WorkflowPlan:
+def plan_for_selection(workflow, repository, facts, state, store, selected, *, interactive: bool, known=None) -> WorkflowPlan:
     """Plan one workflow for a selection and save that selection."""
     if workflow is WorkflowId.PACKAGES:
         selected |= frozenset(
@@ -304,7 +304,8 @@ def plan_for_selection(workflow, repository, facts, state, store, selected, *, i
                 evidence,
                 github_keys=github_keys,
             )
-    known = frozenset(visible_catalog(repository, workflow))
+    if known is None:
+        known = frozenset(visible_catalog(repository, workflow))
     store.write_selection(SelectionRecord(workflow, selected, repository.source_digest, known))
     return plan
 
@@ -553,10 +554,11 @@ def agent_plan(workflow: WorkflowId, add: frozenset[str], remove: frozenset[str]
     existing = repository.applications.keys() if workflow is WorkflowId.PACKAGES else workspace.public_catalog.keys()
     selected = ((base & existing) | add) - remove
     new_items = sorted(catalog.keys() - previous.known) if previous and previous.known is not None else []
-    plan = plan_for_selection(workflow, repository, facts, detect_host_state(workspace), store, selected, interactive=False)
-    if previous is not None and previous.known is not None and not (add or remove):
-        # New items stay reported until someone changes the selection.
-        store.write_selection(SelectionRecord(workflow, selected, repository.source_digest, previous.known))
+    # New items stay reported until someone changes the selection.
+    keep_known = previous.known if previous is not None and not (add or remove) else None
+    plan = plan_for_selection(
+        workflow, repository, facts, detect_host_state(workspace), store, selected, interactive=False, known=keep_known
+    )
     save_workflow_plan(plan)
     with HomeFiles(Path(facts.target_home)) as home:
         changes = agent.describe_changes(plan, home, read_managed(home, workflow.value))
