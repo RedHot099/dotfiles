@@ -283,11 +283,17 @@ class HomeFiles:
         return True
 
     def _backup_once(self, target: str, backup_root: str) -> None:
-        if self.hash(target) is None:
+        current = self.hash(target)
+        if current is None:
             return
         backup = f"{backup_root}/{target}"
-        if self.hash(backup) is not None:
+        existing = self.hash(backup)
+        if existing == current:
             return
+        if existing is not None:
+            # The first backup stays the one restore uses; a later version
+            # (a local edit replaced on a re-apply) gets its own copy.
+            backup = f"{backup_root}/.superseded/{current[:16]}/{target}"
         source_parent, source_name = self._parent(target, create=False)
         assert source_parent is not None
         try:

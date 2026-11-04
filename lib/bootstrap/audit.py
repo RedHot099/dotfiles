@@ -14,6 +14,7 @@ from .executor import (
     run_probe,
     strings,
     tool_installed,
+    ufw_rule_present,
 )
 from .packages import installed_versions, transaction_from_action
 from .files import FileBoundaryError, HomeFiles
@@ -97,6 +98,8 @@ def audit_action(item: PlannedAction, home: HomeFiles, isolated: bool) -> AuditF
             item.feature,
             "authentication ready" if ready else f"manual login required: {item.data['label']}",
         )
+    if item.kind is ActionKind.FIREWALL_RULE and ufw_rule_present() is None:
+        return AuditFinding("WARN", kind, item.feature, "UFW rule files are readable by root only")
     if item.kind is ActionKind.USER_DAEMON_RELOAD:
         return AuditFinding("PASS", kind, item.feature, "daemon reload is an apply transition")
     if item.kind is ActionKind.HYPRLAND_RELOAD:

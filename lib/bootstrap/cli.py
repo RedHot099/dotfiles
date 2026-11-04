@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import time
+from dataclasses import replace
 from pathlib import Path
 
 from . import agent
@@ -26,6 +27,7 @@ from .domain import (
 from .execution import apply_workflow_plan, execution_plan, execution_workspace
 from .executor import (
     ApplyLocked,
+    strings,
     UNIT_DIRECTORY,
     LocalEditConflict,
     NeedsTerminal,
@@ -42,7 +44,7 @@ from .planning.model import PackagesEvidence, WorkflowPlan, plan_from_dict
 from .platform import PlatformDetectionError, detect_platform
 from .repository import compile_repository
 from .session import session_environment
-from .state import SelectionRecord, StateStore, read_managed
+from .state import STATE_ROOT, SelectionRecord, StateStore, read_managed
 from .ssh import fetch_github_keys, ssh_fingerprint
 from .tui.model import ChoiceRow, SelectorState
 from .tui.screens import select
@@ -544,16 +546,18 @@ def agent_plan(workflow: WorkflowId, add: frozenset[str], remove: frozenset[str]
     facts = detect_platform(LocalHostProbe(Path.home()))
     repository = compile_repository(ROOT, facts.platform)
     catalog = visible_catalog(repository, workflow)
-    unknown = (add | remove) - catalog.keys()
-    if unknown:
-        raise CatalogError(f"unknown {workflow.value} IDs: {', '.join(sorted(unknown))}")
     store = StateStore(Path(facts.target_home))
     previous = store.read_selection(workflow)
     base = previous.selected if previous else frozenset(item for item, (_, default) in catalog.items() if default)
-    selected = (base | add) - remove
+    # IDs the repository dropped since the selection was saved fall away.
+    workspace = execution_workspace(repository, workflow)
+    existing = repository.applications.keys() if workflow is WorkflowId.PACKAGES else workspace.public_catalog.keys()
+    selected = ((base & existing) | add) - remove
     new_items = sorted(catalog.keys() - previous.known) if previous and previous.known is not None else []
-    state = detect_host_state(execution_workspace(repository, workflow))
-    plan = plan_for_selection(workflow, repository, facts, state, store, selected, interactive=False)
+    plan = plan_for_selection(workflow, repository, facts, detect_host_state(workspace), store, selected, interactive=False)
+    if previous is not None and not (add or remove):
+        # New items stay reported until someone changes the selection.
+        store.write_selection(replace(store.read_selection(workflow), known=previous.known))
     save_workflow_plan(plan)
     with HomeFiles(Path(facts.target_home)) as home:
         changes = agent.describe_changes(plan, home, read_managed(home, workflow.value))
@@ -611,8 +615,8 @@ def approved_apply(
         raise StalePlan("the repository changed after planning; plan again")
     store = StateStore(Path(facts.target_home))
     checkout = agent.checkout_state(ROOT)
-    flags = ("--discard-local",) if discard_local else ()
-    handoff = bootstrap_command(workflow.value, "apply", "--plan", digest, "--json", "--in-terminal", *flags)
+    terminal = [str(ROOT / "bootstrap"), workflow.value, "apply", "--plan", digest, *(("--discard-local",) if discard_local else ())]
+    handoff = shlex.join([*terminal, "--json", "--in-terminal"])
 
     def finish(status: str, code: int, message: str = "", **extra: object) -> tuple[dict[str, object], int]:
         record = agent.result_record(workflow.value, digest, status, code, message=message, checkout=checkout, **extra)
@@ -635,7 +639,6 @@ def approved_apply(
                 next_actions=[step("user", "approve replacing these files (each is backed up)", bootstrap_command(workflow.value, "apply", "--plan", digest, "--json", "--discard-local"))],
             )
         if in_terminal:
-            terminal = agent.terminal_command(ROOT, workflow.value, digest, discard_local)
             session = session_environment()
             if session is None:
                 return finish("NEEDS_TERMINAL", agent.EXIT_ACTION_NEEDED, "no Hyprland session to open a terminal on", next_actions=[step("user", "run this in a terminal", shlex.join(terminal))])
@@ -651,9 +654,11 @@ def approved_apply(
             return report
         # Saved before the password prompt: a terminal closed there reads as INTERRUPTED.
         store.write_result(workflow, agent.result_record(workflow.value, digest, "RUNNING", agent.EXIT_ACTION_NEEDED, checkout=checkout, pid=os.getpid()))
-        if prompts and any(not item.startswith(f"{ActionKind.AUTHORIZED_SSH_KEYS.value}:") for item in pending):
-            print("sudo asks for your password now; pacman may ask before its transaction.")
-            subprocess.run(("/usr/bin/sudo", "-v"), check=True)
+        keys = [ssh_fingerprint(key) for item in plan.actions if item.kind is ActionKind.AUTHORIZED_SSH_KEYS for key in strings(item.data["keys"])]
+        if prompts and any(item.startswith(f"{ActionKind.AUTHORIZED_SSH_KEYS.value}:") for item in pending):
+            # Incoming SSH access is granted only on a keypress in the user's terminal.
+            if not confirm(f"Trust these SSH keys for incoming access? {', '.join(keys)}"):
+                return finish("DECLINED", agent.EXIT_DRIFT, "SSH key trust was declined")
         result = apply_workflow_plan(
             ROOT, repository, plan, facts, system_changes=True, interactive=prompts, reviewed=True, discard_local=discard_local
         )
@@ -726,6 +731,13 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
     plan = load_workflow_plan(workflow, digest)
     if plan.header.target_home != facts.target_home:
         raise PlanHostMismatch("plan target home differs from the current home")
+    units = {str(item.data["name"]) for item in plan.actions if item.kind is ActionKind.USER_UNIT}
+    with HomeFiles(Path(facts.target_home)) as home:
+        journal = json.loads(home.read_text(f"{STATE_ROOT}/journals/{digest}.json") or "{}")
+    for unit in sorted(units):
+        # A unit this plan created goes with its file; disable it while the file exists.
+        if f"{UNIT_DIRECTORY}{unit}" in journal.get("created", []):
+            subprocess.run(("/usr/bin/systemctl", "--user", "disable", "--now", unit), check=False)
     try:
         result = restore_files(Path(facts.target_home), plan.actions, digest, workflow.value, discard_local=discard_local)
     except LocalEditConflict as error:
@@ -734,7 +746,6 @@ def restore_command(workflow: WorkflowId, digest: str, discard_local: bool) -> t
     if any(str(item.data.get("target", "")).startswith(".config/systemd/user/") for item in plan.actions):
         run(("/usr/bin/systemctl", "--user", "daemon-reload"))
     # A running unit keeps its definition until it restarts.
-    units = {str(item.data["name"]) for item in plan.actions if item.kind is ActionKind.USER_UNIT}
     for unit in sorted(units & {target.removeprefix(UNIT_DIRECTORY) for target in result.restored}):
         run(("/usr/bin/systemctl", "--user", "try-restart", unit))
     # Reloaded on every run, so a restore repeated after a failed reload finishes it.

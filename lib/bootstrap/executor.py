@@ -171,6 +171,8 @@ def _apply_locked(
     journal = read_json(home.read_text(journal_target), {"completed": [], "skipped_features": []})
     completed = set(strings(journal.get("completed")))
     created = set(strings(journal.get("created", [])))
+    # Units whose files changed, kept until restarted so a resumed apply still restarts them.
+    restart = set(strings(journal.get("restart", [])))
     skipped.update(strings(journal.get("skipped_features")))
     # Both checks run under the apply lock and before the first change.
     if system_changes and not interactive:
@@ -185,8 +187,7 @@ def _apply_locked(
     if system_changes:
         if interactive and not options.reviewed:
             review_aur_actions(plan, skipped)
-        write_journal(home, journal_target, completed, skipped, plan.digest, created)
-    restart: set[str] = set()
+        write_journal(home, journal_target, completed, skipped, plan.digest, created, restart)
     sources = {
         (feature, entry.target, entry.sha256): entry
         for feature, entries in workspace.payload.items()
@@ -237,6 +238,7 @@ def _apply_locked(
         ):
             # A running unit keeps its old definition until it restarts.
             run(("/usr/bin/systemctl", "--user", "restart", str(item.data["name"])))
+            restart.discard(str(item.data["name"]))
             changed += 1
         elif action_satisfied(item, home, environment):
             unchanged += 1
@@ -309,7 +311,7 @@ def _apply_locked(
         else:
             raise CatalogError(f"executor does not implement action: {item.kind.value}")
         completed.add(action_id)
-        write_journal(home, journal_target, completed, skipped, plan.digest, created)
+        write_journal(home, journal_target, completed, skipped, plan.digest, created, restart)
     return ApplyResult(changed, unchanged, simulated, tuple(sorted(skipped)), tuple(deferred))
 
 
@@ -346,7 +348,8 @@ def terminal_action_satisfied(item: PlannedAction, home: HomeFiles) -> bool:
     if item.kind is ActionKind.SYSTEM_UNIT:
         return service_active(str(item.data["name"]))
     if item.kind is ActionKind.FIREWALL_RULE:
-        return ufw_rule_present()
+        # Unreadable without root: no handoff just to look; a terminal apply re-adds it.
+        return ufw_rule_present() is not False
     if item.kind is ActionKind.AUTHORIZED_SSH_KEYS:
         current = set((home.read_text(".ssh/authorized_keys") or "").splitlines())
         return set(strings(item.data["keys"])).issubset(current)
@@ -701,12 +704,14 @@ def write_journal(
     skipped: set[str],
     digest: str,
     created: set[str] = frozenset(),
+    restart: set[str] = frozenset(),
 ) -> None:
     content = json_bytes(
         {
             "plan_digest": digest,
             "completed": sorted(completed),
             "created": sorted(created),
+            "restart": sorted(restart),
             "skipped_features": sorted(skipped),
         }
     )
@@ -773,7 +778,7 @@ def action_satisfied(
         current = set((home.read_text(".ssh/authorized_keys") or "").splitlines())
         return set(strings(item.data["keys"])).issubset(current) and service_active("sshd.service")
     if item.kind is ActionKind.FIREWALL_RULE:
-        return ufw_rule_present()
+        return ufw_rule_present() is True
     return False
 
 
@@ -917,15 +922,19 @@ def service_active(name: str) -> bool:
     return not enabled and not active
 
 
-def ufw_rule_present() -> bool:
+def ufw_rule_present() -> bool | None:
+    """From the UFW rule files; None when root alone can read them."""
     pattern = re.compile(r"^### tuple ### limit tcp 22(?:\s|$)")
+    readable = False
     for path in (Path("/etc/ufw/user.rules"), Path("/etc/ufw/user6.rules")):
         try:
-            if any(pattern.search(line) for line in path.read_text().splitlines()):
-                return True
+            lines = path.read_text().splitlines()
         except OSError:
             continue
-    return False
+        readable = True
+        if any(pattern.search(line) for line in lines):
+            return True
+    return False if readable else None
 
 
 def git_output(target: Path, *arguments: str) -> str:

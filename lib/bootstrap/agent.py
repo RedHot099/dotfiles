@@ -185,11 +185,6 @@ def result_record(
     return record
 
 
-def terminal_command(root: Path, workflow: str, digest: str, discard_local: bool) -> list[str]:
-    command = [str(root / "bootstrap"), workflow, "apply", "--plan", digest]
-    return command + ["--discard-local"] if discard_local else command
-
-
 def launch_terminal(command: list[str], environment: dict[str, str]) -> None:
     """Open a floating terminal on the user's session and return at once.
 

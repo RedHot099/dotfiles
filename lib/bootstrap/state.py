@@ -69,10 +69,6 @@ class StateStore:
     def write_result(self, workflow: WorkflowId, result: dict[str, object]) -> None:
         self._write(f"{STATE_ROOT}/results/{workflow.value}.json", result, "results")
 
-    def read_managed(self, workflow: WorkflowId) -> dict[str, str]:
-        with HomeFiles(self.target_home) as home:
-            return read_managed(home, workflow.value)
-
     def _write(self, target: str, data: dict[str, object], directory: str) -> None:
         content = (json.dumps(data, sort_keys=True, separators=(",", ":")) + "\n").encode()
         with HomeFiles(self.target_home) as home:
