@@ -1,10 +1,10 @@
 [Desktop Entry]
 Name=T3 Code
-Comment=T3 Code desktop build
+Comment=T3 Code desktop app
 Exec=t3code %U
 Terminal=false
 Type=Application
 Icon=t3code
 StartupWMClass=com.t3tools.T3Code
 Categories=Development;
-MimeType=x-scheme-handler/t3code;
+MimeType=x-scheme-handler/t3code;x-scheme-handler/t3code-dev;

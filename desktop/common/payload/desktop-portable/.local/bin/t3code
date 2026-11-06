@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Launch the packaged T3 Code Nightly with Polish spellcheck and libsecret.
-# /usr/bin/t3code-nightly already selects Wayland and reads
-# ~/.config/t3code-nightly-flags.conf.
+# Launch the self-updating T3 Code AppImage with Polish spellcheck and
+# libsecret. The platform's T3 Code installer puts the AppImage in place;
+# Electron picks Wayland on its own.
 set -euo pipefail
 
-launcher=/usr/bin/t3code-nightly
+launcher="${T3CODE_APPIMAGE:-$HOME/.local/share/t3code/T3-Code.AppImage}"
 t3code_profile="${T3CODE_PROFILE_DIR:-$HOME/.config/t3code-v2}"
 runtime_dir="${XDG_RUNTIME_DIR:-$HOME/.local/state/arch-hypr-bootstrap/runtime}"
 mkdir -p "$runtime_dir"
@@ -12,7 +12,7 @@ chmod 700 "$runtime_dir"
 single_instance_lock="$runtime_dir/t3code-$UID.lock"
 
 if [[ ! -x "$launcher" ]]; then
-  echo "T3 Code Nightly is not available. Select it in the bootstrap package review." >&2
+  echo "T3 Code is not installed at $launcher. Install it with the platform's T3 Code installer." >&2
   exit 1
 fi
 
