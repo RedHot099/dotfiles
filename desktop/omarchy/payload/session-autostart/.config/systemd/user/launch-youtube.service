@@ -3,6 +3,8 @@ Description=Launch YouTube after Caprine is ready
 After=launch-caprine.service graphical-session.target wayland-session-waitenv.service
 Wants=launch-chromium.service
 PartOf=graphical-session.target
+# Laptops skip YouTube; Chromium still starts because Wants= is queued anyway.
+ConditionPathExistsGlob=!/sys/class/power_supply/BAT*
 
 [Service]
 Type=oneshot
