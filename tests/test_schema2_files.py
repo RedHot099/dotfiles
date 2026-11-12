@@ -51,6 +51,37 @@ class HomeFileTests(unittest.TestCase):
             "old",
         )
 
+    def test_backs_up_and_restores_a_users_absolute_symlink(self):
+        # Omarchy 3 left absolute theme links behind; replacing one must not fail.
+        target = self.home / ".config/nvim/lua/plugins/theme.lua"
+        target.parent.mkdir(parents=True)
+        os.symlink("/nonexistent/theme/neovim.lua", target)
+        backup = ".local/state/arch-hypr-bootstrap/backups/plan"
+        content = b"return {}\n"
+
+        with HomeFiles(self.home) as files:
+            files.install(
+                ".config/nvim/lua/plugins/theme.lua",
+                content=content,
+                symlink=None,
+                mode=0o644,
+                expected_sha256=hashlib.sha256(content).hexdigest(),
+                backup_root=backup,
+            )
+            saved = self.home / backup / ".config/nvim/lua/plugins/theme.lua"
+            self.assertEqual(os.readlink(saved), "/nonexistent/theme/neovim.lua")
+            files.install(
+                ".config/nvim/lua/plugins/theme.lua",
+                content=None,
+                symlink=os.readlink(saved),
+                mode=0o777,
+                expected_sha256=hashlib.sha256(b"symlink:/nonexistent/theme/neovim.lua").hexdigest(),
+                backup_root=".local/state/arch-hypr-bootstrap/backups/restore",
+                validate_link=False,
+            )
+
+        self.assertEqual(os.readlink(target), "/nonexistent/theme/neovim.lua")
+
     def test_rejects_parent_symlinks_and_links_escaping_home(self):
         outside = Path(self.temporary.name) / "outside"
         outside.mkdir()

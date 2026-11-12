@@ -202,7 +202,10 @@ class HomeFiles:
         mode: int,
         expected_sha256: str,
         backup_root: str,
+        validate_link: bool = True,
     ) -> bool:
+        # validate_link=False only for a link the user already had: backing it
+        # up, or restoring it from that backup.
         if (content is None) == (symlink is None):
             raise ValueError("exactly one of content and symlink is required")
         if self.matches(target, expected_sha256, mode, symlink):
@@ -213,7 +216,8 @@ class HomeFiles:
         temporary = f".{name}.bootstrap-{secrets.token_hex(8)}"
         try:
             if symlink is not None:
-                _validate_link(target, symlink)
+                if validate_link:
+                    _validate_link(target, symlink)
                 os.symlink(symlink, temporary, dir_fd=parent)
             else:
                 descriptor = os.open(
@@ -306,6 +310,7 @@ class HomeFiles:
                     mode=metadata.st_mode & 0o777,
                     expected_sha256=self.hash(target) or "",
                     backup_root=f"{backup_root}/.never",
+                    validate_link=False,
                 )
                 return
             descriptor = os.open(source_name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=source_parent)

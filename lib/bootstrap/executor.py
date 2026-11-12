@@ -482,6 +482,7 @@ def restore_files(
                     mode=mode,
                     expected_sha256=_entry_digest(backup),
                     backup_root=undo,
+                    validate_link=False,
                 ):
                     restored.append(target)
                 managed[target] = _entry_digest(backup)
