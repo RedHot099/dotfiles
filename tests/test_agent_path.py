@@ -17,7 +17,7 @@ from bootstrap.planning.model import PackagesEvidence
 from bootstrap.platform import detect_platform
 from bootstrap.repository import compile_repository
 from bootstrap.session import session_environment
-from bootstrap.state import SelectionRecord, StateStore
+from bootstrap.state import STATE_ROOT, SelectionRecord, StateStore
 from bootstrap.workflows import plan_desktop, plan_integrations
 from tests.fixtures import omarchy_probe
 
@@ -563,6 +563,19 @@ class CliJsonTests(CliCase):
             code, report = self.run_cli("packages", "plan", "--json")
         self.assertEqual((code, report["status"]), (3, "NEEDS_SYSTEM_UPDATE"))
         self.assertEqual(report["next_actions"][0]["who"], "user")
+
+    def test_missing_applications_point_to_the_packages_plan(self):
+        error = cli.CatalogError("NEEDS PACKAGES: chromium")
+        with mock.patch.object(cli, "plan_desktop", side_effect=error), mock.patch.object(
+            cli, "session_environment", return_value={"WAYLAND_DISPLAY": "wayland-1"}
+        ):
+            code, report = self.run_cli("desktop", "plan", "--json")
+            self.assertEqual((code, report["status"]), (3, "NEEDS_PACKAGES"))
+            self.assertTrue(report["next_actions"][0]["command"].endswith("packages plan --json --add chromium"))
+            # A new host has no Packages selection yet; its defaults are enough.
+            (self.home / STATE_ROOT / "selections/packages.json").unlink()
+            code, report = self.run_cli("desktop", "plan", "--json")
+        self.assertTrue(report["next_actions"][0]["command"].endswith("packages plan --json"))
 
     def test_interrupted_apply_is_reported(self):
         child = subprocess.Popen(("true",))

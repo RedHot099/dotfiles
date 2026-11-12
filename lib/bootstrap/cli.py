@@ -512,6 +512,9 @@ def classify_error(error: Exception) -> tuple[str, int, list[dict[str, str]]]:
     if isinstance(error, ApplyLocked):
         return "BUSY", agent.EXIT_ACTION_NEEDED, [step("agent", "another apply is running; wait with status --wait, then retry")]
     if message.startswith("NEEDS PACKAGES: "):
+        if StateStore(Path.home()).read_selection(WorkflowId.PACKAGES) is None:
+            # A new host: the Packages defaults already hold these applications.
+            return "NEEDS_PACKAGES", agent.EXIT_ACTION_NEEDED, [step("agent", "plan and apply packages first", bootstrap_command("packages", "plan", "--json"))]
         missing = message.removeprefix("NEEDS PACKAGES: ").replace(",", " ").split()
         arguments = [argument for item in missing for argument in ("--add", item)]
         return "NEEDS_PACKAGES", agent.EXIT_ACTION_NEEDED, [step("agent", "install the prerequisites first", bootstrap_command("packages", "plan", "--json", *arguments))]
