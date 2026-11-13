@@ -2,13 +2,19 @@
 
 set -euo pipefail
 
+# Same choice as ~/.config/hypr/workspaces.lua: 3 on a laptop, 2 on a desktop.
+workspace=2
+if compgen -G '/sys/class/power_supply/BAT*' >/dev/null; then
+  workspace=3
+fi
+
 if [[ -x "$HOME/.local/bin/vscode-sync-extensions" ]]; then
   "$HOME/.local/bin/vscode-sync-extensions" >/dev/null 2>&1 &
 fi
 
-if "$HOME/.local/bin/hypr-find-client" '^(Code|code|com\.microsoft\.VSCode)$' '3' >/dev/null 2>&1; then
+if "$HOME/.local/bin/hypr-find-client" '^(Code|code|com\.microsoft\.VSCode)$' "$workspace" >/dev/null 2>&1; then
   exit 0
 fi
 
 uwsm-app -- code >/dev/null 2>&1 &
-"$HOME/.local/bin/hypr-wait-client" '^(Code|code|com\.microsoft\.VSCode)$' '3' 15 >/dev/null
+"$HOME/.local/bin/hypr-wait-client" '^(Code|code|com\.microsoft\.VSCode)$' "$workspace" 15 >/dev/null

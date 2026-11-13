@@ -2,11 +2,17 @@
 
 set -euo pipefail
 
+# Same choice as ~/.config/hypr/workspaces.lua: 5 on a laptop, 3 on a desktop.
+workspace=3
+if compgen -G '/sys/class/power_supply/BAT*' >/dev/null; then
+  workspace=5
+fi
+
 class_regex='^chrome-(www\.)?youtube\.com__.*$'
 
-if "$HOME/.local/bin/hypr-find-client" "$class_regex" '5' >/dev/null 2>&1; then
+if "$HOME/.local/bin/hypr-find-client" "$class_regex" "$workspace" >/dev/null 2>&1; then
   exit 0
 fi
 
 uwsm-app -- omarchy-launch-webapp 'https://youtube.com/' >/dev/null 2>&1 &
-"$HOME/.local/bin/hypr-wait-client" "$class_regex" '5' 15 >/dev/null
+"$HOME/.local/bin/hypr-wait-client" "$class_regex" "$workspace" 15 >/dev/null

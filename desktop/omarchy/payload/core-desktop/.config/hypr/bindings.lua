@@ -1,6 +1,7 @@
 hl.unbind("SUPER + SHIFT + CTRL + A")
 
 local home = os.getenv("HOME")
+local workspaces = require("hypr.workspaces")
 
 local function open_session_app(workspace, command)
   return function()
@@ -17,7 +18,7 @@ local bindings = {
   { "SUPER + SHIFT + B", "Chromium", open_session_app("6", home .. "/.local/bin/start-session-chromium") },
   { "SUPER + ALT + B", "Browser (private)", "omarchy-launch-browser --private" },
   { "SUPER + SHIFT + M", "Music", "omarchy-launch-or-focus spotify" },
-  { "SUPER + N", "VS Code", open_session_app("3", home .. "/.local/bin/start-session-code") },
+  { "SUPER + N", "VS Code", open_session_app(workspaces.code, home .. "/.local/bin/start-session-code") },
   { "SUPER + SHIFT + N", "T3 Code", open_session_app("2", home .. "/.local/bin/start-session-t3") },
   { "SUPER + ALT + N", "Neovim", "omarchy-launch-tui nvim" },
   { "SUPER + SHIFT + T", "Activity", "omarchy-launch-tui btop" },
@@ -31,8 +32,8 @@ local bindings = {
   { "SUPER + SHIFT + A", "ChatGPT", "omarchy-launch-or-focus ^chatgpt$ \"uwsm-app -- chatgpt\"" },
   { "SUPER + SHIFT + C", "Calendar", "omarchy-launch-webapp \"https://calendar.google.com\"" },
   { "SUPER + E", "Email", "omarchy-launch-webapp \"https://mail.google.com\"" },
-  { "SUPER + Y", "YouTube", open_session_app("5", home .. "/.local/bin/start-session-youtube") },
-  { "SUPER + SHIFT + Y", "YouTube", open_session_app("5", home .. "/.local/bin/start-session-youtube") },
+  { "SUPER + Y", "YouTube", open_session_app(workspaces.youtube, home .. "/.local/bin/start-session-youtube") },
+  { "SUPER + SHIFT + Y", "YouTube", open_session_app(workspaces.youtube, home .. "/.local/bin/start-session-youtube") },
   { "SUPER + ALT + T", "Twitch Following Live", "omarchy-launch-webapp \"https://pl.twitch.tv/directory/following/live\"" },
   { "SUPER + SHIFT + ALT + G", "WhatsApp", open_session_app("4", "omarchy-launch-or-focus-webapp WhatsApp \"https://web.whatsapp.com/\"") },
   { "SUPER + SHIFT + CTRL + G", "WhatsApp", open_session_app("4", "omarchy-launch-or-focus-webapp WhatsApp \"https://web.whatsapp.com/\"") },
